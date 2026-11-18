@@ -2,522 +2,462 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UV5EUnKIB/JTUXt1dZK7zZVDSBFZ7rYvAc/0y9uidoE='; style-src 'sha256-S04nko81Nd6+XKgSXX3QGsjd9qQVujeUSvGyy5TcDMg='; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
 <title>CRM עצלן חכם</title>
 <style>
-  :root{
-    --bg:#0f172a; --card:#1e293b; --card2:#273449; --txt:#e2e8f0;
-    --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --del:#ef4444;
-    --wa:#25d366; --call:#34d399; --mail:#60a5fa;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-    -webkit-tap-highlight-color:transparent;}
-  body{padding:16px 14px 100px;max-width:720px;margin:0 auto;}
-  h1{font-size:1.25rem;margin:0 0 4px}
-  .sub{color:var(--muted);font-size:.85rem;margin:0 0 16px}
-  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;
-    box-shadow:0 2px 8px rgba(0,0,0,.25)}
-  textarea,input[type=text],input[type=email]{width:100%;background:var(--card2);color:var(--txt);
-    border:1px solid #334155;border-radius:10px;padding:12px;font-size:1rem;
-    font-family:inherit;resize:vertical}
-  textarea{min-height:90px}
-  .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-  button{border:0;border-radius:10px;padding:11px 16px;font-size:.95rem;
-    font-family:inherit;cursor:pointer;font-weight:600;transition:opacity .15s}
-  button:active{opacity:.75}
-  .btn-rec{background:var(--accent);color:#0b1220;flex:1;min-width:140px}
-  .btn-rec.recording{background:var(--del);color:#fff;animation:pulse 1.2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-  .btn-save{background:var(--ok);color:#06210f;flex:1;min-width:120px}
-  .btn-ghost{background:var(--card2);color:var(--txt)}
-  .list{display:flex;flex-direction:column;gap:10px}
-  .item{background:var(--card);border-radius:12px;padding:12px;position:relative;
-    border-right:4px solid var(--accent)}
-  .item.done{border-right-color:var(--ok);opacity:.65}
-  .item .name{font-weight:700;font-size:1.05rem}
-  .item .raw{color:var(--muted);font-size:.85rem;margin:4px 0;line-height:1.4}
-  .item .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .chip{background:var(--card2);border-radius:20px;padding:4px 10px;
-    font-size:.78rem;color:var(--accent);white-space:nowrap}
-  .chip.phone{color:var(--warn)}
-  .chip.mail{color:var(--mail)}
-  
-  .item .actions{position:absolute;top:8px;left:8px;display:flex;gap:4px}
-  .item .actions button{background:var(--card2);color:var(--txt);padding:5px 9px;font-size:.8rem}
-  
-  .action-bar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-  .action-btn{padding:6px 12px;border-radius:8px;font-size:.82rem;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px}
-  .action-call{background:rgba(52, 211, 153, 0.15);color:var(--call)}
-  .action-wa{background:rgba(37, 211, 102, 0.15);color:var(--wa)}
-  .action-mail{background:rgba(96, 165, 250, 0.15);color:var(--mail)}
-
-  .empty{text-align:center;color:var(--muted);padding:30px 0;font-size:.9rem}
-  .hint{font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.4}
-  .search{width:100%;margin-bottom:12px}
-  
-  .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:999;padding:16px}
-  .modal.open{display:flex}
-  .modal-content{background:var(--card);width:100%;max-width:500px;border-radius:14px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
-  .modal-content h3{margin-top:0}
-  .field-group{margin-bottom:10px}
-  .field-group label{font-size:0.82rem;color:var(--muted);display:block;margin-bottom:4px}
+:root{--bg:#0f172a;--card:#1e293b;--card2:#273449;--txt:#e2e8f0;--muted:#94a3b8;--accent:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--del:#ef4444;--wa:#25d366;--call:#34d399;--mail:#60a5fa}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{padding:16px 14px 100px;max-width:720px;margin:0 auto}
+h1{font-size:1.25rem;margin:0 0 4px}.sub{color:var(--muted);font-size:.85rem;margin:0 0 16px}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+textarea,input{width:100%;background:var(--card2);color:var(--txt);border:1px solid #334155;border-radius:10px;padding:12px;font-size:1rem;font-family:inherit}
+textarea{min-height:90px;resize:vertical}textarea[readonly]{opacity:.8}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{border:0;border-radius:10px;padding:11px 16px;font-size:.95rem;font-family:inherit;cursor:pointer;font-weight:600}
+button:active{opacity:.75}
+.btn-rec{background:var(--accent);color:#0b1220;flex:1;min-width:140px}
+.btn-rec.recording{background:var(--del);color:#fff}
+.btn-save{background:var(--ok);color:#06210f;flex:1;min-width:120px}
+.btn-ghost{background:var(--card2);color:var(--txt)}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--card);border-radius:12px;padding:12px;position:relative;border-right:4px solid var(--accent)}
+.item.done{border-right-color:var(--ok);opacity:.65}
+.name{font-weight:700;font-size:1.05rem;padding-left:110px}
+.raw{color:var(--muted);font-size:.85rem;margin:4px 0;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta,.bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--card2);border-radius:20px;padding:4px 10px;font-size:.78rem;color:var(--accent)}
+.chip.p{color:var(--warn)}.chip.m{color:var(--mail)}
+.acts{position:absolute;top:8px;left:8px;display:flex;gap:4px}
+.acts button{background:var(--card2);color:var(--txt);padding:5px 9px;font-size:.8rem}
+.acts .del{color:var(--del)}
+.lnk{padding:6px 12px;border-radius:8px;font-size:.82rem;text-decoration:none;font-weight:600}
+.lnk.call{background:rgba(52,211,153,.15);color:var(--call)}
+.lnk.wa{background:rgba(37,211,102,.15);color:var(--wa)}
+.lnk.mail{background:rgba(96,165,250,.15);color:var(--mail)}
+.empty{text-align:center;color:var(--muted);padding:30px 0;font-size:.9rem}
+.hint{font-size:.8rem;color:var(--muted);margin-top:8px;line-height:1.4}
+.panel{border:1px solid var(--accent)}
+summary{cursor:pointer;font-weight:600}
+label{font-size:.82rem;color:var(--muted);display:block;margin:10px 0 4px}
+.err{color:var(--del);font-size:.85rem;margin-top:6px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:999;padding:16px}
+.modal.open{display:flex}
+.mc{background:var(--card);width:100%;max-width:500px;max-height:100%;overflow:auto;border-radius:14px;padding:16px}
+.mc h3{margin-top:0}
 </style>
 </head>
 <body>
-
 <h1>🧠 CRM עצלן חכם</h1>
-<p class="sub">דבר או כתוב — תעד פגישות או תן פקודות ביצוע מיידיות בקול</p>
+<p class="sub">דבר או כתוב — תעד פגישות או תן פקודות ביצוע בקול</p>
 
 <div class="card">
-  <textarea id="raw" placeholder="למשל: תפגוש את דני כהן ביום שלישי ב-15:30, טלפון 050-1234567&#10;או פקודה: שלח וואטסאפ לדני שאני מאחר ב-10 דקות"></textarea>
+  <textarea id="raw" maxlength="5000" placeholder="למשל: תפגוש את דני כהן ביום שלישי ב-15:30, טלפון 050-1234567&#10;או פקודה: שלח וואטסאפ לדני שאני מאחר ב-10 דקות"></textarea>
   <div class="row">
-    <button id="recBtn" class="btn-rec">🎤 דבר / פקודה</button>
-    <button id="saveBtn" class="btn-save">💾 שמור</button>
-    <button id="clearBtn" class="btn-ghost">נקה</button>
+    <button type="button" id="recBtn" class="btn-rec">🎤 דבר / פקודה</button>
+    <button type="button" id="saveBtn" class="btn-save">💾 שמור</button>
+    <button type="button" id="clearBtn" class="btn-ghost">נקה</button>
   </div>
-  <div class="hint" id="status">טיפ: נסה להגיד "שלח וואטסאפ לדני שאני מאחר ב-10 דקות" או "תתקשר לדני".</div>
+  <div class="hint" id="status" role="status" aria-live="polite">בקול: סיים ב״שמור״ כדי לשמור, או ״נקה״ כדי למחוק את הטיוטה.</div>
 </div>
 
-<input type="text" id="search" class="search" placeholder="🔍 חפש אנשי קשר או תוכן...">
+<div class="card panel" id="act" hidden>
+  <div id="actText"></div>
+  <div class="row"><button type="button" id="actGo" class="btn-save">▶ בצע</button><button type="button" id="actNo" class="btn-ghost">התעלם</button></div>
+</div>
+
+<details class="card">
+  <summary>⚙️ הגדרות</summary>
+  <label for="silence">זמן שקט לעצירה אוטומטית של ההקלטה (שניות)</label>
+  <input type="number" id="silence" min="0.5" max="30" step="0.5" inputmode="decimal">
+</details>
+
+<input type="text" id="search" maxlength="100" placeholder="🔍 חפש אנשי קשר או תוכן..." style="margin-bottom:12px">
 <div class="list" id="list"></div>
 
-<!-- Modal עריכה -->
 <div class="modal" id="editModal">
-  <div class="modal-content">
+  <div class="mc">
     <h3>עריכת רשומה</h3>
     <input type="hidden" id="editId">
-    <div class="field-group"><label>שם איש קשר</label><input type="text" id="editName"></div>
-    <div class="field-group"><label>טלפון</label><input type="text" id="editPhone"></div>
-    <div class="field-group"><label>אימייל</label><input type="email" id="editEmail"></div>
-    <div class="field-group"><label>תאריך</label><input type="text" id="editDate" placeholder="YYYY-MM-DD"></div>
-    <div class="field-group"><label>שעה</label><input type="text" id="editTime" placeholder="HH:MM"></div>
-    <div class="field-group"><label>טקסט / הערות</label><textarea id="editRaw"></textarea></div>
-    <div class="row">
-      <button class="btn-save" id="saveEditBtn">שמור שינויים</button>
-      <button class="btn-ghost" id="closeModalBtn">ביטול</button>
-    </div>
+    <label for="editName">שם איש קשר</label><input type="text" id="editName" maxlength="80">
+    <label for="editPhone">טלפון</label><input type="tel" id="editPhone" maxlength="20">
+    <label for="editEmail">אימייל</label><input type="email" id="editEmail" maxlength="254">
+    <label for="editDate">תאריך</label><input type="date" id="editDate">
+    <label for="editTime">שעה</label><input type="time" id="editTime">
+    <label for="editRaw">טקסט / הערות</label><textarea id="editRaw" maxlength="5000"></textarea>
+    <div class="err" id="editErr" hidden></div>
+    <div class="row"><button type="button" class="btn-save" id="saveEditBtn">שמור שינויים</button><button type="button" class="btn-ghost" id="closeModalBtn">ביטול</button></div>
   </div>
 </div>
 
 <script>
 "use strict";
+(() => {
+const $ = (id) => document.getElementById(id);
+const KEY = "lazy_crm_v2", SKEY = "lazy_crm_settings_v1", MAXN = 5000, MAXRAW = 5000;
+const RE_PHONE = /^\+?\d{7,15}$/, RE_MAIL = /^[^\s@<>"',;()\\]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/;
+const RE_DATE = /^\d{4}-\d{2}-\d{2}$/, RE_TIME = /^\d{2}:\d{2}$/, RE_ID = /^[A-Za-z0-9-]{6,40}$/;
+const NOHE = "(?![\\u05D0-\\u05EA])";
+const rawEl = $("raw"), statusEl = $("status"), recBtn = $("recBtn"), listEl = $("list"), searchEl = $("search");
+const say = (s) => { statusEl.textContent = s; };
 
-const KEY = "lazy_crm_v2";
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-const save = (arr) => localStorage.setItem(KEY, JSON.stringify(arr));
-
-/* ---------- Extraction helpers ---------- */
-const HEB_MONTHS = {
-  "ינואר":1,"פברואר":2,"מרץ":3,"מרס":3,"אפריל":4,"מאי":5,"יוני":6,
-  "יולי":7,"אוגוסט":8,"ספטמבר":9,"אוקטובר":10,"נובמבר":11,"דצמבר":12
-};
-const WEEKDAYS = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
-
-function extractPhone(text){
-  const m = text.match(/(\+?972[-\s]?|0)(\d[-\s]?){7,9}\d/);
-  if(!m) return null;
-  return m[0].replace(/[-\s]/g,"");
+/* ---------- storage (validated, no dynamic keys) ---------- */
+const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+function mkDate(y, m, d) { const x = new Date(y, m - 1, d); return x.getFullYear() === y && x.getMonth() === m - 1 && x.getDate() === d ? iso(x) : null; }
+function validDate(s) { if (!RE_DATE.test(s)) return null; const p = s.split("-").map(Number); return mkDate(p[0], p[1], p[2]); }
+function validTime(s) { if (!RE_TIME.test(s)) return null; const p = s.split(":").map(Number); return p[0] < 24 && p[1] < 60 ? s : null; }
+function newId() { return Date.now().toString(36) + "-" + Array.from(crypto.getRandomValues(new Uint32Array(2)), (n) => n.toString(36)).join(""); }
+function sanitize(o) {
+  if (!o || typeof o !== "object") return null;
+  const phone = str(o.phone, 20), email = str(o.email, 254);
+  return {
+    id: RE_ID.test(str(o.id, 40)) ? o.id : newId(),
+    raw: str(o.raw, MAXRAW), name: str(o.name, 80) || "ללא שם",
+    phone: RE_PHONE.test(phone) ? phone : null, email: RE_MAIL.test(email) ? email : null,
+    date: validDate(str(o.date, 10)), time: validTime(str(o.time, 5)),
+    done: o.done === true, created: Number.isFinite(o.created) ? o.created : 0
+  };
 }
-
-function extractEmail(text){
-  const m = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  return m ? m[0] : null;
+function load() {
+  try { const a = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(a) ? a.slice(0, MAXN).map(sanitize).filter(Boolean) : []; } catch (e) { return []; }
 }
+function save(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr)); return true; } catch (e) { return false; } }
+function getSilence() { try { const n = parseFloat(localStorage.getItem(SKEY)); if (n >= 0.5 && n <= 30) return n; } catch (e) { /* default */ } return 2.5; }
+function setSilence(n) { try { localStorage.setItem(SKEY, String(n)); } catch (e) { /* ignore */ } }
 
-function pad(n){ return String(n).padStart(2,"0"); }
-function iso(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+/* ---------- text helpers ---------- */
+const norm = (s) => s.normalize("NFC").replace(/[\u0591-\u05C7]/g, "").replace(/["״“”'׳’]/g, "").toLowerCase().trim();
+const MONTHS = new Map([["ינואר", 1], ["פברואר", 2], ["מרץ", 3], ["מרס", 3], ["אפריל", 4], ["מאי", 5], ["יוני", 6], ["יולי", 7], ["אוגוסט", 8], ["ספטמבר", 9], ["אוקטובר", 10], ["נובמבר", 11], ["דצמבר", 12]]);
+const DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const RE_MON = new RegExp("(\\d{1,2})\\s*[בל]?(ינואר|פברואר|מרץ|מרס|אפריל|מאי|יוני|יולי|אוגוסט|ספטמבר|אוקטובר|נובמבר|דצמבר)" + NOHE);
+const RE_DAY = new RegExp("יום\\s*(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)" + NOHE);
+const RE_AFT = new RegExp("(?:^|[^\\u05D0-\\u05EA])מחרתיים" + NOHE);
+const RE_TOM = new RegExp("(?:^|[^\\u05D0-\\u05EA])מחר" + NOHE);
+const RE_TOD = new RegExp("(?:^|[^\\u05D0-\\u05EA])היום" + NOHE);
+const RE_IN = new RegExp("בעוד\\s*(\\d{1,3})\\s*(ימים|יום|שבועות|שבוע)" + NOHE);
 
-function extractDateTime(text){
+function extractPhone(t) { const m = t.match(/(?:\+?972[-\s]?|0)(?:\d[-\s]?){7,9}\d/); if (!m) return null; const p = m[0].replace(/[-\s]/g, ""); return RE_PHONE.test(p) ? p : null; }
+function extractEmail(t) { const m = t.match(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}/); return m && RE_MAIL.test(m[0]) ? m[0] : null; }
+
+function extractDateTime(text) {
+  let t = text, date = null, time = null;
   const now = new Date();
-  let date = null, time = null;
-
-  const tm = text.match(/(?:בשעה\s*)?(\d{1,2})[:.](\d{2})/) ||
-             text.match(/בשעה\s*(\d{1,2})\b/);
-  if(tm){
-    const h = parseInt(tm[1],10);
-    const mi = tm[2] ? parseInt(tm[2],10) : 0;
-    if(h>=0 && h<24 && mi>=0 && mi<60){ time = pad(h)+":"+pad(mi); }
+  const setTime = (h, mi) => { if (h < 24 && mi < 60) time = pad(h) + ":" + pad(mi); };
+  let m = t.match(/בשעה\s*(\d{1,2})(?:[:.](\d{2}))?(?!\d)/);
+  if (m) { setTime(+m[1], m[2] ? +m[2] : 0); t = t.replace(m[0], " "); }
+  else if ((m = t.match(/(?:^|\D)(\d{1,2}):(\d{2})(?!\d)/))) { setTime(+m[1], +m[2]); t = t.replace(m[0], " "); }
+  m = t.match(/(?:^|\D)(\d{1,2})[/.](\d{1,2})(?:[/.](\d{2,4}))?(?!\d)/);
+  if (m) { let y = m[3] ? +m[3] : now.getFullYear(); if (y < 100) y += 2000; date = mkDate(y, +m[2], +m[1]); }
+  if (!date && (m = t.match(RE_MON))) date = mkDate(now.getFullYear(), MONTHS.get(m[2]), +m[1]);
+  const plus = (n) => { const d = new Date(now); d.setDate(d.getDate() + n); return iso(d); };
+  if (!date) {
+    if (RE_AFT.test(t)) date = plus(2);
+    else if (RE_TOM.test(t)) date = plus(1);
+    else if (RE_TOD.test(t)) date = plus(0);
+    else if ((m = t.match(RE_IN))) date = plus(+m[1] * (m[2].startsWith("שבוע") ? 7 : 1));
+    else if ((m = t.match(RE_DAY))) { let diff = (DAYS.indexOf(m[1]) - now.getDay() + 7) % 7; if (diff === 0) diff = 7; date = plus(diff); }
   }
-
-  const dm = text.match(/\b(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?\b/);
-  if(dm){
-    let y = dm[3] ? parseInt(dm[3],10) : now.getFullYear();
-    if(y<100) y+=2000;
-    date = iso(new Date(y, parseInt(dm[2],10)-1, parseInt(dm[1],10)));
-  }
-
-  if(!date){
-    for(const [name, num] of Object.entries(HEB_MONTHS)){
-      const re = new RegExp("(\\d{1,2})\\s*ב?" + name);
-      const mm = text.match(re);
-      if(mm){ date = iso(new Date(now.getFullYear(), num-1, parseInt(mm[1],10))); break; }
-    }
-  }
-
-  if(!date){
-    if(/מחרתיים/.test(text)){ const d=new Date(now); d.setDate(d.getDate()+2); date=iso(d); }
-    else if(/מחר\b/.test(text)){ const d=new Date(now); d.setDate(d.getDate()+1); date=iso(d); }
-    else if(/היום/.test(text)){ date=iso(now); }
-  }
-
-  if(!date){
-    for(let i=0;i<WEEKDAYS.length;i++){
-      if(new RegExp("יום\\s*"+WEEKDAYS[i]).test(text)){
-        const d = new Date(now);
-        let diff = (i - d.getDay() + 7) % 7;
-        if(diff===0) diff = 7;
-        d.setDate(d.getDate()+diff);
-        date = iso(d);
-        break;
-      }
-    }
-  }
-
   return { date, time };
 }
 
-function extractName(text){
-  const patterns = [
-    /(?:לפגוש את|לפגוש|עם|אצל|את|ל|אל)\s*([A-Za-z\u0590-\u05FF]+(?:\s+[A-Za-z\u0590-\u05FF]+)?)/,
-    /^([A-Za-z\u0590-\u05FF]+(?:\s+[A-Za-z\u0590-\u05FF]+)?)\s/
-  ];
-  const stop = new Set(["היום","מחר","מחרתיים","שעה","שעת","יום","בשעה","טלפון","נייד","משרד","תתקשר","שלח","וואטסאפ","מייל"]);
-  for(const re of patterns){
-    const m = text.match(re);
-    if(m){
-      const words = m[1].split(/\s+/).filter(w => !stop.has(w));
-      if(words.length) return words.slice(0,2).join(" ");
+/* names: known contacts first, then trigger words, then leading words */
+const TRIG = new Set(["עם", "אצל", "את", "אל", "מול", "פגישה", "שיחה", "של", "לפגוש", "פגש", "תפגוש", "נפגש", "אפגש", "תפגשי"]);
+const STOP = new Set(("היום מחר מחרתיים שעה שעת יום ביום בשעה בתאריך טלפון נייד פלאפון פלפון מייל אימייל משרד כתובת הצעה הצעת מחיר לגבי בנושא רוצה רוצים צריך צריכה צריכים ביקש ביקשה אמר אמרה מעוניין מעוניינת יגיע תגיע חדש חדשה לקוח לקוחה בבוקר בערב בצהריים שלח תתקשר התקשר חייג וואטסאפ " + DAYS.join(" ") + " " + Array.from(MONTHS.keys()).join(" ")).split(" "));
+const toks = (t) => t.split(/\s+/).filter(Boolean).map((x) => ({ w: x.replace(/[^\u05D0-\u05EAA-Za-z"'׳״-]/g, "").replace(/^-+|-+$/g, ""), bad: /\d/.test(x), brk: /[,;:.!?]$/.test(x) }));
+function collect(tk, j) {
+  const out = [];
+  for (let k = j; k < tk.length && out.length < 2; k++) {
+    const x = tk[k];
+    if (x.bad || !x.w || STOP.has(norm(x.w))) break;
+    out.push(x.w);
+    if (x.brk) break;
+  }
+  return out.join(" ");
+}
+function knownIn(tk, names) {
+  const nt = tk.map((x) => norm(x.w));
+  for (const name of names) {
+    const p = norm(name).split(" ");
+    for (let i = 0; i + p.length <= nt.length; i++) {
+      if (p.every((w, k) => nt[i + k] === w || (k === 0 && nt[i + k].length > 1 && nt[i + k].slice(1) === w && "בלמוהשכ".includes(nt[i + k][0])))) return name;
     }
   }
   return null;
 }
-
-function parseEntry(text){
+function extractName(text, names) {
+  const tk = toks(text);
+  const k = knownIn(tk, names || []);
+  if (k) return k;
+  for (let i = 0; i < tk.length; i++) {
+    if (TRIG.has(tk[i].w)) { let j = i + 1; while (j < tk.length && TRIG.has(tk[j].w)) j++; const n = collect(tk, j); if (n) return n; }
+  }
+  return collect(tk, 0) || null;
+}
+function knownNames(arr) { return Array.from(new Set(arr.map((e) => e.name).filter((n) => n !== "ללא שם"))).sort((a, b) => b.length - a.length); }
+function parseEntry(text, arr) {
   const { date, time } = extractDateTime(text);
-  const phone = extractPhone(text);
-  const email = extractEmail(text);
-  const name  = extractName(text);
-  return {
-    id: Date.now() + Math.random().toString(36).slice(2,7),
-    raw: text.trim(),
-    name: name || "ללא שם",
-    phone, email, date, time,
-    done: false,
-    created: Date.now()
-  };
+  return { id: newId(), raw: text.trim().slice(0, MAXRAW), name: (extractName(text, knownNames(arr)) || "ללא שם").slice(0, 80), phone: extractPhone(text), email: extractEmail(text), date, time, done: false, created: Date.now() };
 }
 
-/* ---------- Smart Contact & Message Parser for Commands ---------- */
-function findContactAndMessage(fullText, arr, requireField) {
-  // מחלץ את החלק שאחרי מילת הפקודה (למשל אחרי "וואטסאפ ל..." או "מייל אל...")
-  const afterTarget = fullText.match(/(?:וואטסאפ|וודסטאפ|וצאפ|הודעה|מייל|אימייל)\s+(?:ל|אל|את)\s*(.+)/i);
-  const tail = afterTarget ? afterTarget[1].trim() : fullText;
-
-  // מיון אנשי הקשר מהשם הארוך לקצר כדי ש"דני כהן" ייבדק לפני "דני"
-  const sortedContacts = [...arr]
-    .filter(c => c[requireField] && c.name && c.name !== "ללא שם")
-    .sort((a, b) => b.name.length - a.name.length);
-
-  for (const contact of sortedContacts) {
-    // מחפש את שם איש הקשר בתחילת המשפט (למשל "דני שאני מאחר...")
-    const escapedName = contact.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const nameRegex = new RegExp(`^${escapedName}(?:\\s+|$)(.*)`, 'i');
-    const match = tail.match(nameRegex);
-
-    if (match) {
-      let msg = (match[1] || "").trim();
-      // ניקוי מילות קישור נפוצות בדיבור: "ותגיד לו ש...", "תכתוב ש...", "ש..."
-      msg = msg.replace(/^(?:ותגיד לו|ותגידי לה|תגיד לו|תגידי לה|ותכתוב|תכתוב|שהודעה היא)?\s*ש(?=[א-ת])/i, "");
-      msg = msg.replace(/^(?:ותגיד לו|ותגידי לה|תגיד לו|תגידי לה|ותכתוב|תכתוב)\s+/i, "");
-      return { contact, message: msg.trim() };
-    }
+/* ---------- commands: only when the text STARTS with a command ---------- */
+const CALLV = new Set(["תתקשר", "התקשר", "להתקשר", "חייג", "תחייג", "תתקשרי", "חייגי"]);
+const SENDV = new Set(["שלח", "תשלח", "לשלוח", "תכתוב", "כתוב", "פתח", "תפתח", "שלחי", "תשלחי"]);
+const RE_WA = /^ב?(?:וואטסאפ|ווטסאפ|וואצאפ|ווצאפ|וצאפ|וודסטאפ|וואטס|whatsapp|watsapp)$/;
+const RE_ML = /^ב?(?:מייל|מיל|אימייל|דואל|email|e-mail|mail|gmail)$/;
+function parseCommand(text) {
+  const orig = text.trim().split(/\s+/), nt = orig.map(norm);
+  let i = 0, type = null;
+  while (i < nt.length && ["בבקשה", "נא", "אז", "יאללה"].includes(nt[i])) i++;
+  if (CALLV.has(nt[i])) { type = "call"; i++; }
+  else {
+    const verb = SENDV.has(nt[i]);
+    if (verb) i++;
+    if (verb && (nt[i] === "הודעה" || nt[i] === "הודעת")) { type = "wa"; i++; }
+    if (RE_WA.test(nt[i] || "")) { type = "wa"; i++; } else if (RE_ML.test(nt[i] || "")) { type = "mail"; i++; }
+    if (!type) return null;
   }
-
-  // ניסיון גיבוי: חיפוש השם בכל מקום בטקסט ללא הודעה
-  const fallbackName = extractName(fullText);
-  if (fallbackName) {
-    const found = arr.find(item => item.name.toLowerCase().includes(fallbackName.toLowerCase()) && item[requireField]);
-    if (found) return { contact: found, message: "" };
-  }
-
-  return null;
+  while (["אל", "את", "ל"].includes(nt[i])) i++;
+  return { type, orig: orig.slice(i), nt: nt.slice(i) };
 }
-
-/* ---------- Voice Commands Execution ---------- */
-function executeVoiceCommand(text){
-  const clean = text.toLowerCase();
-  const arr = load();
-
-  // 1. פקודת התקשרות: "תתקשר לדני", "חייג לדני"
-  if(clean.includes("תתקשר") || clean.includes("חייג") || clean.includes("להתקשר")){
-    const targetName = extractName(text);
-    if(targetName){
-      const found = arr.find(item => item.name.toLowerCase().includes(targetName.toLowerCase()) && item.phone);
-      if(found){
-        statusEl.textContent = `📞 מבצע שיחה אל ${found.name} (${found.phone})...`;
-        window.location.href = `tel:${found.phone}`;
-        return true;
-      } else {
-        statusEl.textContent = `לא נמצא טלפון עבור "${targetName}" ברשימה.`;
-        return true;
+function resolve(cmd, arr) {
+  const f = cmd.type === "mail" ? "email" : "phone";
+  const people = arr.filter((e) => e.name !== "ללא שם").map((e) => ({ e, n: norm(e.name).split(/\s+/) }));
+  for (let k = Math.min(3, cmd.nt.length); k >= 1; k--) {
+    const ph = cmd.nt.slice(0, k), vs = [ph];
+    if (ph[0].length > 1 && ph[0][0] === "ל") vs.push([ph[0].slice(1)].concat(ph.slice(1)));
+    for (const v of vs) {
+      const match = people.filter((p) => v.every((t, i) => p.n[i] === t));
+      if (match.length) {
+        const withF = match.filter((p) => p.e[f]);
+        const pick = withF.find((p) => p.n.length === v.length) || withF[0];
+        return { found: true, entry: pick ? pick.e : null, who: v.join(" "), rest: cmd.orig.slice(k), f };
       }
     }
   }
-
-  // 2. פקודת וואטסאפ כולל הכתבת הודעה: "שלח וואטסאפ לדני שאני מאחר ב-10 דקות"
-  if(clean.includes("וואטסאפ") || clean.includes("וודסטאפ") || clean.includes("וצאפ")){
-    const result = findContactAndMessage(text, arr, "phone");
-    if(result){
-      const { contact, message } = result;
-      const cleanPhone = contact.phone.startsWith("0") ? "972" + contact.phone.slice(1) : contact.phone;
-      const finalMsg = message ? message : `היי ${contact.name}, `;
-      
-      statusEl.textContent = message 
-        ? `💬 פותח וואטסאפ אל ${contact.name} עם ההודעה: "${message}"`
-        : `💬 פותח וואטסאפ אל ${contact.name}...`;
-        
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(finalMsg)}`, "_blank");
-      return true;
-    } else {
-      const targetName = extractName(text) || "איש הקשר";
-      statusEl.textContent = `לא נמצא טלפון עבור "${targetName}" לשליחת וואטסאפ.`;
-      return true;
-    }
-  }
-
-  // 3. פקודת מייל כולל תוכן: "שלח מייל לאבי שאני שולח הצעת מחיר"
-  if(clean.includes("מייל") || clean.includes("אימייל")){
-    const result = findContactAndMessage(text, arr, "email");
-    if(result){
-      const { contact, message } = result;
-      statusEl.textContent = `✉️ פותח אימייל אל ${contact.email}...`;
-      const mailUrl = message 
-        ? `mailto:${contact.email}?body=${encodeURIComponent(message)}`
-        : `mailto:${contact.email}`;
-      window.location.href = mailUrl;
-      return true;
-    } else {
-      const targetName = extractName(text) || "איש הקשר";
-      statusEl.textContent = `לא נמצא אימייל עבור "${targetName}" ברשימה.`;
-      return true;
-    }
-  }
-
-  return false;
+  return { found: false, who: cmd.orig.slice(0, 2).join(" "), f };
+}
+const CONN = [["ותגיד", "לו"], ["ותגיד", "לה"], ["תגיד", "לו"], ["תגיד", "לה"], ["תגידי", "לה"], ["ותגידי", "לה"], ["ותכתוב"], ["תכתוב"], ["שהודעה", "היא"], ["עם", "ההודעה"], ["ההודעה"]];
+const SH = new Set("אני אנחנו אתה את אתם הוא היא הם הן יש אין זה זאת מחר היום הפגישה אגיע נגיע אאחר נאחר אתאחר נתאחר אתקשר אחזור אשלח נדבר נפגש אפגש אבוא נבוא ארצה".split(" "));
+function cleanMsg(tokens) {
+  let t = tokens.slice();
+  for (let g = 0; g < 2; g++) for (const c of CONN) { if (c.every((w, i) => t[i] && norm(t[i]) === w)) { t = t.slice(c.length); break; } }
+  if (t.length && t[0][0] === "ש" && SH.has(norm(t[0]).slice(1))) t[0] = t[0].slice(1);
+  return t.join(" ").trim();
+}
+function intl(p) { const d = p.replace(/\D/g, ""); const r = p.startsWith("+") || d.startsWith("972") ? d : d.startsWith("0") ? "972" + d.slice(1) : d; return /^\d{8,15}$/.test(r) ? r : ""; }
+function buildAction(cmd, arr) {
+  const r = resolve(cmd, arr);
+  if (!r.found) return { err: "לא נמצא איש קשר “" + r.who + "”." };
+  if (!r.entry) return { err: "ל“" + r.who + "” אין " + (r.f === "email" ? "אימייל" : "טלפון") + " שמור." };
+  const e = r.entry, msg = cleanMsg(r.rest);
+  if (cmd.type === "call") return { url: "tel:" + e.phone, text: "📞 התקשרות אל " + e.name + " (" + e.phone + ")" };
+  if (cmd.type === "mail") return { url: "mailto:" + e.email + (msg ? "?body=" + encodeURIComponent(msg) : ""), text: "✉️ מייל אל " + e.name + " (" + e.email + ")" + (msg ? ": “" + msg + "”" : "") };
+  const d = intl(e.phone);
+  if (!d) return { err: "מספר הטלפון של " + e.name + " לא תקין." };
+  return { url: "https://wa.me/" + d + "?text=" + encodeURIComponent(msg || "היי " + e.name.split(" ")[0] + ", "), text: "💬 וואטסאפ אל " + e.name + (msg ? ": “" + msg + "”" : "") };
+}
+function safeHref(u) {
+  try { const x = new URL(u); if (x.protocol === "tel:" || x.protocol === "mailto:" || (x.protocol === "https:" && x.hostname === "wa.me")) return x.href; } catch (e) { /* invalid */ }
+  return "";
+}
+function mkLink(cls, label, url) {
+  const h = safeHref(url); if (!h) return null;
+  const a = document.createElement("a");
+  a.className = "lnk " + cls; a.textContent = label; a.href = h; a.rel = "noopener noreferrer";
+  if (h.startsWith("https:")) a.target = "_blank";
+  return a;
+}
+function launch(url) {
+  const a = mkLink("", "", url); if (!a) return false;
+  a.hidden = true; document.body.append(a); a.click(); a.remove(); return true;
 }
 
-/* ---------- Speech Recognition ---------- */
+/* ---------- action panel ---------- */
+let pending = null;
+const actEl = $("act"), actText = $("actText"), actGo = $("actGo");
+function hidePanel() { pending = null; actEl.hidden = true; }
+function refreshPreview() {
+  const text = rawEl.value;
+  const cmd = text.trim() ? parseCommand(text) : null;
+  if (!cmd) { hidePanel(); return; }
+  const a = buildAction(cmd, load());
+  pending = a.url ? a : null;
+  actText.textContent = a.url ? a.text : "⚠ " + a.err + " אפשר לשמור כרשומה.";
+  actGo.hidden = !a.url; actEl.hidden = false;
+}
+actGo.addEventListener("click", () => {
+  if (pending && launch(pending.url)) { rawEl.value = ""; hidePanel(); say("בוצע ✓"); }
+});
+$("actNo").addEventListener("click", hidePanel);
+
+/* ---------- save ---------- */
+function addEntry() {
+  if (st !== "idle") { after = "save"; stopRec(); return; }
+  const text = rawEl.value.trim();
+  if (!text) { rawEl.focus(); return; }
+  const arr = load(); arr.unshift(parseEntry(text, arr));
+  if (arr.length > MAXN) arr.length = MAXN;
+  if (!save(arr)) { say("⚠ השמירה נכשלה (אחסון חסום או מלא). הטקסט לא נמחק."); return; }
+  rawEl.value = ""; hidePanel(); render(); say("נשמר ✓");
+}
+
+/* ---------- voice: explicit state machine ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recBtn = document.getElementById("recBtn");
-const statusEl = document.getElementById("status");
-const rawEl = document.getElementById("raw");
-let recognition = null, recording = false;
-
-if(!SR){
-  recBtn.disabled = true;
-  recBtn.textContent = "🎤 לא נתמך";
-  statusEl.textContent = "זיהוי דיבור לא נתמך בדפדפן זה. השתמש ב-Chrome/Edge.";
-} else {
-  recognition = new SR();
-  recognition.lang = "he-IL";
-  recognition.interimResults = true;
-  recognition.continuous = false;
-
-  recognition.onstart = () => {
-    recording = true;
-    recBtn.classList.add("recording");
-    recBtn.textContent = "⏹ עצור";
-    statusEl.textContent = "מקשיב לפקודה או לטקסט...";
-  };
-
-  recognition.onresult = (e) => {
-    let finalTxt = "", interimTxt = "";
-    for(let i=e.resultIndex; i<e.results.length; i++){
-      const r = e.results[i];
-      if(r.isFinal) finalTxt += r[0].transcript;
-      else interimTxt += r[0].transcript;
+const SAVE_W = [["שמור"], ["תשמור"], ["שמור", "רשומה"], ["שמור", "את", "זה"], ["תשמור", "את", "זה"], ["שמור", "הכל"], ["שמור", "הכול"]];
+const CLEAR_W = [["נקה"], ["תנקה"], ["בטל"], ["תבטל"], ["מחק", "הכל"], ["מחק", "הכול"]];
+let rec = null, st = "idle", base = "", fin = "", interim = "", after = null, fatal = false, restarts = 0, tSil = 0, tWatch = 0, tRe = 0;
+const join = (...p) => p.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+const live = () => { rawEl.value = join(base, fin, interim); };
+function setUi() { recBtn.classList.toggle("recording", st !== "idle"); recBtn.textContent = st === "idle" ? "🎤 דבר / פקודה" : "⏹ עצור"; rawEl.readOnly = st !== "idle"; }
+function arm() { clearTimeout(tSil); tSil = setTimeout(stopRec, getSilence() * 1000); }
+function stopRec() {
+  if (st === "idle" || st === "stopping") return;
+  st = "stopping"; clearTimeout(tSil); clearTimeout(tRe); setUi();
+  try { rec.stop(); } catch (e) { try { rec.abort(); } catch (e2) { /* ignore */ } }
+  clearTimeout(tWatch); tWatch = setTimeout(() => { try { rec.abort(); } catch (e) { /* ignore */ } finish(); }, 1500);
+}
+function finish() {
+  clearTimeout(tSil); clearTimeout(tWatch); clearTimeout(tRe);
+  if (st === "idle") return;
+  if (interim) { fin = join(fin, interim); interim = ""; }
+  st = "idle"; live(); setUi();
+  const a = after; after = null;
+  if (a === "save") addEntry(); else { refreshPreview(); if (rawEl.value) say("נקלט ✓ — אמור/לחץ ״שמור״, או ״בצע״ אם זו פקודה."); }
+}
+function begin() {
+  try { rec.start(); } catch (e) {
+    try { rec.abort(); } catch (e2) { /* ignore */ }
+    clearTimeout(tRe); tRe = setTimeout(() => { if (st === "starting") { try { rec.start(); } catch (e3) { fail("לא ניתן להתחיל הקלטה."); } } }, 300);
+  }
+  clearTimeout(tWatch); tWatch = setTimeout(() => { if (st === "starting") { try { rec.abort(); } catch (e) { /* ignore */ } fail("המיקרופון לא הגיב."); } }, 8000);
+}
+function fail(msg) { clearTimeout(tSil); clearTimeout(tWatch); clearTimeout(tRe); st = "idle"; setUi(); say(msg); }
+function startRec() {
+  if (st !== "idle") return;
+  fatal = false; after = null; restarts = 0; base = rawEl.value.trim(); fin = ""; interim = "";
+  st = "starting"; setUi(); say("מתחבר למיקרופון…"); begin();
+}
+function endsWith(nt, pats) { return pats.find((p) => p.length <= nt.length && p.every((w, i) => nt[nt.length - p.length + i] === w)); }
+function onFinal(tx) {
+  const tk = tx.split(/\s+/).filter(Boolean), nt = tk.map(norm);
+  const c = CLEAR_W.find((p) => p.length === nt.length && p.every((w, i) => nt[i] === w));
+  if (c) { base = ""; fin = ""; interim = ""; live(); hidePanel(); say("הטיוטה נוקתה."); return; }
+  const s = endsWith(nt, SAVE_W);
+  if (s) { fin = join(fin, tk.slice(0, tk.length - s.length).join(" ")); after = "save"; stopRec(); return; }
+  fin = join(fin, tx);
+}
+if (!SR) { recBtn.disabled = true; recBtn.textContent = "🎤 לא נתמך"; say("זיהוי דיבור לא נתמך בדפדפן זה (השתמש ב-Chrome/Edge). הקלדה עובדת כרגיל."); }
+else {
+  rec = new SR(); rec.lang = "he-IL"; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+  rec.onstart = () => { if (st !== "starting") return; st = "listening"; clearTimeout(tWatch); if (restarts === 0) { arm(); say("מקשיב… עוצר אחרי " + getSilence() + " שנ׳ של שקט."); } };
+  rec.onresult = (e) => {
+    if (st === "idle") return;
+    if (st === "listening") arm();
+    interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i], tx = r[0].transcript.trim();
+      if (r.isFinal) onFinal(tx); else interim += " " + tx;
     }
-    if(interimTxt) statusEl.textContent = interimTxt;
-    if(finalTxt){
-      const spoken = finalTxt.trim();
-      const executed = executeVoiceCommand(spoken);
-      if(executed){
-        // אם בוצעה פקודה, לא נמלא את תיבת הטקסט כדי שלא תישמר בטעות כרשומה חדשה
-        rawEl.value = "";
-      } else {
-        rawEl.value = (rawEl.value ? rawEl.value + " " : "") + spoken;
-        statusEl.textContent = "נקלט ✓ (לחץ שמור או המשך לדבר)";
-      }
+    interim = interim.trim(); live();
+  };
+  rec.onerror = (e) => {
+    const c = String(e.error || "");
+    if (c === "no-speech" || c === "aborted") return;
+    if (c === "not-allowed" || c === "service-not-allowed") { fatal = true; say("אין הרשאת מיקרופון (בדוק הרשאות אתר, ודפדפן עם HTTPS)."); }
+    else if (c === "network") { fatal = true; say("זיהוי הדיבור של הדפדפן דורש חיבור לשירות הדפדפן."); }
+    else if (c === "audio-capture") { fatal = true; say("לא נמצא מיקרופון."); }
+    else say("שגיאת זיהוי: " + c.slice(0, 40));
+  };
+  rec.onend = () => {
+    clearTimeout(tWatch);
+    if (st === "listening" && !fatal && restarts < 60) {
+      restarts++; st = "starting";
+      if (interim) { fin = join(fin, interim); interim = ""; live(); }
+      tRe = setTimeout(begin, 200); return;
     }
+    finish();
   };
-
-  recognition.onerror = (e) => {
-    statusEl.textContent = "שגיאת זיהוי: " + e.error;
-  };
-
-  recognition.onend = () => {
-    recording = false;
-    recBtn.classList.remove("recording");
-    recBtn.textContent = "🎤 דבר / פקודה";
-  };
-
   recBtn.addEventListener("click", () => {
-    if(recording){ recognition.stop(); }
-    else { try { recognition.start(); } catch(err){} }
+    if (st === "idle") startRec();
+    else if (st === "stopping") { try { rec.abort(); } catch (e) { /* ignore */ } finish(); }
+    else stopRec();
   });
 }
 
-/* ---------- Save Entry ---------- */
-function addEntry(){
-  const text = rawEl.value.trim();
-  if(!text){ rawEl.focus(); return; }
-  
-  // מאפשר גם להקליד פקודה וללחוץ שמור/Ctrl+Enter כדי לבצע אותה
-  if(executeVoiceCommand(text)){
-    rawEl.value = "";
-    return;
-  }
-
-  const entry = parseEntry(text);
-  const arr = load(); arr.unshift(entry); save(arr);
-  rawEl.value = "";
-  statusEl.textContent = "נשמר בהצלחה ✓";
-  render();
-}
-
-document.getElementById("saveBtn").addEventListener("click", addEntry);
-document.getElementById("clearBtn").addEventListener("click", () => {
-  rawEl.value = ""; statusEl.textContent = "";
-  rawEl.focus();
-});
-
-rawEl.addEventListener("keydown", (e) => {
-  if((e.ctrlKey || e.metaKey) && e.key === "Enter") addEntry();
-});
-
-/* ---------- Render List ---------- */
-const listEl = document.getElementById("list");
-const searchEl = document.getElementById("search");
-
-function fmtDate(isoStr){
-  if(!isoStr) return "";
-  const [y,m,d] = isoStr.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-function render(){
+/* ---------- list (DOM API only, no innerHTML) ---------- */
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
+function fmtDate(s) { const p = s.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+function render() {
   const q = searchEl.value.trim().toLowerCase();
-  const arr = load().filter(e =>
-    !q || e.raw.toLowerCase().includes(q) || e.name.toLowerCase().includes(q) || (e.phone && e.phone.includes(q))
-  );
-  if(!arr.length){
-    listEl.innerHTML = '<div class="empty">אין עדיין רשומות. דבר/הקלד פקודה או פרטי לקוח ולחץ שמור.</div>';
-    return;
-  }
-  
-  listEl.innerHTML = arr.map(e => {
-    const meta = [];
-    if(e.date) meta.push(`<span class="chip">📅 ${fmtDate(e.date)}</span>`);
-    if(e.time) meta.push(`<span class="chip">🕒 ${e.time}</span>`);
-    if(e.phone) meta.push(`<span class="chip phone">📞 ${e.phone}</span>`);
-    if(e.email) meta.push(`<span class="chip mail">✉️ ${e.email}</span>`);
-
-    let actionButtons = '';
-    if(e.phone){
-      const cleanPhone = e.phone.startsWith("0") ? "972" + e.phone.slice(1) : e.phone;
-      actionButtons += `<a class="action-btn action-call" href="tel:${e.phone}">📞 התקשר</a>`;
-      actionButtons += `<a class="action-btn action-wa" href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('היי ' + e.name + ', ') }" target="_blank">💬 וואטסאפ</a>`;
-    }
-    if(e.email){
-      actionButtons += `<a class="action-btn action-mail" href="mailto:${e.email}">✉️ שלח מייל</a>`;
-    }
-
-    return `
-      <div class="item ${e.done ? "done" : ""}" data-id="${e.id}">
-        <div class="actions">
-          <button data-act="edit" title="ערוך">✏️</button>
-          <button data-act="toggle" title="${e.done ? "בטל סימון" : "סמן כטופל"}">${e.done ? "↩" : "✓"}</button>
-          <button style="color:var(--del);" data-act="del" title="מחק">🗑</button>
-        </div>
-        <div class="name">${escapeHtml(e.name)}</div>
-        <div class="raw">${escapeHtml(e.raw)}</div>
-        ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
-        ${actionButtons ? `<div class="action-bar">${actionButtons}</div>` : ""}
-      </div>`;
-  }).join("");
+  const arr = load().filter((e) => !q || e.raw.toLowerCase().includes(q) || e.name.toLowerCase().includes(q) || (e.phone && e.phone.includes(q)) || (e.email && e.email.toLowerCase().includes(q)));
+  if (!arr.length) { listEl.replaceChildren(el("div", "empty", "אין עדיין רשומות. דבר/הקלד פקודה או פרטי לקוח ולחץ שמור.")); return; }
+  listEl.replaceChildren(...arr.map((e) => {
+    const it = el("div", "item" + (e.done ? " done" : "")); it.dataset.id = e.id;
+    const acts = el("div", "acts");
+    [["edit", "✏️", "ערוך", ""], ["toggle", e.done ? "↩" : "✓", e.done ? "בטל סימון" : "סמן כטופל", ""], ["del", "🗑", "מחק", "del"]].forEach((b) => {
+      const x = el("button", b[3], b[1]); x.type = "button"; x.dataset.act = b[0]; x.title = b[2]; x.setAttribute("aria-label", b[2]); acts.append(x);
+    });
+    it.append(acts, el("div", "name", e.name), el("div", "raw", e.raw));
+    const meta = el("div", "meta");
+    if (e.date) meta.append(el("span", "chip", "📅 " + fmtDate(e.date)));
+    if (e.time) meta.append(el("span", "chip", "🕒 " + e.time));
+    if (e.phone) meta.append(el("span", "chip p", "📞 " + e.phone));
+    if (e.email) meta.append(el("span", "chip m", "✉️ " + e.email));
+    if (meta.children.length) it.append(meta);
+    const bar = el("div", "bar");
+    if (e.phone) { const d = intl(e.phone); [mkLink("call", "📞 התקשר", "tel:" + e.phone), d ? mkLink("wa", "💬 וואטסאפ", "https://wa.me/" + d + "?text=" + encodeURIComponent("היי " + e.name.split(" ")[0] + ", ")) : null].forEach((a) => { if (a) bar.append(a); }); }
+    if (e.email) { const a = mkLink("mail", "✉️ שלח מייל", "mailto:" + e.email); if (a) bar.append(a); }
+    if (bar.children.length) it.append(bar);
+    return it;
+  }));
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
-
-/* ---------- Modal Edit Management ---------- */
-const modal = document.getElementById("editModal");
-const editId = document.getElementById("editId");
-const editName = document.getElementById("editName");
-const editPhone = document.getElementById("editPhone");
-const editEmail = document.getElementById("editEmail");
-const editDate = document.getElementById("editDate");
-const editTime = document.getElementById("editTime");
-const editRaw = document.getElementById("editRaw");
-
+/* ---------- edit modal ---------- */
+const modal = $("editModal"), F = { id: $("editId"), name: $("editName"), phone: $("editPhone"), email: $("editEmail"), date: $("editDate"), time: $("editTime"), raw: $("editRaw") }, errEl = $("editErr");
+const closeModal = () => { modal.classList.remove("open"); errEl.hidden = true; };
 listEl.addEventListener("click", (ev) => {
-  const btn = ev.target.closest("button[data-act]");
-  if(!btn) return;
-  const item = btn.closest(".item");
-  const id = item.dataset.id;
-  const arr = load();
-  const idx = arr.findIndex(e => e.id === id);
-  if(idx < 0) return;
-
+  const btn = ev.target.closest("button[data-act]"); if (!btn) return;
+  const it = btn.closest(".item"); if (!it) return;
+  const arr = load(), idx = arr.findIndex((e) => e.id === it.dataset.id); if (idx < 0) return;
   const act = btn.dataset.act;
-  if(act === "del"){
-    arr.splice(idx,1);
-    save(arr); render();
-  } else if(act === "toggle"){
-    arr[idx].done = !arr[idx].done;
-    save(arr); render();
-  } else if(act === "edit"){
+  if (act === "del") { if (!window.confirm("למחוק את הרשומה?")) return; arr.splice(idx, 1); save(arr); render(); }
+  else if (act === "toggle") { arr[idx].done = !arr[idx].done; save(arr); render(); }
+  else if (act === "edit") {
     const e = arr[idx];
-    editId.value = e.id;
-    editName.value = e.name || "";
-    editPhone.value = e.phone || "";
-    editEmail.value = e.email || "";
-    editDate.value = e.date || "";
-    editTime.value = e.time || "";
-    editRaw.value = e.raw || "";
-    modal.classList.add("open");
+    F.id.value = e.id; F.name.value = e.name; F.phone.value = e.phone || ""; F.email.value = e.email || "";
+    F.date.value = e.date || ""; F.time.value = e.time || ""; F.raw.value = e.raw; errEl.hidden = true; modal.classList.add("open");
   }
 });
-
-document.getElementById("closeModalBtn").addEventListener("click", () => {
-  modal.classList.remove("open");
+$("closeModalBtn").addEventListener("click", closeModal);
+modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+$("saveEditBtn").addEventListener("click", () => {
+  const phone = F.phone.value.replace(/[-\s]/g, ""), email = F.email.value.trim();
+  let bad = "";
+  if (phone && !RE_PHONE.test(phone)) bad = "טלפון לא תקין.";
+  else if (email && !RE_MAIL.test(email)) bad = "אימייל לא תקין.";
+  if (bad) { errEl.textContent = bad; errEl.hidden = false; return; }
+  const arr = load(), idx = arr.findIndex((e) => e.id === F.id.value); if (idx < 0) { closeModal(); return; }
+  Object.assign(arr[idx], { name: F.name.value.trim().slice(0, 80) || "ללא שם", phone: phone || null, email: email || null, date: validDate(F.date.value), time: validTime(F.time.value), raw: F.raw.value.trim().slice(0, MAXRAW) });
+  if (!save(arr)) { errEl.textContent = "השמירה נכשלה."; errEl.hidden = false; return; }
+  closeModal(); render();
 });
 
-document.getElementById("saveEditBtn").addEventListener("click", () => {
-  const id = editId.value;
-  const arr = load();
-  const idx = arr.findIndex(e => e.id === id);
-  if(idx >= 0){
-    arr[idx].name = editName.value.trim() || "ללא שם";
-    arr[idx].phone = editPhone.value.trim() || null;
-    arr[idx].email = editEmail.value.trim() || null;
-    arr[idx].date = editDate.value.trim() || null;
-    arr[idx].time = editTime.value.trim() || null;
-    arr[idx].raw = editRaw.value.trim() || "";
-    save(arr);
-    modal.classList.remove("open");
-    render();
-  }
-});
-
+/* ---------- wiring ---------- */
+$("saveBtn").addEventListener("click", addEntry);
+$("clearBtn").addEventListener("click", () => { if (st !== "idle") { after = null; base = ""; fin = ""; interim = ""; stopRec(); } rawEl.value = ""; hidePanel(); say(""); rawEl.focus(); });
+rawEl.addEventListener("input", refreshPreview);
+rawEl.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") addEntry(); });
 searchEl.addEventListener("input", render);
+const silEl = $("silence"); silEl.value = String(getSilence());
+silEl.addEventListener("change", () => { let n = parseFloat(silEl.value); if (!(n >= 0.5)) n = 2.5; n = Math.min(30, Math.round(n * 2) / 2); silEl.value = String(n); setSilence(n); say("זמן שקט עודכן: " + n + " שנ׳."); });
 render();
+})();
 </script>
 </body>
 </html>
