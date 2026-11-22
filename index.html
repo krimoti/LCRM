@@ -188,6 +188,8 @@
         .cat-sel { font-size:12px !important; padding:6px 8px !important; width:auto !important; max-width:118px; border-radius:10px !important; }
         .pend { border:1px solid #00d4ff; border-radius:14px; padding:10px; margin-bottom:6px; }
         .pend .shop-row button { font-size:16px; padding:4px 6px; }
+        #shop-dict.on { background:#00d4ff; color:#030712; border-color:#00d4ff; } html.light #shop-dict.on { background:#1976d2; color:#fff; border-color:#1976d2; }
+        #voice-log { font-size:11px; border:1px solid #1f2937; border-radius:12px; padding:8px; white-space:pre-wrap; direction:ltr; text-align:left; max-height:220px; overflow:auto; }
         #shop-mic.recording { animation:recordPulse 1s ease infinite; background:#ef4444 !important; color:#fff !important; }
 
         html.light body{background:#f4f9ff!important;color:#0f2742}
@@ -418,14 +420,16 @@
         <div id="panel-5" class="flex-1 hidden flex-col overflow-auto p-4 space-y-4">
             <div style="display:flex;gap:8px;align-items:stretch">
                 <button id="shop-mic" onclick="shopVoiceToggle()" class="btn-primary" style="flex:1;padding:14px;font-size:16px">🎤 לחץ ודבר</button>
+                <button id="shop-dict" onclick="shopDictateToggle()" class="chip" style="min-width:48px;font-size:18px" title="הכתבה במקלדת (לחץ על המיקרופון במקלדת)">⌨️</button>
                 <button id="shop-tts" onclick="shopTtsToggle()" class="chip" style="min-width:48px;font-size:18px">🔊</button>
             </div>
             <div style="font-size:11px;opacity:.65;text-align:center">אמור פריטים ("חלב ביצים ולחם") או פקודה ("קניתי חלב")</div>
             <div id="shop-voice-status" style="font-size:13px;min-height:18px"></div>
-            <div id="voice-diag" style="font-size:10px;opacity:.5;text-align:center;min-height:12px"></div>
+            <div style="display:flex;align-items:center;gap:6px"><div id="voice-diag" style="flex:1;font-size:11px;opacity:.65;text-align:center;min-height:14px"></div><button class="chip" onclick="toggleVoiceLog()" title="אבחון מיקרופון" style="padding:2px 8px">🩺</button></div>
+            <div id="voice-log" style="display:none"></div>
             <div id="shop-pending"></div>
             <div style="display:flex;gap:8px;align-items:stretch">
-                <textarea id="shop-in" rows="2" style="flex:1;font-size:14px;resize:none;min-height:46px" placeholder="הדבק רשימה או כתוב: חלב, ביצים, 2 קילו עגבניות"></textarea>
+                <textarea id="shop-in" rows="2" oninput="shopBoxInput()" style="flex:1;font-size:14px;resize:none;min-height:46px" placeholder="הדבק רשימה או כתוב: חלב, ביצים, 2 קילו עגבניות"></textarea>
                 <button onclick="shopAddFromBox()" class="btn-primary" style="padding:0 18px;font-size:20px" title="הוסף לרשימה">➕</button>
             </div>
             <div id="shop-chips" style="display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px"></div>
@@ -1799,7 +1803,7 @@ function shopSetFilter(c) { shopFilter = c; renderShop() }
 function shopToggle(id) { const i = shop.items.find(x => x.id === id); if (!i) return; const snap = snapShop(); i.bought = !i.bought; if (i.bought) recordBuy(i); saveShop(); renderShop(); if (i.bought) undoShop(snap, 'סומן כנקנה: ' + i.name) }
 function shopCycleCat(id) { const i = shop.items.find(x => x.id === id); if (!i) return; i.cat = allCats()[(allCats().indexOf(i.cat) + 1) % allCats().length]; shop.catMap[stemsOf(i.name).join(' ')] = i.cat; saveShop(); renderShop() }
 function shopDel(id) { const snap = snapShop(), i = shop.items.find(x => x.id === id); if (!i) return; shop.items = shop.items.filter(x => x.id !== id); saveShop(); renderShop(); undoShop(snap, 'נמחק: ' + i.name) }
-function shopAddFromBox() { const el = document.getElementById('shop-in'); if (!el.value.trim()) return; const r = shopAdd(el.value); el.value = ''; if (/לא הבנתי/.test(r)) toast(r.replace(/<[^>]+>/g, ''), '#f59e0b') }
+function shopAddFromBox() { shopSubmitBox() }
 function shopClearBought() { const snap = snapShop(), n = shop.items.filter(i => i.bought).length; if (!n) return; shop.items = shop.items.filter(i => !i.bought); saveShop(); renderShop(); undoShop(snap, 'נוקו ' + n + ' פריטים שנקנו') }
 function shopCopy() {
     const txt = shopListText()
@@ -1907,70 +1911,144 @@ function speakHe(t) {
     try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(t).replace(/[^\u0590-\u05FF0-9a-zA-Z .,:%-]/g, ' ').slice(0, 140)); u.lang = 'he-IL'; speechSynthesis.speak(u) } catch (e) {}
 }
 function shopTtsToggle() { ttsOn = !ttsOn; localStorage.setItem('gl_tts', ttsOn ? '1' : '0'); const b = document.getElementById('shop-tts'); if (b) b.textContent = ttsOn ? '🔊' : '🔇' }
-function setMic(on) { const b = document.getElementById('shop-mic'); if (!b) return; b.classList.toggle('recording', on); b.textContent = on ? '⏹️ מקשיב… (לחץ לעצירה)' : '🎤 לחץ ודבר' }
+function setMic(on, label) { const b = document.getElementById('shop-mic'); if (!b) return; b.classList.toggle('recording', on); b.textContent = on ? (label || '⏹️ מקשיב… (לחץ לעצירה)') : '🎤 לחץ ודבר' }
 function shopVoiceStatus(heard, reply) { const el = document.getElementById('shop-voice-status'); if (el) el.innerHTML = '🗣️ ' + escHtml(heard) + '<br><span style="opacity:.8">' + escHtml(plain(reply)) + '</span>' }
-const Voice = { rec: null, state: 'idle', kind: '', t0: 0, wd: null, wdMs: 3000, stuckMs: 15000, speak: null }
+const Voice = { rec: null, state: 'idle', kind: '', t0: 0, wd: null, wdMs: 12000, stuckMs: 15000, speak: null, log: [], fails: 0, hiddenAt: 0 }
 const voiceSupported = () => window.SpeechRecognition || window.webkitSpeechRecognition
-function voiceDiag(msg) { const el = document.getElementById('voice-diag'); if (el) el.textContent = msg; try { console.log('[voice]', msg) } catch (e) {} }
-function voiceUI(on, kind) {
+function vlog(msg) {
+    const d = new Date(), t = [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':')
+    Voice.log.push(t + ' ' + msg); if (Voice.log.length > 60) Voice.log.shift()
+    try { console.log('[voice]', msg) } catch (e) {}
+    renderVoiceLog()
+}
+function voiceDiag(msg) { const el = document.getElementById('voice-diag'); if (el) el.textContent = msg; vlog(msg) }
+function voiceEnv() {
+    const ua = navigator.userAgent || ''
+    return { ios: /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+        standalone: !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)),
+        secure: window.isSecureContext !== false, proto: location.protocol,
+        sr: window.SpeechRecognition ? 'SpeechRecognition' : window.webkitSpeechRecognition ? 'webkitSpeechRecognition' : 'none',
+        getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), tts: !!window.speechSynthesis, ua: ua.slice(0, 100) }
+}
+function renderVoiceLog() {
+    const el = document.getElementById('voice-log'); if (!el || el.style.display === 'none') return
+    const e = voiceEnv()
+    el.textContent = `סביבה: ${e.ios ? 'iOS' : 'לא-iOS'} | מסך-הבית: ${e.standalone ? 'כן' : 'לא'} | HTTPS: ${e.secure ? 'כן' : 'לא'} (${e.proto}) | זיהוי דיבור: ${e.sr} | גישה למיקרופון: ${e.getUserMedia ? 'כן' : 'לא'}\n${e.ua}\n` + '─'.repeat(30) + '\n' + (Voice.log.join('\n') || '(עוד לא נרשם כלום – לחץ על 🎤)')
+}
+function toggleVoiceLog() {
+    const el = document.getElementById('voice-log'); if (!el) return
+    const open = el.style.display === 'none'; el.style.display = open ? 'block' : 'none'
+    if (open) { renderVoiceLog(); el.insertAdjacentHTML('afterend', '<div id="voice-log-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="chip" onclick="micTest()">🎙️ בדיקת מיקרופון</button><button class="chip" onclick="copyVoiceLog()">📋 העתק</button><button class="chip" onclick="Voice.log=[];renderVoiceLog()">🧹 נקה</button></div>') }
+    else { const b = document.getElementById('voice-log-btns'); if (b) b.remove() }
+}
+function copyVoiceLog() { const t = document.getElementById('voice-log').textContent; try { navigator.clipboard.writeText(t); toast('האבחון הועתק') } catch (e) { toast('ההעתקה לא נתמכת – צלם מסך', '#f59e0b') } return t }
+async function micTest() {                      // is the microphone reachable at all? (independent of speech recognition)
+    vlog('בדיקת מיקרופון: מבקש הרשאה…')
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); vlog('בדיקת מיקרופון: ✓ הרשאה ניתנה (' + st.getAudioTracks().length + ' ערוץ)'); st.getTracks().forEach(t => t.stop()) }
+    catch (e) { vlog('בדיקת מיקרופון: ✗ ' + (e.name || '') + ' ' + (e.message || '')) }
+}
+function voiceUI(on, kind, label) {
     if (kind === 'chat') { const b = document.getElementById('voice-btn'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? '⏹️' : '🎤' } }
-    else setMic(on)
+    else setMic(on, label)
 }
 function voiceReset() {                         // hard reset: kills the recognizer, drops its handlers, clears the UI
     clearTimeout(Voice.wd)
     const r = Voice.rec; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
-    if (r) { r.onstart = r.onresult = r.onerror = r.onend = r.onnomatch = null; try { r.abort() } catch (e) {} }
+    if (r) { r.onstart = r.onresult = r.onerror = r.onend = r.onnomatch = r.onaudiostart = r.onsoundstart = r.onspeechstart = r.onspeechend = r.onsoundend = r.onaudioend = null; try { r.abort() } catch (e) {} }
     voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
 }
 const VOICE_ERR = {
-    'not-allowed': 'אין הרשאת מיקרופון – אפשר אותה בהגדרות הדפדפן/האתר',
-    'service-not-allowed': 'אין הרשאת מיקרופון – אפשר אותה בהגדרות הדפדפן/האתר',
+    'not-allowed': 'אין הרשאת מיקרופון/זיהוי דיבור – אפשר בהגדרות האייפון (Safari ← מיקרופון) ובהגדרות ← מקלדת ← הכתבה',
+    'service-not-allowed': 'זיהוי הדיבור כבוי באייפון – הגדרות ← מקלדת ← הפעל הכתבה (Dictation)',
     'no-speech': 'לא שמעתי כלום – לחץ שוב ודבר',
     'audio-capture': 'המיקרופון לא זמין – סגור אפליקציות אחרות או כבה 🔊 ונסה שוב',
     'network': 'זיהוי הדיבור דורש חיבור לרשת',
     'language-not-supported': 'עברית לא נתמכת בזיהוי הדיבור של הדפדפן הזה'
 }
+function voiceFailed(why) {
+    Voice.fails++; vlog('כשל #' + Voice.fails + ': ' + why)
+    if (Voice.fails >= 2) shopVoiceHint()
+}
+function shopVoiceHint() {
+    const st = document.getElementById('shop-voice-status')
+    if (st) st.innerHTML = 'זיהוי הדיבור לא מגיב במכשיר הזה. <button class="clarify" onclick="shopDictateToggle()">⌨️ עבור להכתבה במקלדת</button>'
+}
 function voiceStart(kind, onText) {
     const SR = voiceSupported()
-    if (!SR) { toast('הדפדפן לא תומך בזיהוי דיבור – השתמש בהקלדה הקולית של המקלדת', '#f59e0b'); return }
+    if (!SR) { vlog('אין SpeechRecognition בדפדפן הזה'); toast('הדפדפן לא תומך בזיהוי דיבור – השתמש בהכתבה במקלדת ⌨️', '#f59e0b'); if (kind === 'shop') shopVoiceHint(); return }
     voiceReset()                                   // always begin from a clean state (no zombie sessions)
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
-    const r = new SR(); let got = false
+    const r = new SR(); let got = false, heard = false
     Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
     r.lang = 'he-IL'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1
-    r.onstart = () => { if (Voice.rec !== r) return; Voice.state = 'listening'; clearTimeout(Voice.wd); voiceDiag('מקשיב… דבר עכשיו') }
-    r.onresult = e => {
-        if (Voice.rec !== r) return                // an old session can never act on the new one
+    const on = (name, f) => { r['on' + name] = e => { if (Voice.rec !== r) return; f(e) } }   // an old session can never act on the new one
+    on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); voiceDiag('מקשיב… דבר עכשיו') })
+    on('audiostart', () => { heard = true; vlog('audiostart – המיקרופון נפתח') })
+    on('soundstart', () => { heard = true; vlog('soundstart – נקלט קול') })
+    on('speechstart', () => { heard = true; vlog('speechstart – נקלט דיבור') })
+    on('speechend', () => vlog('speechend')); on('soundend', () => vlog('soundend')); on('audioend', () => vlog('audioend')); on('nomatch', () => vlog('nomatch – לא זוהה'))
+    on('result', e => {
         const t = ((e.results[e.results.length - 1] || [])[0] || {}).transcript; if (!t || !t.trim()) return
-        got = true; voiceDiag('שמעתי: ' + t.trim()); const rep = onText(t.trim()); if (rep) Voice.speak = rep
-    }
-    r.onerror = e => {
-        if (Voice.rec !== r) return
-        voiceDiag('שגיאה: ' + e.error); if (e.error !== 'aborted' && VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
-        setTimeout(() => { if (Voice.rec === r) voiceReset() }, 500)       // some browsers never send "end" after an error
-    }
-    r.onend = () => {
-        if (Voice.rec !== r) return
+        got = true; heard = true; Voice.fails = 0; voiceDiag('שמעתי: ' + t.trim()); const rep = onText(t.trim()); if (rep) Voice.speak = rep
+    })
+    on('error', e => {
+        vlog('error: ' + e.error + (e.message ? ' – ' + e.message : ''))
+        if (e.error !== 'aborted' && VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
+        if (e.error !== 'aborted' && e.error !== 'no-speech') voiceFailed(e.error)
+        setTimeout(() => { if (Voice.rec === r) voiceReset() }, 500)      // some browsers never send "end" after an error
+    })
+    on('end', () => {
         clearTimeout(Voice.wd); const sp = Voice.speak; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
         voiceUI(false, kind); voiceDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
+        if (!heard && !got) voiceFailed('הסתיים בלי שהמיקרופון נפתח')
         if (sp) speakHe(sp)                        // speak only AFTER listening has fully ended
-    }
-    voiceUI(true, kind)
-    Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b') } }, Voice.wdMs)
-    try { r.start() } catch (e) { voiceReset(); voiceDiag('start נכשל: ' + e.message); toast('לא הצלחתי להפעיל את המיקרופון – לחץ שוב', '#f59e0b') }
+    })
+    voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה אם מופיע)'); voiceDiag('מפעיל את הזיהוי… (ייתכן חלון הרשאה)')
+    Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך ' + Math.round(Voice.wdMs / 1000) + ' שניות') } }, Voice.wdMs)
+    try { r.start(); vlog('start() נקרא') } catch (e) { voiceReset(); voiceDiag('start נכשל: ' + e.message); toast('לא הצלחתי להפעיל את המיקרופון – לחץ שוב', '#f59e0b'); voiceFailed('start() זרק ' + e.name) }
 }
 function voiceToggle(kind, onText) {
     if (Voice.rec && Voice.state === 'listening' && Voice.kind === kind && Date.now() - Voice.t0 < Voice.stuckMs) {      // a real, live session → stop it
-        const r = Voice.rec; try { r.stop() } catch (e) {}
+        const r = Voice.rec; vlog('עצירה ידנית'); try { r.stop() } catch (e) {}
         setTimeout(() => { if (Voice.rec === r) voiceReset() }, 1500); return
     }
     voiceStart(kind, onText)                       // idle / starting / stuck / other mic → always a fresh start
 }
 function shopVoiceToggle() { voiceToggle('shop', t => { const r = handleShopPhrase(t); shopVoiceStatus(t, r); return r }) }
-// leaving the app and coming back must never leave a half-dead session behind
-document.addEventListener('visibilitychange', () => { if (document.hidden) { voiceReset(); try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {} } })
+// Going to the background must NOT kill a session that is waiting for the iOS permission sheet;
+// it is cleaned up when the user comes back (and never survives a page reload / bfcache restore).
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { Voice.hiddenAt = Date.now(); try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {} vlog('האפליקציה עברה לרקע') }
+    else { if (Voice.hiddenAt && Voice.state !== 'idle') { vlog('חזרה לאפליקציה – מאפס הקשבה ישנה'); voiceReset() } Voice.hiddenAt = 0 }
+})
 window.addEventListener('pagehide', () => voiceReset())
 window.addEventListener('pageshow', () => voiceReset())
+
+// ---- keyboard dictation: works even where the browser's speech recognition does not (iPhone mic key on the keyboard)
+let shopDictate = false, shopDictateMs = 2500, shopBoxTimer = null
+function shopDictateToggle() {
+    shopDictate = !shopDictate
+    const el = document.getElementById('shop-in'), b = document.getElementById('shop-dict'), st = document.getElementById('shop-voice-status')
+    if (b) b.classList.toggle('on', shopDictate)
+    if (shopDictate) {
+        voiceReset(); if (el) { el.placeholder = 'לחץ על 🎤 שבמקלדת ודבר – אוסיף אוטומטית אחרי רגע של שקט'; el.focus() }
+        if (st) st.textContent = '⌨️ מצב הכתבה פעיל: פתח את המקלדת ולחץ על המיקרופון שלה'
+        vlog('מצב הכתבה במקלדת: פעיל')
+    } else { clearTimeout(shopBoxTimer); if (el) el.placeholder = 'הדבק רשימה או כתוב: חלב, ביצים, 2 קילו עגבניות'; if (st) st.textContent = ''; vlog('מצב הכתבה במקלדת: כבוי') }
+}
+function shopBoxInput() {                       // dictated text arrives while typing → process after a pause
+    if (!shopDictate) return
+    clearTimeout(shopBoxTimer)
+    shopBoxTimer = setTimeout(() => { const el = document.getElementById('shop-in'); if (el && el.value.trim().length >= 2) shopSubmitBox() }, shopDictateMs)
+}
+function shopSubmitBox() {
+    const el = document.getElementById('shop-in'); if (!el) return; const text = el.value.trim(); if (!text) return
+    clearTimeout(shopBoxTimer); el.value = ''
+    const cmd = answerFromShop(text)               // commands work in the box too ("קניתי חלב")
+    const r = cmd !== null ? cmd : (shopDictate ? handleShopPhrase(text) : shopAdd(text))
+    if (/לא הבנתי/.test(r)) toast(plain(r), '#f59e0b'); else if (cmd !== null || shopDictate) shopVoiceStatus(text, r)
+    if (shopDictate) el.focus()
+}
 
 // =====================================================================
 //  HUMAN CONVERSATION: praise / thanks / correction + teachable phrases
