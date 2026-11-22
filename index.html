@@ -218,6 +218,152 @@
             background:#0d1117; border:1px solid #1f2937; border-radius:16px; padding:16px; margin-bottom:12px;
         }
     </style>
+<style id="ui2">
+:root{--bg:#070c16;--card:#0b1220;--line:#18233a;--mut:#7b8794;--acc:#22d3ee}
+body{background:var(--bg);-webkit-font-smoothing:antialiased}
+.glow{box-shadow:none!important}
+.dot-bg{background-image:none!important;background-color:var(--bg)!important}
+#status-badge,#kb-badge,.hdr-text,.sidebar-section>.flex:last-child{display:none!important}
+.sidebar-section{padding:16px 18px;border:none}
+#sidebar{border-color:var(--line)!important}
+.tab-btn{display:flex!important;flex-direction:column;align-items:center;gap:2px;font-size:11px!important;padding:8px 0!important}
+.t-ic{font-size:17px;line-height:1.2}
+.tab-active{border-bottom:2px solid var(--acc)}
+.uppercase{text-transform:none!important;letter-spacing:0!important;font-size:12px!important;color:var(--mut)!important;margin-bottom:8px!important}
+#messages{padding:24px max(16px,calc((100% - 780px)/2))!important}
+#messages .text-sm{font-size:15px;line-height:1.75}
+.chat-bubble-user{background:#0e7490!important;border-radius:18px 18px 4px 18px;color:#fff}
+.chat-bubble-ai{border-color:var(--line)!important;background:var(--card)!important;border-radius:18px 18px 18px 4px}
+.msg-del{opacity:0}.msg-appear:hover .msg-del{opacity:.55}
+@media (pointer:coarse){.msg-del{opacity:.3}}
+.knowledge-item,.report-section,.shop-row,.pend,.sugg{background:var(--card)!important;border-color:var(--line)!important;border-radius:14px}
+.knowledge-item:hover{transform:none;box-shadow:none;border-color:#27415f!important}
+input,textarea,select{border-color:var(--line);border-radius:14px}
+:focus-visible{outline:2px solid rgba(34,211,238,.45);outline-offset:1px}
+.btn-primary{box-shadow:none}
+.btn-ghost,.chip{background:transparent;border-color:var(--line)}
+#voice-diag{display:none}
+#panel-5{gap:14px}
+.grp{border:1px solid var(--line);border-radius:16px;background:var(--card);flex-shrink:0}
+.grp>summary{list-style:none;padding:14px 16px;font-weight:600;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary::after{content:'‹';color:var(--mut);transition:transform .2s}
+.grp[open]>summary::after{transform:rotate(-90deg)}
+.grp-b{padding:2px 16px 16px;display:flex;flex-direction:column;gap:18px}
+#pipe-bar{display:none}.pipe-btn{min-height:46px}.pipe-lb{font-size:10px}
+html.light{--bg:#f4f9ff;--card:#fff;--line:#d6e6f8;--mut:#5b7391}
+html.light .chat-bubble-user{background:#1976d2!important}
+html.light .knowledge-item:hover{border-color:#90b8e8!important}
+</style>
+<style id="ui3">
+/* ===== UI v3: neon hi-tech ===== */
+:root{--c1:#22d3ee;--c2:#8b5cf6;--c3:#ec4899;--grad:linear-gradient(135deg,#22d3ee,#8b5cf6 55%,#ec4899);--glass:rgba(14,16,36,.55);--edge:rgba(255,255,255,.09)}
+body{background:#05060f}
+body::before{content:'';position:fixed;inset:-10%;z-index:-1;pointer-events:none;
+ background:radial-gradient(600px 420px at 15% 10%,rgba(139,92,246,.32),transparent 62%),radial-gradient(520px 420px at 88% 18%,rgba(34,211,238,.24),transparent 62%),radial-gradient(640px 520px at 50% 105%,rgba(236,72,153,.2),transparent 62%);
+ animation:aurora 16s ease-in-out infinite alternate}
+@keyframes aurora{to{transform:translate3d(-3%,2.5%,0) scale(1.08)}}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{box-shadow:0 6px 26px rgba(139,92,246,.45)}50%{box-shadow:0 6px 40px rgba(34,211,238,.7)}}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.msg-appear{animation:pop .38s cubic-bezier(.2,.9,.3,1.15) both}
+#sidebar{background:rgba(8,10,26,.6)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-color:var(--edge)!important}
+#main-area>div:first-child,#main-area>div:last-child{background:rgba(8,10,26,.5)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--edge)!important}
+#messages,#messages.dot-bg{background:transparent!important}
+h1,#main-area .font-medium.text-sm{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.sidebar-section .glow{background:var(--grad)!important;box-shadow:0 0 24px rgba(139,92,246,.7)!important;animation:breathe 3s ease-in-out infinite}
+.tabbar{padding:6px 8px;border:none!important;gap:2px}
+.tab-btn{margin:2px;border-radius:14px;transition:all .25s}
+.tab-btn:hover{background:rgba(255,255,255,.06)}
+.tab-active{background:var(--grad)!important;color:#fff!important;border:none!important;box-shadow:0 0 20px rgba(139,92,246,.55)}
+.chat-bubble-user{background:linear-gradient(135deg,#0891b2,#7c3aed)!important;box-shadow:0 8px 28px -8px rgba(124,58,237,.7)}
+.chat-bubble-ai{background:var(--glass)!important;border:1px solid rgba(139,92,246,.35)!important;backdrop-filter:blur(10px);box-shadow:0 0 26px rgba(139,92,246,.12)}
+.msg-appear .text-2xl{filter:drop-shadow(0 0 8px #22d3ee)}
+#main-area .rounded-3xl{background:rgba(255,255,255,.04)!important;border-color:var(--edge)!important;transition:box-shadow .25s,border-color .25s}
+#main-area .rounded-3xl:focus-within{border-color:var(--c1)!important;box-shadow:0 0 0 1px var(--c1),0 0 30px rgba(34,211,238,.35)}
+.btn-primary,.btn-ghost,.chip,.clarify,.tab-btn,.pipe-btn{position:relative;overflow:hidden}
+.btn-primary{background:var(--grad)!important;color:#fff!important;box-shadow:0 6px 22px rgba(139,92,246,.45)}
+.btn-primary::after{content:'';position:absolute;top:0;left:-130%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg);transition:left .7s}
+.btn-primary:hover::after{left:150%}
+.btn-primary:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 32px rgba(34,211,238,.55)}
+.btn-ghost,.chip,.clarify{background:rgba(255,255,255,.05)!important;border:1px solid var(--edge)!important;backdrop-filter:blur(8px);transition:all .2s}
+.btn-ghost:hover,.chip:hover,.clarify:hover{border-color:var(--c1)!important;color:#fff!important;box-shadow:0 0 18px rgba(34,211,238,.4);transform:translateY(-1px)}
+.chip.on,#shop-aisle.on,#shop-dict.on{background:var(--grad)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 0 18px rgba(139,92,246,.55)}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.38);transform:scale(0);animation:rip .6s ease-out forwards;pointer-events:none}
+.knowledge-item,.report-section,.shop-row,.pend,.sugg,.grp{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(139,92,246,.2),transparent 70%),var(--glass)!important;border:1px solid var(--edge)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .2s,border-color .2s,box-shadow .2s}
+.knowledge-item:hover,.report-section:hover,.grp:hover{transform:translateY(-2px);border-color:rgba(34,211,238,.55)!important;box-shadow:0 12px 32px -12px rgba(34,211,238,.45)}
+.shop-row:hover{border-color:rgba(34,211,238,.5)!important}
+.grp>summary::after{color:var(--c1)}
+input:not([type=range]):not([type=radio]):not([type=file]):not(#user-input),textarea,select{background:rgba(6,8,22,.7)!important;border:1px solid var(--edge)!important}
+input:not([type=range]):focus,textarea:focus,select:focus{border-color:var(--c1)!important;box-shadow:0 0 0 3px rgba(34,211,238,.18)}
+#shop-mic{min-height:64px;font-size:17px}
+#shop-mic:not(.recording){animation:breathe 3s ease-in-out infinite}
+#shop-mic.recording{background:linear-gradient(135deg,#ef4444,#ec4899)!important}
+.typing-dot{box-shadow:0 0 10px #22d3ee}
+#active-learn-bar{background:rgba(245,158,11,.08)!important;border-color:rgba(245,158,11,.4)!important}
+#add-modal>div{background:rgba(14,16,36,.88)!important;backdrop-filter:blur(22px);border-color:rgba(139,92,246,.45)!important;box-shadow:0 0 70px rgba(139,92,246,.35)}
+#pipe{background:rgba(8,10,26,.72)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-color:var(--edge)!important}
+#pipe-bar{display:block!important;height:2px;background:rgba(255,255,255,.06)}
+#pipe-fill{background:var(--grad);box-shadow:0 0 10px var(--c2)}
+.pipe-btn{transition:color .2s}.pipe-ic{transition:transform .25s,filter .25s}
+.pipe-btn.on{color:#fff}.pipe-btn.on .pipe-ic{transform:scale(1.2);filter:drop-shadow(0 0 8px var(--c1))}
+.pipe-badge{background:var(--grad)!important;color:#fff!important}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--c1),var(--c2))}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+html.light body{background:#eef2ff!important}
+html.light body::before{opacity:.4}
+html.light #sidebar,html.light #pipe,html.light #main-area>div:first-child,html.light #main-area>div:last-child{background:rgba(255,255,255,.65)!important}
+html.light .knowledge-item,html.light .report-section,html.light .shop-row,html.light .pend,html.light .sugg,html.light .grp,html.light .chat-bubble-ai{background:rgba(255,255,255,.78)!important;border-color:rgba(99,102,241,.25)!important}
+html.light input:not([type=range]):not([type=radio]):not([type=file]):not(#user-input),html.light textarea,html.light select{background:#fff!important}
+html.light .chat-bubble-user,html.light .btn-primary{background:linear-gradient(135deg,#0891b2,#7c3aed)!important}
+</style>
+<style id="ui4">
+/* ===== UI v4: themes + layout fixes ===== */
+:root{--g1:139 92 246;--g2:34 211 238;--g3:236 72 153;--on:#fff;--tbg:#05060f;--lbg:#eef2ff}
+html[data-theme=aurora]{--c1:#34d399;--c2:#22d3ee;--c3:#3b82f6;--grad:linear-gradient(135deg,#10b981,#06b6d4 55%,#3b82f6);--g1:52 211 153;--g2:34 211 238;--g3:59 130 246;--tbg:#04100f;--lbg:#ecfdf5;--on:#fff}
+html[data-theme=sunset]{--c1:#fb923c;--c2:#f43f5e;--c3:#a855f7;--grad:linear-gradient(135deg,#f97316,#f43f5e 55%,#a855f7);--g1:251 146 60;--g2:244 63 94;--g3:168 85 247;--tbg:#130708;--lbg:#fff1ee;--on:#fff}
+html[data-theme=ocean]{--c1:#38bdf8;--c2:#2563eb;--c3:#6366f1;--grad:linear-gradient(135deg,#0ea5e9,#2563eb 55%,#6366f1);--g1:56 189 248;--g2:37 99 235;--g3:99 102 241;--tbg:#040b18;--lbg:#eff6ff;--on:#fff}
+html[data-theme=matrix]{--c1:#4ade80;--c2:#a3e635;--c3:#10b981;--grad:linear-gradient(135deg,#22c55e,#10b981 55%,#84cc16);--g1:74 222 128;--g2:163 230 53;--g3:16 185 129;--tbg:#020a04;--lbg:#f0fdf4;--on:#02150a}
+html[data-theme=royal]{--c1:#fbbf24;--c2:#c026d3;--c3:#7c3aed;--grad:linear-gradient(135deg,#7c3aed,#c026d3 55%,#f59e0b);--g1:192 38 211;--g2:251 191 36;--g3:124 58 237;--tbg:#0b0614;--lbg:#faf5ff;--on:#fff}
+html[data-theme=mono]{--c1:#cbd5e1;--c2:#94a3b8;--c3:#64748b;--grad:linear-gradient(135deg,#cbd5e1,#94a3b8 55%,#64748b);--g1:148 163 184;--g2:203 213 225;--g3:100 116 139;--tbg:#0a0b0d;--lbg:#f1f5f9;--on:#0b1220}
+body{background:var(--tbg)}
+html.light body{background:var(--lbg)!important}
+body::before{background:radial-gradient(600px 420px at 15% 10%,rgb(var(--g1)/.32),transparent 62%),radial-gradient(520px 420px at 88% 18%,rgb(var(--g2)/.24),transparent 62%),radial-gradient(640px 520px at 50% 105%,rgb(var(--g3)/.2),transparent 62%)}
+@keyframes breathe{0%,100%{box-shadow:0 6px 26px rgb(var(--g1)/.45)}50%{box-shadow:0 6px 40px rgb(var(--g2)/.7)}}
+.sidebar-section .glow{box-shadow:0 0 24px rgb(var(--g1)/.7)!important}
+.tab-active{color:var(--on)!important;box-shadow:0 0 20px rgb(var(--g1)/.5)}
+.chat-bubble-user,html.light .chat-bubble-user{background:var(--grad)!important;color:var(--on)!important;box-shadow:0 8px 28px -8px rgb(var(--g1)/.7)}
+.chat-bubble-ai{border-color:rgb(var(--g1)/.35)!important;box-shadow:0 0 26px rgb(var(--g1)/.12)}
+.btn-primary,html.light .btn-primary{background:var(--grad)!important;color:var(--on)!important;box-shadow:0 6px 22px rgb(var(--g1)/.45)}
+.btn-primary:hover{box-shadow:0 10px 32px rgb(var(--g2)/.55)}
+.chip.on,#shop-aisle.on,#shop-dict.on{color:var(--on)!important;box-shadow:0 2px 10px rgb(var(--g1)/.45)}
+.knowledge-item,.report-section,.shop-row,.pend,.sugg,.grp{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgb(var(--g1)/.2),transparent 70%),var(--glass)!important}
+html.light .knowledge-item,html.light .report-section,html.light .shop-row,html.light .pend,html.light .sugg,html.light .grp{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgb(var(--g1)/.14),transparent 70%),rgba(255,255,255,.85)!important}
+.knowledge-item:hover,.report-section:hover,.grp:hover{border-color:rgb(var(--g2)/.55)!important;box-shadow:0 12px 32px -12px rgb(var(--g2)/.45)}
+.btn-ghost:hover,.chip:hover,.clarify:hover{box-shadow:0 0 18px rgb(var(--g2)/.4)}
+html.light .btn-ghost,html.light .chip,html.light .clarify{background:rgba(255,255,255,.9)!important;color:#334155!important;border-color:rgb(var(--g1)/.28)!important}
+html.light .chip.on,html.light #shop-aisle.on,html.light #shop-dict.on{background:var(--grad)!important;color:var(--on)!important}
+#main-area .rounded-3xl:focus-within{box-shadow:0 0 0 1px var(--c1),0 0 30px rgb(var(--g2)/.35)}
+#add-modal>div{border-color:rgb(var(--g1)/.45)!important;box-shadow:0 0 70px rgb(var(--g1)/.35)}
+.pipe-badge{color:var(--on)!important}
+/* theme picker */
+.pals{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pal{border-radius:14px;padding:8px;background:var(--pb)!important;border:2px solid transparent!important;display:flex;flex-direction:column;gap:6px;text-align:center;font-size:12px;color:#fff!important;transition:transform .15s}
+.pal i{display:block;height:34px;border-radius:9px;background:var(--pg)}
+.pal.sel{border-color:var(--c1)!important;box-shadow:0 0 14px rgb(var(--g1)/.6)}
+.pal:active{transform:scale(.97)}
+/* layout fixes (from phone screenshots) */
+button[onclick="shopAddFromBox()"]{align-self:center!important;width:52px;height:52px;padding:0!important;border-radius:16px!important;font-size:22px;flex-shrink:0}
+#shop-mic{border-radius:18px;flex:1}
+#shop-dict,#shop-tts{width:56px;min-width:56px;padding:0;border-radius:16px;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#shop-chips{padding:8px 4px 12px!important;gap:8px!important}
+.sharebar{display:grid!important;grid-template-columns:repeat(4,1fr);gap:8px}
+.sharebar .btn-ghost{padding:10px 2px;font-size:12px;text-align:center;white-space:nowrap;border-radius:14px}
+#panel-4>button{margin-top:16px!important;align-self:flex-start}
+#panel-2>div:last-child{margin-top:8px}
+#shop-voice-status:empty,#shop-pending:empty{display:none}
+#shop-chips .chip.on{box-shadow:none}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -260,28 +406,6 @@
                     <span>הודעות: <span id="msg-count" class="font-mono" style="color:#00d4ff">0</span></span>
                     <button onclick="clearChat()" class="text-xs hover:text-red-400" style="color:#6b7280">🗑️ נקה</button>
                 </div>
-                <div class="text-xs uppercase tracking-widest mt-4 mb-1" style="color:#4b5563">יכולות פעילות</div>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> Bigrams
-                    </div>
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> Synonyms
-                    </div>
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> Fuzzy Search
-                    </div>
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> למידה אקטיבית
-                    </div>
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> הקשר שיחה
-                    </div>
-                    <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#0d1117;border:1px solid #1f2937">
-                        <span class="text-green-400">✓</span> 🎤 קולי
-                    </div>
-                </div>
-
                 <div class="text-xs uppercase tracking-widest mt-4 mb-1" style="color:#4b5563">למד עכשיו (מהיר)</div>
                 <div class="space-y-2">
                     <input id="quick-q" type="text" placeholder="שאלה לדוגמה..." style="font-size:13px;padding:10px 14px">
@@ -452,7 +576,7 @@
         <div class="h-14 px-6 flex items-center justify-between border-b" style="background:#030712;border-color:#0f172a">
             <div class="flex items-center gap-2">
                 <span style="color:#00d4ff">🧬</span>
-                <span class="font-medium text-sm">הAI שלך – לומד בזמן אמת</span>
+                <span class="font-medium text-sm">KMS-CRM</span>
                 <span id="status-badge" class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(16,185,129,.1);color:#10b981">
                     מוכן
                 </span>
@@ -485,7 +609,7 @@
         <div class="px-6 py-4 border-t" style="background:#030712;border-color:#0f172a">
             <div class="flex gap-2 p-2 rounded-3xl" style="background:#0d1117;border:1px solid #1f2937">
                 <input id="user-input" type="text"
-                       placeholder="שאל אותי כל דבר..."
+                       placeholder="שאל, או למד אותי משהו…"
                        class="flex-1 bg-transparent px-4 outline-none text-sm"
                        style="border:none;border-radius:0;padding:10px 16px"
                        onkeydown="if(event.key==='Enter') sendMessage()">
@@ -498,7 +622,7 @@
                         style="padding:0">↑</button>
             </div>
             <div class="flex justify-between text-xs mt-2 px-2" style="color:#374151">
-                <span>הנתונים נשמרים בדפדפן שלך בלבד</span>
+                <span></span>
                 <span onclick="switchTab(0);document.getElementById('quick-q').focus()" class="cursor-pointer hover:text-cyan-400">+ למד אותי משהו חדש</span>
             </div>
         </div>
@@ -1704,7 +1828,7 @@ function parseItem(txt) {
     t = t.trim()
     return t ? { name: t, qty } : null
 }
-const splitItems = text => String(text).split(/[\n,;،]+|\s+(?!וניל|ורד|ויטמין|וופל|וודקה|ויסקי|ווסבי)ו(?=[\u0590-\u05FF])/).map(parseItem).filter(Boolean)
+const splitItems = text => String(text).split(/[\n,;،]+|\s+(?!וניל|ורד|ויטמין|וופל|וודקה|ויסקי|ווסבי)ו-?(?=[\u0590-\u05FF]|\d)/).map(parseItem).filter(Boolean)
 const remaining = () => shop.items.filter(i => !i.bought)
 const snapShop = () => JSON.stringify(shop)
 function undoShop(snap, msg) { toastUndo(msg, () => { shop = JSON.parse(snap); saveShop(); renderShop() }) }
@@ -2198,7 +2322,7 @@ function splitUnits(name) {                    // "חלב קוטג מעדנים 
 }
 function segmentStream(text) {
     const clean = String(text).replace(/ק["״]ג/g, 'קילו').replace(/["'׳״’`]/g, ''), out = []
-    clean.split(/[\n,;،]+|\s+(?!וניל|ורד|ויטמין|וופל|וודקה|ויסקי|ווסבי)ו(?=[\u0590-\u05FF])/).map(x => x.trim()).filter(Boolean).forEach(seg => {
+    clean.split(/[\n,;،]+|\s+(?!וניל|ורד|ויטמין|וופל|וודקה|ויסקי|ווסבי)ו-?(?=[\u0590-\u05FF]|\d)/).map(x => x.trim()).filter(Boolean).forEach(seg => {
         const parts = []; let cur = []
         seg.split(/\s+/).forEach(t => {            // a number starts a new item: "2 קילו עגבניות 3 חלב"
             if (isNumTok(t) && cur.length && !/^(של|עם|מ|ל|ב)$/.test(cur[cur.length - 1])) { parts.push(cur); cur = [] }
@@ -2354,15 +2478,7 @@ window.onload = () => {
     if (chat.length === 0) {
         chat.push({
             role:'ai',
-            content:`שלום! 👋 אני <b>KMS-CRM</b> – AI שרץ בדפדפן שלך, והנתונים נשמרים אצלך בלבד.<br><br>
-            <b>מה חדש בגרסה זו:</b><br>
-            🔤 Bigrams – מחפש צמדי מילים לדיוק גבוה יותר<br>
-            🔄 מפת נרדפות – "מוליך" = "כבל" = "חוט"<br>
-            🔍 Fuzzy search – מוצא גם עם שגיאות כתיב<br>
-            🧩 הקשר שיחה – מבין "שלו", "זאת" בהתאם לשיחה<br>
-            🎤 קלט קולי – לחץ 🎤 ודבר<br>
-            📊 למידה אקטיבית – כשאני לא יודע, אני שואל אותך<br><br>
-            תתחיל לשאול!`,
+            content:`שלום! 👋 אני <b>KMS-CRM</b> – AI שרץ אצלך בדפדפן, והכול נשמר אצלך בלבד.<br>שאל אותי משהו, למד אותי ידע חדש, או עבור ללשונית 🛒 לרשימת קניות בקול.`,
             ts: Date.now()
         })
         save()
@@ -2375,6 +2491,221 @@ window.onload = () => {
     }
     console.log('%c✅ KMS-CRM v2', 'color:#00d4ff;font-size:11px')
 }
+/* ===== KMS-CRM patch v2.1 =====
+   הדבק את כל הבלוק הזה בסוף הסקריפט הראשי, לפני תג הסגירה האחרון שלו.
+   הוא דורס פונקציות קיימות (קול, הכתבה, אישור פריטים) ומוסיף CSS קטן. */
+(function () {
+  // ---------- 1. זיהוי סביבה ----------
+  const iosStandalone = () => { const e = voiceEnv(); return e.ios && e.standalone }
+  const noWebSpeech = () => !voiceSupported() || iosStandalone()
+  const setDiag = m => { const el = document.getElementById('voice-diag'); if (el) el.textContent = m }
+
+  // אין זיהוי דיבור (אפליקציית מסך-הבית באייפון / Chrome באייפון) -> עוברים אוטומטית להכתבה במקלדת
+  function keyboardFallback(kind) {
+    const why = iosStandalone()
+      ? 'באפליקציה ממסך הבית של האייפון זיהוי הדיבור של הדפדפן לא נתמך'
+      : 'הדפדפן הזה לא תומך בזיהוי דיבור'
+    vlog('מעבר להכתבה במקלדת: ' + why)
+    if (kind === 'chat') {
+      const i = document.getElementById('user-input'); if (i) i.focus()
+      toast('לחץ על 🎤 שבמקלדת, דבר, ואז Enter', '#f59e0b'); return
+    }
+    if (!shopDictate) shopDictateToggle()
+    const st = document.getElementById('shop-voice-status')
+    if (st) st.textContent = '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר.'
+  }
+
+  // ---------- 2. זיהוי דיבור ----------
+  window.voiceStart = function (kind, onText) {
+    if (noWebSpeech()) return keyboardFallback(kind)
+    if (kind === 'shop' && shopDictate) shopDictateToggle()
+    const hadRec = !!Voice.rec
+    voiceReset()
+    // iOS: התחלה מיידית אחרי abort() נכשלת לפעמים – נותנים לה רגע
+    if (hadRec) setTimeout(() => begin(kind, onText), 350); else begin(kind, onText)
+  }
+
+  function begin(kind, onText) {
+    try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
+    let r
+    try { r = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
+    let got = false, heard = false, last = '', delivered = false
+    Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
+    r.lang = 'he-IL'; r.continuous = false; r.interimResults = true; r.maxAlternatives = 1
+    const on = (n, f) => { r['on' + n] = e => { if (Voice.rec === r) f(e) } }
+    const deliver = t => {
+      if (delivered) return
+      delivered = true; got = true; Voice.fails = 0
+      vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
+      const rep = onText(t); if (rep) Voice.speak = rep
+    }
+    on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start') });
+    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n) }))
+    on('result', e => {
+      const res = e.results[e.results.length - 1]; if (!res) return
+      const t = (res[0].transcript || '').trim(); if (!t) return
+      heard = true; last = t
+      if (res.isFinal) deliver(t); else setDiag('…' + t)          // טקסט חי בזמן הדיבור
+    })
+    on('error', e => {
+      vlog('error: ' + e.error)
+      if (e.error !== 'aborted' && VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
+      const denied = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+      setTimeout(() => { if (Voice.rec === r) { voiceReset(); if (denied) keyboardFallback(kind) } }, 400)
+    })
+    on('end', () => {
+      clearTimeout(Voice.wd)
+      if (!delivered && last) deliver(last)                       // iOS מסיים לפעמים בלי תוצאה סופית
+      const sp = Voice.speak, quick = Date.now() - Voice.t0 < 1500
+      Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
+      voiceUI(false, kind)
+      setDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
+      if (!got && !heard && quick) voiceFailed('נסגר מיד, המיקרופון לא נפתח')
+      if (sp) speakHe(sp)
+    })
+    voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); setDiag('מפעיל את המיקרופון…')
+    // לא הורגים את הסשן בזמן שחלון ההרשאה פתוח: רק הודעה אחרי 6 שנ׳, ואיפוס אחרי 45 שנ׳
+    Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') setDiag('ממתין להרשאה… אשר בחלון שנפתח') }, 6000)
+    setTimeout(() => {
+      if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך 45 שניות') }
+    }, 45000)
+    try { r.start(); vlog('start() נקרא') } catch (e) { voiceReset(); vlog('start נכשל: ' + e.message); keyboardFallback(kind) }
+  }
+
+  // ---------- 3. הכתבה במקלדת (לא מוחקים טקסט בזמן שהכתבה פעילה) ----------
+  shopDictateMs = 3500
+  let dictDone = 0                                               // כמה תווים כבר נקלטו בהכתבה הנוכחית
+  const _dt = window.shopDictateToggle
+  window.shopDictateToggle = function () { dictDone = 0; _dt() }
+
+  window.shopBoxInput = function () {
+    if (!shopDictate) return
+    clearTimeout(shopBoxTimer)
+    shopBoxTimer = setTimeout(() => {
+      const el = document.getElementById('shop-in')
+      if (el && el.value.slice(dictDone).trim().length >= 2) shopSubmitBox()
+    }, shopDictateMs)
+  }
+
+  window.shopSubmitBox = function (fromBlur) {
+    const el = document.getElementById('shop-in'); if (!el) return
+    const full = el.value
+    if (dictDone > full.length) dictDone = 0
+    const text = (shopDictate ? full.slice(dictDone) : full).trim()
+    if (fromBlur === true && shopDictate) { el.value = ''; dictDone = 0 }   // סיום הכתבה = ניקוי
+    if (!text) { if (!shopDictate) el.value = ''; return }
+    clearTimeout(shopBoxTimer)
+    if (shopDictate) { if (fromBlur !== true) dictDone = full.length } else el.value = ''
+    const cmd = answerFromShop(text)                              // פקודות עובדות גם בתיבה ("קניתי חלב")
+    const r = cmd !== null ? cmd : (shopDictate ? handleShopPhrase(text) : shopAdd(text))
+    if (/לא הבנתי/.test(r)) toast(plain(r), '#f59e0b'); else if (cmd !== null || shopDictate) shopVoiceStatus(text, r)
+  }
+  const box = document.getElementById('shop-in')
+  if (box) box.addEventListener('blur', () => { if (shopDictate) setTimeout(() => shopSubmitBox(true), 150) })
+
+  // ---------- 4. מסך אישור פריטים: לא נסגר באמצע בחירה ----------
+  const pendHead = () => 'הבנתי ' + pend.items.length + ' פריטים — ' + (pend.held ? 'ממתין לאישור שלך' : 'מוסיף בעוד ' + pend.left + ' שניות')
+  const _pr = window.pendRender
+  window.pendRender = function () { _pr(); const h = document.querySelector('#shop-pending .pend > div'); if (h) h.id = 'pend-head' }
+  window.pendStart = function () {
+    clearInterval(pend.timer); pend.held = false; pend.left = Math.round(confirmMs() / 1000)
+    pend.timer = setInterval(() => {
+      if (!pend) return
+      if (--pend.left <= 0) pendCommit()
+      else { const h = document.getElementById('pend-head'); if (h) h.textContent = pendHead() }   // רק הטקסט – בלי לצייר מחדש את התפריטים
+    }, 1000)
+  }
+  const sp = document.getElementById('shop-pending')
+  if (sp) ['pointerdown', 'focusin'].forEach(ev => sp.addEventListener(ev, () => {
+    if (pend && !pend.held) { pendHold(); const h = document.getElementById('pend-head'); if (h) h.textContent = pendHead() }
+  }))
+
+  // ---------- 5. נוחות במובייל ----------
+  document.head.insertAdjacentHTML('beforeend', '<style>' +
+    'button,.chip,select,.shop-chk{touch-action:manipulation;-webkit-tap-highlight-color:transparent}' +
+    'body.h-screen{height:100dvh}' +
+    '.shop-row select.cat-sel{min-height:40px}' +
+    '.shop-row button{min-width:40px;min-height:40px}' +
+    '#shop-mic{min-height:56px}' +
+    '#shop-voice-status{line-height:1.5}' +
+    '</style>')
+})()
+
+// ===== UI v2: calmer layout (tabs with icons, grouped settings, collapsed import forms) =====
+;(function () {
+  ['💬', '📚', '⚙️', '📊', '🛠️', '🛒'].forEach((x, i) => {
+    const b = document.getElementById('tab-' + i)
+    if (b) b.innerHTML = '<span class="t-ic">' + x + '</span><span>' + b.textContent.trim() + '</span>'
+  })
+  ;[['analyzeChat', 'ניתוח שיחה'], ['exportChat', 'ייצוא שיחה'], ['clearChat', 'ניקוי שיחה']].forEach(([f, t]) =>
+    document.querySelectorAll('button[onclick^="' + f + '("]').forEach(b => b.title = t))
+  const mk = (title, items, open) => {
+    const d = document.createElement('details'); d.className = 'grp'; if (open) d.open = true
+    const sm = document.createElement('summary'); sm.textContent = title
+    const w = document.createElement('div'); w.className = 'grp-b'
+    items.forEach(e => w.appendChild(e)); d.append(sm, w); return d
+  }
+  const p2 = document.getElementById('panel-2')
+  if (p2 && p2.children.length >= 8) {
+    const k = [...p2.children]
+    p2.prepend(mk('🎛️ התנהגות', [k[0], k[1], k[3]], true), mk('🖥️ תצוגה וסדר בסופר', [k[2], k[4]]), mk('🛡️ רגישות ומילים נרדפות', [k[5], k[6]]))
+  }
+  const p4 = document.getElementById('panel-4')
+  if (p4 && p4.children.length >= 5) {
+    const k = [...p4.children]
+    k[4].before(mk('➕ טעינת מחברים', [k[0], k[1]]), mk('➕ טעינת כללי שרוול', [k[2]]))
+  }
+  const p5 = document.getElementById('panel-5')
+  if (p5 && p5.children.length >= 12) {
+    const k = [...p5.children]
+    k[1].style.display = 'none'                                   // שורת ההסבר – הדוגמאות עברו ל-placeholder
+    p5.append(k[3], k[4])                                         // אבחון המיקרופון יורד לתחתית
+    const box = document.getElementById('shop-in')
+    if (box) box.placeholder = 'כתוב או הדבק: חלב, ביצים, 2 קילו עגבניות · או פקודה: "קניתי חלב"'
+  }
+})()
+
+;(function () {                                                   // UI v3 interactions
+  const t0 = document.getElementById('tab-0'); if (t0 && t0.parentNode) t0.parentNode.classList.add('tabbar')
+  const cards = '.knowledge-item,.report-section,.grp,.pend,.sugg,.shop-row'
+  document.addEventListener('pointermove', e => {                // זרקור שעוקב אחרי האצבע/העכבר
+    const c = e.target.closest && e.target.closest(cards); if (!c) return
+    const r = c.getBoundingClientRect()
+    c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px')
+  }, { passive: true })
+  document.addEventListener('pointerdown', e => {                // אפקט אדוות בלחיצה
+    const b = e.target.closest && e.target.closest('.btn-primary,.btn-ghost,.chip,.clarify,.tab-btn,.pipe-btn'); if (!b) return
+    const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, s = document.createElement('span')
+    s.className = 'rip'; s.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px'
+    b.appendChild(s); setTimeout(() => s.remove(), 650)
+  }, { passive: true })
+})()
+
+;(function () {                                                   // UI v4: 7 themes
+  const T = [['neon', 'ניאון', 'linear-gradient(135deg,#22d3ee,#8b5cf6 55%,#ec4899)', '#05060f'],
+    ['aurora', 'זוהר צפוני', 'linear-gradient(135deg,#10b981,#06b6d4 55%,#3b82f6)', '#04100f'],
+    ['sunset', 'שקיעה', 'linear-gradient(135deg,#f97316,#f43f5e 55%,#a855f7)', '#130708'],
+    ['ocean', 'אוקיינוס', 'linear-gradient(135deg,#0ea5e9,#2563eb 55%,#6366f1)', '#040b18'],
+    ['matrix', 'מטריקס', 'linear-gradient(135deg,#22c55e,#10b981 55%,#84cc16)', '#020a04'],
+    ['royal', 'מלכותי', 'linear-gradient(135deg,#7c3aed,#c026d3 55%,#f59e0b)', '#0b0614'],
+    ['mono', 'מינימל', 'linear-gradient(135deg,#cbd5e1,#94a3b8 55%,#64748b)', '#0a0b0d']]
+  const saved = () => { try { return localStorage.getItem('gl_palette') } catch (e) { return null } }
+  const cur = () => T.some(t => t[0] === saved()) ? saved() : 'neon'
+  window.setPalette = id => {
+    document.documentElement.dataset.theme = id
+    try { localStorage.setItem('gl_palette', id) } catch (e) {}
+    document.querySelectorAll('.pal').forEach(b => b.classList.toggle('sel', b.dataset.id === id))
+  }
+  document.documentElement.dataset.theme = cur()
+  const p2 = document.getElementById('panel-2')
+  if (p2) {
+    const d = document.createElement('details'); d.className = 'grp'; d.open = true
+    d.innerHTML = '<summary>🎨 ערכת נושא</summary><div class="grp-b"><div class="pals">' + T.map(t =>
+      '<button class="pal' + (t[0] === cur() ? ' sel' : '') + '" data-id="' + t[0] + '" onclick="setPalette(this.dataset.id)" style="--pg:' + t[2] + ';--pb:' + t[3] + '"><i></i><span>' + t[1] + '</span></button>').join('') + '</div></div>'
+    p2.prepend(d)
+  }
+  const sh = document.querySelector('button[onclick="shopShare()"]'); if (sh && sh.parentNode) sh.parentNode.classList.add('sharebar')
+})()
 </script>
 </body>
 </html>
