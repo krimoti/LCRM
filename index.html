@@ -422,6 +422,7 @@
             </div>
             <div style="font-size:11px;opacity:.65;text-align:center">אמור פריטים ("חלב ביצים ולחם") או פקודה ("קניתי חלב")</div>
             <div id="shop-voice-status" style="font-size:13px;min-height:18px"></div>
+            <div id="voice-diag" style="font-size:10px;opacity:.5;text-align:center;min-height:12px"></div>
             <div id="shop-pending"></div>
             <div style="display:flex;gap:8px;align-items:stretch">
                 <textarea id="shop-in" rows="2" style="flex:1;font-size:14px;resize:none;min-height:46px" placeholder="הדבק רשימה או כתוב: חלב, ביצים, 2 קילו עגבניות"></textarea>
@@ -1080,51 +1081,7 @@ function addSynonymPair() {
 // =====================================================================
 //  VOICE INPUT
 // =====================================================================
-function toggleVoice() {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        alert('הדפדפן שלך לא תומך בקלט קולי. נסה Chrome.'); return
-    }
-
-    if (isRecording) {
-        recognition?.stop()
-        isRecording = false
-        document.getElementById('voice-btn').classList.remove('recording')
-        document.getElementById('voice-btn').textContent = '🎤'
-        return
-    }
-
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    recognition = new SR()
-    recognition.lang = 'he-IL'
-    recognition.continuous = false
-    recognition.interimResults = false
-
-    recognition.onresult = e => {
-        const transcript = e.results[0][0].transcript
-        document.getElementById('user-input').value = transcript
-        isRecording = false
-        document.getElementById('voice-btn').classList.remove('recording')
-        document.getElementById('voice-btn').textContent = '🎤'
-        sendMessage()
-    }
-
-    recognition.onerror = () => {
-        isRecording = false
-        document.getElementById('voice-btn').classList.remove('recording')
-        document.getElementById('voice-btn').textContent = '🎤'
-    }
-
-    recognition.onend = () => {
-        isRecording = false
-        document.getElementById('voice-btn').classList.remove('recording')
-        document.getElementById('voice-btn').textContent = '🎤'
-    }
-
-    recognition.start()
-    isRecording = true
-    document.getElementById('voice-btn').classList.add('recording')
-    document.getElementById('voice-btn').textContent = '⏹️'
-}
+function toggleVoice() { voiceToggle('chat', t => { document.getElementById('user-input').value = t; sendMessage() }) }
 
 // =====================================================================
 //  LEARNING REPORT
@@ -1919,7 +1876,7 @@ function setStation(i) {
     try { localStorage.setItem('gl_station', String(i)) } catch (e) {}
     document.querySelectorAll('.pipe-btn').forEach((b, k) => b.classList.toggle('on', k === i))
     const fill = document.getElementById('pipe-fill'); if (fill) fill.style.width = (i / (STATIONS.length - 1) * 100) + '%'
-    if (STATIONS[i].id !== 'shop' && shopVoiceOn) shopVoiceToggle()
+    if (i !== prev) voiceReset()                                    // leaving a screen always stops the microphone
     if (STATIONS[i].on) STATIONS[i].on()
     updatePipe()
 }
@@ -1943,29 +1900,77 @@ function handleShopPhrase(ph) {
     if (/^(מה|איך|למה|האם|מי|מתי|איפה)\s/.test(ph)) return 'לא הבנתי את הבקשה. אפשר לומר "קניתי חלב" או לומר פריטים להוספה.'
     return shopStage(segmentStream(ph))
 }
-let shopRec = null, shopVoiceOn = false, ttsOn = localStorage.getItem('gl_tts') !== '0'
+let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? '0' : '1')) !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
 function speakHe(t) {
-    if (!ttsOn || !window.speechSynthesis) return
+    if (!ttsOn || !window.speechSynthesis || (typeof Voice !== 'undefined' && Voice.state !== 'idle')) return     // never talk over the microphone
     try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(t).replace(/[^\u0590-\u05FF0-9a-zA-Z .,:%-]/g, ' ').slice(0, 140)); u.lang = 'he-IL'; speechSynthesis.speak(u) } catch (e) {}
 }
 function shopTtsToggle() { ttsOn = !ttsOn; localStorage.setItem('gl_tts', ttsOn ? '1' : '0'); const b = document.getElementById('shop-tts'); if (b) b.textContent = ttsOn ? '🔊' : '🔇' }
 function setMic(on) { const b = document.getElementById('shop-mic'); if (!b) return; b.classList.toggle('recording', on); b.textContent = on ? '⏹️ מקשיב… (לחץ לעצירה)' : '🎤 לחץ ודבר' }
 function shopVoiceStatus(heard, reply) { const el = document.getElementById('shop-voice-status'); if (el) el.innerHTML = '🗣️ ' + escHtml(heard) + '<br><span style="opacity:.8">' + escHtml(plain(reply)) + '</span>' }
-function shopVoiceToggle() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { toast('הדפדפן לא תומך בזיהוי דיבור – השתמש בהקלדה הקולית של המקלדת', '#f59e0b'); return }
-    if (shopVoiceOn) { shopVoiceOn = false; try { shopRec.stop() } catch (e) {} setMic(false); return }
-    shopRec = new SR(); shopRec.lang = 'he-IL'; shopRec.continuous = false; shopRec.interimResults = false
-    shopRec.onresult = e => {
-        const t = (e.results[e.results.length - 1][0].transcript || '').trim(); if (!t) return
-        const r = handleShopPhrase(t); shopVoiceStatus(t, r); speakHe(r)
-    }
-    shopRec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { shopVoiceOn = false; setMic(false); toast('אין הרשאת מיקרופון', '#ef4444') } }
-    shopRec.onend = () => { if (shopVoiceOn) { try { shopRec.start() } catch (e) { shopVoiceOn = false; setMic(false) } } }   // hands-free loop
-    shopVoiceOn = true; setMic(true)
-    try { shopRec.start() } catch (e) { shopVoiceOn = false; setMic(false) }
+const Voice = { rec: null, state: 'idle', kind: '', t0: 0, wd: null, wdMs: 3000, stuckMs: 15000, speak: null }
+const voiceSupported = () => window.SpeechRecognition || window.webkitSpeechRecognition
+function voiceDiag(msg) { const el = document.getElementById('voice-diag'); if (el) el.textContent = msg; try { console.log('[voice]', msg) } catch (e) {} }
+function voiceUI(on, kind) {
+    if (kind === 'chat') { const b = document.getElementById('voice-btn'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? '⏹️' : '🎤' } }
+    else setMic(on)
 }
+function voiceReset() {                         // hard reset: kills the recognizer, drops its handlers, clears the UI
+    clearTimeout(Voice.wd)
+    const r = Voice.rec; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
+    if (r) { r.onstart = r.onresult = r.onerror = r.onend = r.onnomatch = null; try { r.abort() } catch (e) {} }
+    voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
+}
+const VOICE_ERR = {
+    'not-allowed': 'אין הרשאת מיקרופון – אפשר אותה בהגדרות הדפדפן/האתר',
+    'service-not-allowed': 'אין הרשאת מיקרופון – אפשר אותה בהגדרות הדפדפן/האתר',
+    'no-speech': 'לא שמעתי כלום – לחץ שוב ודבר',
+    'audio-capture': 'המיקרופון לא זמין – סגור אפליקציות אחרות או כבה 🔊 ונסה שוב',
+    'network': 'זיהוי הדיבור דורש חיבור לרשת',
+    'language-not-supported': 'עברית לא נתמכת בזיהוי הדיבור של הדפדפן הזה'
+}
+function voiceStart(kind, onText) {
+    const SR = voiceSupported()
+    if (!SR) { toast('הדפדפן לא תומך בזיהוי דיבור – השתמש בהקלדה הקולית של המקלדת', '#f59e0b'); return }
+    voiceReset()                                   // always begin from a clean state (no zombie sessions)
+    try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
+    const r = new SR(); let got = false
+    Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
+    r.lang = 'he-IL'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1
+    r.onstart = () => { if (Voice.rec !== r) return; Voice.state = 'listening'; clearTimeout(Voice.wd); voiceDiag('מקשיב… דבר עכשיו') }
+    r.onresult = e => {
+        if (Voice.rec !== r) return                // an old session can never act on the new one
+        const t = ((e.results[e.results.length - 1] || [])[0] || {}).transcript; if (!t || !t.trim()) return
+        got = true; voiceDiag('שמעתי: ' + t.trim()); const rep = onText(t.trim()); if (rep) Voice.speak = rep
+    }
+    r.onerror = e => {
+        if (Voice.rec !== r) return
+        voiceDiag('שגיאה: ' + e.error); if (e.error !== 'aborted' && VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
+        setTimeout(() => { if (Voice.rec === r) voiceReset() }, 500)       // some browsers never send "end" after an error
+    }
+    r.onend = () => {
+        if (Voice.rec !== r) return
+        clearTimeout(Voice.wd); const sp = Voice.speak; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
+        voiceUI(false, kind); voiceDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
+        if (sp) speakHe(sp)                        // speak only AFTER listening has fully ended
+    }
+    voiceUI(true, kind)
+    Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b') } }, Voice.wdMs)
+    try { r.start() } catch (e) { voiceReset(); voiceDiag('start נכשל: ' + e.message); toast('לא הצלחתי להפעיל את המיקרופון – לחץ שוב', '#f59e0b') }
+}
+function voiceToggle(kind, onText) {
+    if (Voice.rec && Voice.state === 'listening' && Voice.kind === kind && Date.now() - Voice.t0 < Voice.stuckMs) {      // a real, live session → stop it
+        const r = Voice.rec; try { r.stop() } catch (e) {}
+        setTimeout(() => { if (Voice.rec === r) voiceReset() }, 1500); return
+    }
+    voiceStart(kind, onText)                       // idle / starting / stuck / other mic → always a fresh start
+}
+function shopVoiceToggle() { voiceToggle('shop', t => { const r = handleShopPhrase(t); shopVoiceStatus(t, r); return r }) }
+// leaving the app and coming back must never leave a half-dead session behind
+document.addEventListener('visibilitychange', () => { if (document.hidden) { voiceReset(); try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {} } })
+window.addEventListener('pagehide', () => voiceReset())
+window.addEventListener('pageshow', () => voiceReset())
 
 // =====================================================================
 //  HUMAN CONVERSATION: praise / thanks / correction + teachable phrases
@@ -2260,6 +2265,7 @@ window.onload = () => {
     document.getElementById("addr-gender").value = addressGender
     document.getElementById("view-mode").value = localStorage.getItem("gl_view") || "auto"
     document.getElementById("confirm-ms").value = localStorage.getItem("gl_confirm_ms") || "5000"
+    { const tb = document.getElementById("shop-tts"); if (tb) tb.textContent = ttsOn ? "🔊" : "🔇" }
     applyTheme(localStorage.getItem('gl_theme') || ((window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'))
     kb.forEach(i => { if (!i.id) i.id = newId() })
     renderMessages()
