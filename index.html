@@ -2238,10 +2238,10 @@ function voiceUI(on, kind, label) {
     if (kind === 'chat') { const b = document.getElementById('voice-btn'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? '⏹️' : '🎤' } }
     else setMic(on, label)
 }
-function voiceReset() {                         // hard reset: kills the recognizer, drops its handlers, clears the UI
+function voiceReset() {                         // reset the session (the recognizer instance itself is kept and reused)
     clearTimeout(Voice.wd)
     const r = Voice.rec; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
-    if (r) { r.onstart = r.onresult = r.onerror = r.onend = r.onnomatch = r.onaudiostart = r.onsoundstart = r.onspeechstart = r.onspeechend = r.onsoundend = r.onaudioend = null; try { r.abort() } catch (e) {} }
+    if (r && Voice.active) { try { r.stop() } catch (e) {} }
     voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
 }
 const VOICE_ERR = {
@@ -2689,10 +2689,13 @@ window.onload = () => {
     if (hadRec) setTimeout(() => begin(kind, onText), 350); else begin(kind, onText)
   }
 
-  function begin(kind, onText) {
+  function begin(kind, onText, retry) {
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
-    let r
-    try { r = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
+    let r = Voice.sr; const reused = !!r
+    if (!r) {
+      try { r = Voice.sr = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
+      r.addEventListener('start', () => { Voice.active = true }); r.addEventListener('end', () => { Voice.active = false })
+    }
     let got = false, heard = false, last = '', delivered = false, fatal = false, lastAct = Date.now()
     const cont = kind === 'home' || kind === 'shop'; Voice.want = cont
     Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
@@ -2749,7 +2752,19 @@ window.onload = () => {
     setTimeout(() => {
       if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך 45 שניות') }
     }, 45000)
-    try { r.start(); vlog('start() נקרא') } catch (e) { voiceReset(); vlog('start נכשל: ' + e.message); keyboardFallback(kind) }
+    const go = n => {
+      if (Voice.rec !== r) return
+      if (Voice.active && n < 25) return setTimeout(() => go(n + 1), 60)     // מחכים שהסשן הקודם ייסגר
+      try { r.start(); vlog('start() נקרא' + (reused ? ' (מופע קיים)' : '')) } catch (e) {
+        vlog('start נכשל: ' + e.name + ' ' + e.message)
+        if (!retry) { Voice.sr = null; Voice.active = false; voiceReset(); return setTimeout(() => begin(kind, onText, true), 200) }
+        voiceReset(); keyboardFallback(kind)
+      }
+    }
+    go(0)
+    if (reused) setTimeout(() => {                                   // מופע ישן שנתקע → יוצרים חדש פעם אחת
+      if (Voice.rec === r && Voice.state === 'starting' && !retry) { vlog('מופע תקוע – יוצר מחדש'); Voice.sr = null; Voice.active = false; voiceReset(); begin(kind, onText, true) }
+    }, 3500)
   }
 
   // ---------- 3. הכתבה במקלדת (לא מוחקים טקסט בזמן שהכתבה פעילה) ----------
@@ -3280,6 +3295,30 @@ window.onload = () => {
         if (navigator.serviceWorker.controller) toast('✅ מוכן לעבודה אופליין', '#10b981'); else toast('⏳ הותקן – רענן פעם אחת עוד עם אינטרנט', '#f59e0b') }
     }).catch(e => vlog('sw: ' + e.message)))
   }
+})()
+
+;(function () {                                                   // ui9-marker: keyboard-dictation auto-submit
+  const FIELDS = '#home-cmd-in,#dom-in,#shop-in,#user-input'
+  const $ = id => document.getElementById(id)
+  function submit(el) {
+    if (!el || !el.value || !el.value.trim()) return
+    if (el.id === 'home-cmd-in') { const b = document.querySelector('#cmdpill [data-act=send]'); if (b) b.click() }
+    else if (el.id === 'dom-in') { const b = document.querySelector('#crm-sheet [data-act=domadd]'); if (b) b.click() }
+    else if (el.id === 'shop-in') { if (!shopDictate) shopSubmitBox() }       // במצב ⌨️ הלוגיקה הקיימת כבר מטפלת
+    else if (el.id === 'user-input') sendMessage()
+    el.dataset.dict = ''
+  }
+  document.addEventListener('input', e => {
+    const el = e.target; if (!el || !el.matches || !el.matches(FIELDS)) return
+    clearTimeout(el._dt)
+    if (e.inputType === 'insertFromDictation' || el.dataset.dict === '1' && e.inputType === 'insertReplacementText') {
+      el.dataset.dict = '1'
+      el._dt = setTimeout(() => submit(el), 2200)                         // שקט אחרי הכתבה = סיימת → מבצע
+    } else el.dataset.dict = ''
+  })
+  document.addEventListener('focusout', e => {                          // סגירת המקלדת / יציאה מהשדה אחרי הכתבה
+    const el = e.target; if (el && el.dataset && el.dataset.dict === '1') { clearTimeout(el._dt); setTimeout(() => submit(el), 150) }
+  })
 })()
 </script>
 </body>
