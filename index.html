@@ -481,6 +481,50 @@ body>div[style*="bottom:24px"]{bottom:calc(96px + env(safe-area-inset-bottom))!i
 .okr{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:.84rem}.okr small{color:var(--muted);display:block}
 .icos{display:flex;gap:8px;flex-wrap:wrap}.icos button{font-size:1.4rem;width:46px;height:46px;border-radius:14px;border:2px solid var(--line);background:var(--card)}.icos button.on{border-color:var(--accent)}
 </style>
+<style id="ui7">
+/* ===== UI v7: iPhone-style ===== */
+*{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Hebrew","Segoe UI",Heebo,Arial,sans-serif}
+body.carousel #pipe{display:none!important}
+#tabbar,#floatbar{display:none}
+body.carousel #tabbar{display:flex}
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--surface) 78%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8);border-top:.5px solid var(--line);align-items:flex-end;justify-content:space-around}
+#tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:10px;padding:4px 0;position:relative;min-height:48px}
+#tabbar button i{font-style:normal;font-size:23px;line-height:1.1}
+#tabbar button.on{color:var(--accent)}
+#tabbar .bdg{position:absolute;top:0;left:50%;margin-left:8px;background:var(--red);color:#fff;border-radius:99px;font-size:10px;min-width:16px;padding:0 4px;font-style:normal;text-align:center}
+#tabbar .bdg:empty{display:none}
+#tabbar #fab{flex:0 0 66px;width:66px;height:66px;min-height:66px;border-radius:50%;margin-top:-28px;padding:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent);justify-content:center;box-shadow:0 10px 26px var(--logo-sh),0 0 0 5px color-mix(in srgb,var(--surface) 78%,transparent)}
+#tabbar #fab i{font-size:28px}
+#tabbar #fab.recording{background:var(--red);color:#fff;animation:fabp 1.1s infinite}
+@keyframes fabp{0%,100%{box-shadow:0 0 0 0 rgba(240,113,113,.55)}50%{box-shadow:0 0 0 16px rgba(240,113,113,0)}}
+#floatbar{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:29;flex-direction:column;gap:8px;align-items:stretch;pointer-events:none}
+body.carousel #floatbar{display:flex}
+#floatbar>*{pointer-events:auto}
+#floatbar #cmdpill{display:none;background:color-mix(in srgb,var(--surface) 82%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:999px;padding:6px;box-shadow:var(--shadow)}
+body.st-home #floatbar #cmdpill{display:flex}
+#floatbar #home-cmd-in{background:transparent!important;border:0!important;box-shadow:none!important}
+.station{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+body.st-home .station[data-id=home]{padding-bottom:calc(160px + env(safe-area-inset-bottom))!important}
+#toasts{position:fixed;top:calc(env(safe-area-inset-top) + 8px);left:12px;right:12px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:100;pointer-events:none}
+.nt{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:520px;padding:11px 16px;border-radius:22px;background:color-mix(in srgb,var(--surface) 86%,transparent);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line);color:var(--txt);font-size:.88rem;box-shadow:var(--shadow);animation:drop .35s cubic-bezier(.2,.9,.3,1.2);transition:opacity .3s,transform .3s}
+.nt i{width:9px;height:9px;border-radius:50%;flex-shrink:0}.nt small{display:block;color:var(--muted);margin-bottom:2px}
+.nt button{background:var(--accent);color:var(--on-accent);border-radius:99px;padding:4px 14px;font-weight:700}
+.nt.out{opacity:0;transform:translateY(-12px)}
+@keyframes drop{from{opacity:0;transform:translateY(-24px) scale(.95)}to{opacity:1;transform:none}}
+.modalx{padding:0;background:rgba(0,0,0,.38);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeb .25s}
+.dlg{max-width:640px;border-radius:30px 30px 0 0;max-height:min(90dvh,calc(100dvh - env(safe-area-inset-top) - 16px));padding:0 18px calc(14px + env(safe-area-inset-bottom));animation:sheetUp .38s cubic-bezier(.2,.9,.3,1);overscroll-behavior:contain}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}@keyframes fadeb{from{opacity:0}}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:8px auto 0}
+.dh{position:sticky;top:0;z-index:3;background:var(--surface);padding:10px 0 12px;margin:0}
+.done{color:var(--accent);font-weight:700;font-size:1rem;padding:6px 4px}
+.bbar{position:sticky;bottom:0;padding:12px 0 0;background:linear-gradient(transparent,var(--surface) 28%)}
+.bbar .btn-primary{width:100%;padding:13px}
+.mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.brand h1{font-size:1.9rem;font-weight:800;letter-spacing:-.5px}.logo{display:none}
+.topbar{padding-top:calc(14px + env(safe-area-inset-top))}
+.tile{box-shadow:none;border:0;background:var(--card);border-radius:24px}
+.hero{border-radius:28px}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -2985,7 +3029,7 @@ window.onload = () => {
   }
 
   // ---------- THE VOICE ROUTER ----------
-  function route(raw) {
+  function route(raw, defScope) {
     const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
@@ -3000,7 +3044,7 @@ window.onload = () => {
       if (!sp.rest) { scope = sp.d.id; renderSticky(); return sp.d.icon + ' מצב <b>' + esc(sp.d.name) + '</b> – אמור את הפרטים (״יציאה״ לסיום)' }
       return addRec(sp.d, sp.rest)
     }
-    if (scope && dom(scope)) return addRec(dom(scope), t)
+    { const sc = scope || defScope; if (sc && dom(sc)) return addRec(dom(sc), t) }
     const r = answerFromShop(t); if (r !== null) return r
     askText = t; renderAsk(); return '🤔 לאיזה תחום לשמור? בחר למטה.'
   }
@@ -3008,21 +3052,15 @@ window.onload = () => {
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div class="logo">🧠</div><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div>' +
-    '<div class="cmdbar"><button type="button" id="home-voice" data-act="voice">🎙️ לחץ ודבר</button><div class="hint" id="home-status">אמור: ״משימה לשלם חשבון מחר״ · ״לקוח חדש דנה״ · ״קניות חלב״ · ״עזרה״</div>' +
-    '<div class="sticky" id="home-sticky" hidden></div><div id="home-ask" hidden></div><div class="cmdin"><input id="home-cmd-in" placeholder="או כתוב / הכתב פקודה…" autocomplete="off"><button class="sendb" data-act="send">➤</button></div></div><div id="home-body"></div>'
-  function setStatus(heard, reply) { const el = $('home-status'); if (el) el.innerHTML = '🗣️ ' + esc(heard) + '<br>' + (reply == null ? 'לא הבנתי – נסה שוב או לחץ ❓' : reply) }
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
-  function renderAsk() {
-    const el = $('home-ask'); if (!el) return; el.hidden = !askText; if (!askText) return
-    el.innerHTML = '<div class="ask"><div style="display:flex;justify-content:space-between;gap:8px"><span>לאיזה תחום לשמור: <b>״' + esc(askText) + '״</b></span><button type="button" class="xb" data-act="askx">✕</button></div><div class="opts">' +
-      crm.domains.map(d => '<button type="button" class="chip" data-act="askpick" data-v="' + d.id + '">' + d.icon + ' ' + esc(d.name) + '</button>').join('') + '</div></div>'
-  }
+  function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
   const cnt = d => d.link === 'shop' ? remaining().length : crm.records.filter(r => r.domain === d.id && !r.done).length
   function trow(r) { return '<div class="trow"><button class="chk" data-act="tog" data-v="' + r.id + '">' + (r.done ? '☑️' : '⬜') + '</button><div class="tt" data-act="edit" data-v="' + r.id + '"><div' + (r.done ? ' style="text-decoration:line-through;opacity:.55"' : '') + '>' + esc(r.title) + '</div>' +
     (dom(r.domain) ? '<small>' + dom(r.domain).icon + ' ' + esc(dom(r.domain).name) + (r.note ? ' · ' + esc(r.note) : '') + '</small>' : '') + '</div>' + (r.due ? '<span class="dchip' + (r.due < today() && !r.done ? ' late' : '') + '">' + esc(dueLabel(r.due)) + '</span>' : '') + '<button class="chk" data-act="del" data-v="' + r.id + '">🗑️</button></div>' }
   window.renderHome = function () {
-    const b = $('home-body'); if (!b) return; renderSticky(); renderAsk()
+    const b = $('home-body'); if (!b) return; renderSticky()
     const open = crm.records.filter(r => !r.done && r.domain !== 'clients'), t = today(), hr = new Date().getHours()
     const g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
     const st = [[open.length, 'משימות פתוחות', 'tasks'], [open.filter(r => r.due && r.due <= t).length, 'לטיפול היום', 'tasks'], [crm.records.filter(r => r.domain === 'clients').length, 'אנשי קשר', 'clients'], [remaining().length, 'ברשימת קניות', 'shopping']]
@@ -3039,9 +3077,9 @@ window.onload = () => {
 
   // ---------- sheets ----------
   function sheetEl() { let s = $('crm-sheet'); if (!s) { s = document.createElement('div'); s.id = 'crm-sheet'; s.className = 'modalx'; s.hidden = true; document.body.appendChild(s) } return s }
-  function showSheet(h) { const s = sheetEl(); s.innerHTML = '<div class="dlg">' + h + '</div>'; s.hidden = false }
+  function showSheet(h) { const s = sheetEl(); s.innerHTML = '<div class="dlg">' + h + (sheet && /^(edit|newdom)$/.test(sheet.type) ? '' : '<div class="bbar"><button class="btn-primary" data-act="close">סגור</button></div>') + '</div>'; s.hidden = false; const d = s.firstChild; if (d) d.scrollTop = 0 }
   function closeSheet() { const s = $('crm-sheet'); if (s) s.hidden = true; sheet = null }
-  const head = (t, extra) => '<div class="dh"><h2>' + t + '</h2><div>' + (extra || '') + '<button class="chk" data-act="close">✕</button></div></div>'
+  const head = (t, extra) => '<div class="grab"></div><div class="dh"><h2>' + t + '</h2><div>' + (extra || '') + '<button class="done" data-act="close">סגור</button></div></div>'
   function openDomain(id) { const d = dom(id); if (!d) return; if (d.link === 'shop') { closeSheet(); goStation('shop'); return } sheet = { type: 'dom', id }; renderSheet() }
   function openHelp() { sheet = { type: 'help' }; testRes = null; renderSheet() }
   function renderSheet() {
@@ -3059,6 +3097,10 @@ window.onload = () => {
     } else if (sheet.type === 'newdom') {
       showSheet(head('＋ תחום חדש') + '<label class="fl">שם התחום</label><input id="nd-n" placeholder="למשל: ספקים, פרויקטים, רכב"><label class="fl">אייקון</label><div class="icos">' +
         ['📁', '🏷️', '🚗', '🏠', '💼', '📞', '📦', '⭐', '🧾', '🔧'].map(i => '<button type="button" data-act="ico" data-v="' + i + '" class="' + (i === newIco ? 'on' : '') + '">' + i + '</button>').join('') + '</div><button class="btn-primary" style="width:100%;margin-top:16px" data-act="savedom">צור תחום</button>')
+    } else if (sheet.type === 'ask') {
+      showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
+    } else if (sheet.type === 'more') {
+      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ']].map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
       const e = voiceEnv(), sr = voiceSupported() && !(e.ios && e.standalone); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
@@ -3073,7 +3115,7 @@ window.onload = () => {
     }
   }
   function selfTest() {
-    const c0 = snap(), s0 = snapShop(), sc = scope, lastBak = last, res = [], ok = (v, n, d) => res.push([!!v, n, d])
+    const sh0 = sheet, c0 = snap(), s0 = snapShop(), sc = scope, lastBak = last, res = [], ok = (v, n, d) => res.push([!!v, n, d])
     try {
       crm = { domains: DEF.map(d => ({ ...d })), records: [] }; shop = JSON.parse(s0); scope = null
       route('משימה לבדוק ציוד מחר'); const a = crm.records[0]; ok(a && a.domain === 'tasks' && a.due === fmt(new Date(Date.now() + 864e5)), 'משימה עם תאריך', '״משימה לבדוק ציוד מחר״ → תחום משימות, יעד מחר')
@@ -3084,7 +3126,7 @@ window.onload = () => {
       route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
       route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
     } catch (e) { ok(false, 'שגיאה בבדיקה', String(e.message || e)) }
-    crm = JSON.parse(c0); shop = JSON.parse(s0); scope = sc; last = lastBak; askText = null
+    crm = JSON.parse(c0); shop = JSON.parse(s0); scope = sc; last = lastBak; askText = null; sheet = sh0
     try { saveShop(); localStorage.setItem('gl_crm', JSON.stringify(crm)) } catch (e) {}
     pend && pendCancel(); const u = $('undo-toast'); if (u) u.remove(); renderShop(); return res
   }
@@ -3116,21 +3158,78 @@ window.onload = () => {
     else if (a === 'domadd') { const i = $('dom-in'), t = i && i.value.trim(); if (t) addRec(dom(sheet.id), t) }
     else if (a === 'deldom') { if (confirm('למחוק את התחום ואת כל הרשומות שבו?')) { const before = snap(); crm.domains = crm.domains.filter(d => d.id !== v); crm.records = crm.records.filter(r => r.domain !== v); if (scope === v) scope = null; closeSheet(); last = before; saveCrm(); toastUndo('התחום נמחק', () => { crm = JSON.parse(before); saveCrm() }) } }
     else if (a === 'ex') { closeSheet(); const i = $('home-cmd-in'); goStation('home'); i.value = v; i.focus() }
+    else if (a === 'fab') window.fabVoice()
+    else if (a === 'tab') { if (v === 'more') { sheet = { type: 'more' }; renderSheet() } else goStation(v) }
+    else if (a === 'go') { closeSheet(); goStation(v) }
     else if (a === 'runtest') { testRes = selfTest(); renderSheet() }
   })
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return
     if (e.target.id === 'home-cmd-in') send(); else if (e.target.id === 'dom-in') { const t = e.target.value.trim(); if (t) addRec(dom(sheet.id), t) }
   })
-  $('home-cmd-in').addEventListener('input', () => { if (!fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if ($('home-cmd-in').value.trim().length >= 3) send() }, 3500) })
-  window.homeFallback = why => { fb = true; const i = $('home-cmd-in'); i.focus(); const st = $('home-status'); if (st) st.textContent = '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.' }
+  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3500) })
+  window.homeFallback = why => { fb = true; goStation('home'); setTimeout(() => { const i = $('home-cmd-in'); if (i) i.focus() }, 350); window.say('', '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.') }
 
   // voice button state (kind "home")
   const _vu = window.voiceUI
-  window.voiceUI = (on, kind, label) => { if (kind === 'home') { const b = $('home-voice'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? (label || '⏹️ מקשיב… (לחץ לעצירה)') : '🎙️ לחץ ודבר' } return } _vu(on, kind, label) }
+  window.voiceUI = (on, kind, label) => { const f = $('fab'); if (f) { f.classList.toggle('recording', on); const ic = f.querySelector('i'); if (ic) ic.textContent = on ? '⏹️' : '🎙️' } if (kind === 'home') return; _vu(on, kind, label) }
   const _vr = window.voiceReset
-  window.voiceReset = () => { _vr(); const b = $('home-voice'); if (b) { b.classList.remove('recording'); b.textContent = '🎙️ לחץ ודבר' } }
+  window.voiceReset = () => { _vr(); const f = $('fab'); if (f) { f.classList.remove('recording'); const ic = f.querySelector('i'); if (ic) ic.textContent = '🎙️' } }
   renderHome()
+})()
+
+;(function () {                                                   // UI v7: iOS tab bar, top toasts, bottom mic
+  const $ = id => document.getElementById(id)
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="floatbar"><div class="sticky" id="home-sticky" hidden></div><div class="cmdin" id="cmdpill"><input id="home-cmd-in" placeholder="כתוב או הכתב פקודה…" autocomplete="off"><button class="sendb" data-act="send">➤</button></div></div>' +
+    '<nav id="tabbar"><button data-act="tab" data-v="home" data-tab="home"><i>🏠</i><span>בית</span></button><button data-act="tab" data-v="chat" data-tab="chat"><i>💬</i><span>שיחה</span></button>' +
+    '<button id="fab" data-act="fab" aria-label="הכתבה קולית"><i>🎙️</i></button><button data-act="tab" data-v="shop" data-tab="shop"><i>🛒</i><span>קניות</span><b class="bdg"></b></button>' +
+    '<button data-act="tab" data-v="more" data-tab="more"><i>⋯</i><span>עוד</span></button></nav><div id="toasts"></div>')
+  // ---- toasts at the TOP (never cover the buttons)
+  window.toast = function (msg, color) {
+    const el = document.createElement('div'); el.className = 'nt'
+    el.innerHTML = '<i style="background:' + (color || '#10b981') + '"></i><span></span>'; el.lastChild.textContent = msg
+    $('toasts').appendChild(el); setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300) }, 2600)
+  }
+  let ut = null
+  window.toastUndo = function (msg, onUndo) {
+    const old = $('undo-toast'); if (old) old.remove(); clearTimeout(ut)
+    const el = document.createElement('div'); el.id = 'undo-toast'; el.className = 'nt'
+    el.innerHTML = '<i style="background:var(--accent)"></i><span></span><button type="button">בטל</button>'; el.querySelector('span').textContent = msg
+    el.querySelector('button').onclick = () => { clearTimeout(ut); el.remove(); onUndo() }
+    $('toasts').appendChild(el); ut = setTimeout(() => el.remove(), 7000)
+  }
+  let sayT = null
+  window.say = function (heard, reply) {
+    const old = $('say-toast'); if (old) old.remove(); clearTimeout(sayT)
+    const el = document.createElement('div'); el.id = 'say-toast'; el.className = 'nt'
+    el.innerHTML = '<i style="background:var(--accent)"></i><div>' + (heard ? '<small></small>' : '') + '<div>' + (reply == null ? 'לא הבנתי – נסה שוב או לחץ ❓' : reply) + '</div></div>'
+    if (heard) el.querySelector('small').textContent = '🗣️ ' + heard
+    el.onclick = e => { if (!e.target.closest('button,a')) el.remove() }
+    $('toasts').appendChild(el); sayT = setTimeout(() => el.remove(), 8000)
+  }
+  // ---- context-aware mic: chat → chat, shopping → shopping list, else → CRM router
+  window.fabVoice = function () {
+    const id = STATIONS[stationIdx].id
+    if (id === 'chat') return toggleVoice()
+    voiceToggle('home', t => { const r = crmRoute(t, id === 'shop' ? 'shopping' : null); say(t, r); return r })
+  }
+  // ---- tab bar state
+  const MAIN = ['home', 'chat', 'shop']
+  function markTab() {
+    const id = STATIONS[stationIdx].id, cur = MAIN.includes(id) ? id : 'more'
+    document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === cur))
+    document.body.classList.toggle('st-home', id === 'home')
+  }
+  const _ss = window.setStation; window.setStation = function (i) { _ss(i); markTab() }
+  const _up = window.updatePipe
+  window.updatePipe = function () { _up(); const b = document.querySelector('#tabbar [data-tab=shop] .bdg'); if (b) b.textContent = remaining().length || '' }
+  // ---- sheets: swipe down / Escape closes
+  let ty = null
+  document.addEventListener('touchstart', e => { ty = e.target.closest && e.target.closest('.grab,.dh') ? e.touches[0].clientY : null }, { passive: true })
+  document.addEventListener('touchend', e => { if (ty != null && e.changedTouches[0].clientY - ty > 70) { const c = document.querySelector('#crm-sheet:not([hidden]) [data-act=close]'); if (c) c.click() } ty = null })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { const c = document.querySelector('#crm-sheet:not([hidden]) [data-act=close]'); if (c) c.click() } })
+  updatePipe()
 })()
 </script>
 </body>
