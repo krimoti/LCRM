@@ -527,6 +527,25 @@ body.st-home .station[data-id=home]{padding-bottom:calc(160px + env(safe-area-in
 .tile{box-shadow:none;border:0;background:var(--card);border-radius:24px}
 .hero{border-radius:28px}
 </style>
+<style id="ui9">
+#active-learn-bar{position:fixed!important;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:0!important;border:0!important;background:rgba(0,0,0,.55)!important}
+#active-learn-bar.hidden{display:none!important}
+#active-learn-bar .alc{width:100%;max-width:760px;max-height:90dvh;overflow:auto;display:flex;flex-direction:column;gap:10px;background:var(--surface,#111827);color:var(--txt,#e5e7eb);border:1px solid var(--line,#1f2937);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+@media(min-width:768px){#active-learn-bar{align-items:center}#active-learn-bar .alc{border-radius:20px}}
+.al-h{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--amber,#f59e0b);font-size:15px}
+.al-h button{font-size:20px;padding:4px 10px;color:var(--muted,#9ca3af)}
+.al-q{max-height:6.5em;overflow:auto;padding:10px 12px;border-radius:12px;background:var(--bg,#030712);border:1px dashed var(--line,#374151);font-size:15px;line-height:1.5;white-space:pre-wrap}
+#active-learn-input{width:100%;min-height:130px;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:14px;resize:vertical;background:var(--bg,#030712);color:inherit;border:1px solid var(--line,#374151)}
+.al-b{display:flex;gap:8px;flex-wrap:wrap}
+.al-b button{min-height:44px;padding:0 16px;border-radius:12px;font-size:15px}
+.al-save{background:var(--amber,#f59e0b);color:#111;font-weight:700;flex:1}
+.al-cancel{border:1px solid var(--line,#374151)}
+.alc small{opacity:.65;font-size:12px}
+.fmic{border:1px solid var(--line,#2c405b);background:var(--surface,#111c2e);color:var(--txt,#edf3fb);border-radius:12px;padding:6px 12px;font-size:15px;min-height:40px;min-width:40px;margin:4px 0;touch-action:manipulation}
+.fmic.rec{background:var(--red,#f07171);color:#fff;animation:fmp 1s infinite}
+@keyframes fmp{50%{opacity:.6}}
+.sil{border:1px solid var(--line,#2c405b);background:var(--surface,#111c2e);color:var(--txt,#edf3fb);border-radius:999px;padding:0 10px;min-height:36px;font-size:12px;white-space:nowrap;touch-action:manipulation}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -757,14 +776,18 @@ body.st-home .station[data-id=home]{padding-bottom:calc(160px + env(safe-area-in
         <div id="messages" class="message-area flex-1 p-6 space-y-5 dot-bg" style="background-color:#030712"></div>
 
         <!-- Active learning prompt (hidden by default) -->
-        <div id="active-learn-bar" class="hidden px-6 py-3 border-t" style="background:#0d1117;border-color:#1f2937">
-            <div class="flex items-center gap-3">
-                <span class="text-sm" style="color:#f59e0b">🤔 לא בטוח לגבי זה. מה התשובה הנכונה?</span>
-                <input id="active-learn-input" type="text" placeholder="למד אותי..."
-                       class="flex-1 text-sm" style="padding:8px 14px;border-radius:999px"
-                       onkeydown="if(event.key==='Enter') submitActiveLearning()">
-                <button onclick="submitActiveLearning()" class="text-xs px-3 py-2 rounded-full" style="background:#f59e0b;color:#030712">שמור</button>
-                <button onclick="dismissActiveLearning()" class="text-xs" style="color:#6b7280">✕</button>
+        <div id="active-learn-bar" class="hidden">
+            <div class="alc">
+                <div class="al-h"><b>🤔 לא ידעתי לענות – מה התשובה הנכונה?</b><button type="button" onclick="dismissActiveLearning()" aria-label="סגור">✕</button></div>
+                <div class="al-q" id="al-q"></div>
+                <textarea id="active-learn-input" rows="5" placeholder="הכתב (🎤) או כתוב את התשובה…"
+                          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitActiveLearning()}"></textarea>
+                <div class="al-b">
+                    <button type="button" class="fmic" data-for="active-learn-input">🎤 הכתב</button>
+                    <button type="button" class="al-save" onclick="submitActiveLearning()">שמור</button>
+                    <button type="button" class="al-cancel" onclick="dismissActiveLearning()">ביטול</button>
+                </div>
+                <small>אפשר לומר: ״שמור״ · ״ביטול״ · ״נקה שדה״</small>
             </div>
         </div>
 
@@ -2238,10 +2261,10 @@ function voiceUI(on, kind, label) {
     if (kind === 'chat') { const b = document.getElementById('voice-btn'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? '⏹️' : '🎤' } }
     else setMic(on, label)
 }
-function voiceReset() {                         // reset the session (the recognizer instance itself is kept and reused)
+function voiceReset() {                         // hard reset: kills the recognizer, drops its handlers, clears the UI
     clearTimeout(Voice.wd)
     const r = Voice.rec; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
-    if (r && Voice.active) { try { r.stop() } catch (e) {} }
+    if (r) { r.onstart = r.onresult = r.onerror = r.onend = r.onnomatch = r.onaudiostart = r.onsoundstart = r.onspeechstart = r.onspeechend = r.onsoundend = r.onaudioend = null; try { r.abort() } catch (e) {} }
     voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
 }
 const VOICE_ERR = {
@@ -2422,7 +2445,7 @@ function isShortUnknown(m) { const n = normPhrase(m), w = n.split(' ').filter(Bo
 function teachCard(ph) {
     const e = escHtml(ph), b = (a, l) => `<button class="clarify" data-p="${e}" onclick="teachAct(this.dataset.p,'${a}')">${l}</button>`
     return `🤔 "${e}" – לא בטוח מה הכוונה. אפשר להסביר לי?<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${b('praise', '👍 אישור לתשובה הקודמת')}${b('neg', '✏️ תיקון')}${b('newq', '❓ שאלה חדשה')}${b('ack', '🙈 להתעלם')}</div>` +
-        `<div style="margin-top:8px;display:flex;gap:6px"><input class="teach-in" data-p="${e}" placeholder="או הסבר במילים שלך…" style="flex:1;font-size:13px;padding:6px 10px"><button class="clarify" onclick="teachFree(this)">שמור</button></div>`
+        `<div style="margin-top:8px;display:flex;flex-direction:column;gap:8px"><textarea class="teach-in" rows="3" data-p="${e}" placeholder="או הסבר במילים שלך…" style="width:100%;min-width:220px;font-size:16px;padding:10px 12px;border-radius:12px"></textarea><div style="display:flex;gap:6px"><button class="clarify fmic" data-prev="1">🎤 הכתב</button><button class="clarify" onclick="teachFree(this)">שמור</button></div></div>`
 }
 function teachAct(ph, act, note) {
     if (act === 'newq') { openLearnBar(ph); return }
@@ -2432,7 +2455,7 @@ function teachAct(ph, act, note) {
     save(); renderMessages()
 }
 function teachFree(btn) {
-    const inp = btn.parentNode.querySelector('.teach-in'), text = inp.value.trim(); if (!text) return
+    const inp = btn.parentNode.parentNode.querySelector('.teach-in'), text = inp.value.trim(); if (!text) return
     const act = inferAct(text)
     if (!act) { toast('לא הצלחתי להבין מההסבר – בחר אחת מהאפשרויות', '#f59e0b'); return }
     teachAct(inp.dataset.p, act, text)
@@ -2689,15 +2712,12 @@ window.onload = () => {
     if (hadRec) setTimeout(() => begin(kind, onText), 350); else begin(kind, onText)
   }
 
-  function begin(kind, onText, retry) {
+  function begin(kind, onText) {
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
-    let r = Voice.sr; const reused = !!r
-    if (!r) {
-      try { r = Voice.sr = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
-      r.addEventListener('start', () => { Voice.active = true }); r.addEventListener('end', () => { Voice.active = false })
-    }
+    let r
+    try { r = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
     let got = false, heard = false, last = '', delivered = false, fatal = false, lastAct = Date.now()
-    const cont = kind === 'home' || kind === 'shop'; Voice.want = cont
+    const cont = true; Voice.want = true
     Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
     r.lang = 'he-IL'; r.continuous = cont; r.interimResults = true; r.maxAlternatives = 1
     const on = (n, f) => { r['on' + n] = e => { if (Voice.rec === r) f(e) } }
@@ -2707,8 +2727,8 @@ window.onload = () => {
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
       const rep = onText(t); if (rep) Voice.speak = rep
     }
-    on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start') });
-    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n) }))
+    on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start'); if (Voice.onStart) Voice.onStart() });
+    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n); if (n !== 'audiostart' && Voice.onAct) Voice.onAct() }))
     const deliverMulti = t => {                                   // כל משפט סופי = פקודה נפרדת
       got = true; heard = true; Voice.fails = 0; last = ''; lastAct = Date.now()
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
@@ -2716,6 +2736,7 @@ window.onload = () => {
       if (window.voiceInterim) window.voiceInterim(kind, '')
     }
     on('result', e => {
+      if (Voice.onAct) Voice.onAct()
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i], t = ((res[0] || {}).transcript || '').trim(); if (!t) continue
@@ -2738,7 +2759,9 @@ window.onload = () => {
         try { if (last) deliverMulti(last); r.start(); vlog('restart'); return } catch (x) { vlog('restart נכשל: ' + x.message) }
       }
       Voice.want = false
-      if (!delivered && last) { if (cont) deliverMulti(last); else deliver(last) }                       // iOS מסיים לפעמים בלי תוצאה סופית
+      if (!delivered && last) { if (cont) deliverMulti(last); else deliver(last) }
+      if (Voice.onEnd) { try { Voice.onEnd() } catch (x) { vlog('onEnd: ' + x.message) } }
+                             // iOS מסיים לפעמים בלי תוצאה סופית
       const sp = Voice.speak, quick = Date.now() - Voice.t0 < 1500
       Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
       voiceUI(false, kind)
@@ -2752,19 +2775,7 @@ window.onload = () => {
     setTimeout(() => {
       if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך 45 שניות') }
     }, 45000)
-    const go = n => {
-      if (Voice.rec !== r) return
-      if (Voice.active && n < 25) return setTimeout(() => go(n + 1), 60)     // מחכים שהסשן הקודם ייסגר
-      try { r.start(); vlog('start() נקרא' + (reused ? ' (מופע קיים)' : '')) } catch (e) {
-        vlog('start נכשל: ' + e.name + ' ' + e.message)
-        if (!retry) { Voice.sr = null; Voice.active = false; voiceReset(); return setTimeout(() => begin(kind, onText, true), 200) }
-        voiceReset(); keyboardFallback(kind)
-      }
-    }
-    go(0)
-    if (reused) setTimeout(() => {                                   // מופע ישן שנתקע → יוצרים חדש פעם אחת
-      if (Voice.rec === r && Voice.state === 'starting' && !retry) { vlog('מופע תקוע – יוצר מחדש'); Voice.sr = null; Voice.active = false; voiceReset(); begin(kind, onText, true) }
-    }, 3500)
+    try { r.start(); vlog('start() נקרא') } catch (e) { voiceReset(); vlog('start נכשל: ' + e.message); keyboardFallback(kind) }
   }
 
   // ---------- 3. הכתבה במקלדת (לא מוחקים טקסט בזמן שהכתבה פעילה) ----------
@@ -3066,21 +3077,23 @@ window.onload = () => {
   }
 
   // ---------- THE VOICE ROUTER ----------
-  function route(raw, defScope) {
+  function route(raw, defScope, strict) {
     const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
+    if (strict && (/[?？]\s*$/.test(String(raw).trim()) || /^(?:מה|מי|איך|למה|מתי|איפה|כמה|האם|איזה|איזו|תסביר|הסבר)\s/.test(t))) return null
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
     if (/^(?:בטל|תבטל|ביטול|תחזיר|מחק)$/.test(t)) return crmUndo()
-    if (/^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
+    if (!strict && /^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
     if ((m = t.match(/^(?:תוסיף|הוסף|צור|תיצור|פתח)\s+תחום(?:\s+חדש)?\s+(.+)$/))) return newDomain(m[1])
     if ((m = t.match(/^(?:סיימתי|בוצע|בוצעה|סמן כבוצע|סגור)\s+(?!עם\s)(?:את\s+)?(?:משימה\s+)?(.+)$/))) return doneRec(m[1])
     if (/^(?:קניתי|קנתי|קנינו|לקחתי|לקחנו|סיימתי עם)\s/.test(t)) return answerFromShop(t)
     if ((m = t.match(/^(?:הצג|תציג|תראה|הראה)(?:\s+לי)?\s+(?:את\s+)?(.+)$/))) { const d = domOf(m[1].split(/\s+/)[0]); if (d) { openDomain(d.id); return '📂 פותח ' + esc(d.name) } }
     const sp = splitDomain(t)
     if (sp) {
-      if (!sp.rest) { scope = sp.d.id; renderSticky(); return sp.d.icon + ' מצב <b>' + esc(sp.d.name) + '</b> – אמור את הפרטים (״יציאה״ לסיום)' }
+      if (!sp.rest) { if (strict) return null; scope = sp.d.id; renderSticky(); return sp.d.icon + ' מצב <b>' + esc(sp.d.name) + '</b> – אמור את הפרטים (״יציאה״ לסיום)' }
       return addRec(sp.d, sp.rest)
     }
+    if (strict) return null
     { const sc = scope || defScope; if (sc && dom(sc)) return addRec(dom(sc), t) }
     const r = answerFromShop(t); if (r !== null) return r
     const cx = Date.now() - lastDomTs < 90000 ? dom(lastDom) : null          // המשך לאותו תחום של הפקודה הקודמת
@@ -3088,6 +3101,7 @@ window.onload = () => {
     askText = t; renderAsk(); return '🤔 לאיזה תחום לשמור? בחר למטה.'
   }
   window.crmRoute = route
+  window.crmTry = raw => route(raw, null, true)
 
   // ---------- home ----------
   const home = $('home-panel')
@@ -3206,7 +3220,7 @@ window.onload = () => {
     if (e.key !== 'Enter') return
     if (e.target.id === 'home-cmd-in') send(); else if (e.target.id === 'dom-in') { const t = e.target.value.trim(); if (t) addRec(dom(sheet.id), t) }
   })
-  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3500) })
+  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, (window.getSilenceMs ? getSilenceMs() : 3500)) })
   window.homeFallback = why => { fb = true; goStation('home'); setTimeout(() => { const i = $('home-cmd-in'); if (i) i.focus() }, 350); window.say('', '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.') }
 
   // voice button state (kind "home")
@@ -3297,29 +3311,246 @@ window.onload = () => {
   }
 })()
 
-;(function () {                                                   // ui9-marker: keyboard-dictation auto-submit
-  const FIELDS = '#home-cmd-in,#dom-in,#shop-in,#user-input'
+;(function () {                                                   // ui9-marker: dictation everywhere + silence control + voice commands
   const $ = id => document.getElementById(id)
-  function submit(el) {
-    if (!el || !el.value || !el.value.trim()) return
-    if (el.id === 'home-cmd-in') { const b = document.querySelector('#cmdpill [data-act=send]'); if (b) b.click() }
-    else if (el.id === 'dom-in') { const b = document.querySelector('#crm-sheet [data-act=domadd]'); if (b) b.click() }
-    else if (el.id === 'shop-in') { if (!shopDictate) shopSubmitBox() }       // במצב ⌨️ הלוגיקה הקיימת כבר מטפלת
-    else if (el.id === 'user-input') sendMessage()
-    el.dataset.dict = ''
+  const say = (h, r) => { try { window.say(h, r) } catch (e) {} }
+  const Dict = { target: null, starting: false }
+
+  // ---------- settings ----------
+  const SIL = 'gl_silence', AUTO = 'gl_autosend'
+  const num = (k, d) => { try { const v = parseFloat(localStorage.getItem(k)); return isFinite(v) ? v : d } catch (e) { return d } }
+  window.getSilenceMs = () => Math.round(Math.min(15, Math.max(1, num(SIL, 3))) * 1000)
+  const autoSend = () => { try { return localStorage.getItem(AUTO) !== '0' } catch (e) { return true } }
+  function setSilence(s, quiet) {
+    s = Math.min(15, Math.max(1, Math.round(s * 2) / 2))
+    try { localStorage.setItem(SIL, String(s)) } catch (e) {}
+    try { shopDictateMs = s * 1000 } catch (e) {}
+    const r = $('sil-range'); if (r) r.value = s
+    const v = $('sil-val'); if (v) v.textContent = s
+    const c = $('sil-chip'); if (c) c.textContent = '⏱ ' + s + 'ש׳'
+    if (!quiet) toast('⏱ זמן שקט לסיום: ' + s + ' שניות', '#22d3ee')
+    return s
   }
-  document.addEventListener('input', e => {
-    const el = e.target; if (!el || !el.matches || !el.matches(FIELDS)) return
-    clearTimeout(el._dt)
-    if (e.inputType === 'insertFromDictation' || el.dataset.dict === '1' && e.inputType === 'insertReplacementText') {
-      el.dataset.dict = '1'
-      el._dt = setTimeout(() => submit(el), 2200)                         // שקט אחרי הכתבה = סיימת → מבצע
-    } else el.dataset.dict = ''
+  window.setSilence = setSilence
+
+  // ---------- helpers ----------
+  const learnOpen = () => { const b = $('active-learn-bar'); return !!(b && !b.classList.contains('hidden')) }
+  const modalOpen = () => { const b = $('add-modal'); return !!(b && !b.classList.contains('hidden')) }
+  const sheetOpen = () => { const b = $('crm-sheet'); return !!(b && !b.hidden) }
+  function appendTo(el, t) {
+    if (!el || !t) return
+    const v = el.value || ''
+    el.value = v && !/\s$/.test(v) ? v + ' ' + t : v + t
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    try { el.scrollTop = el.scrollHeight } catch (e) {}
+  }
+  function closeTop() {
+    if (learnOpen()) dismissActiveLearning()
+    else if (modalOpen()) hideAddModal()
+    else if (sheetOpen()) { const c = document.querySelector('#crm-sheet [data-act=close]'); if (c) c.click() }
+  }
+
+  // ---------- spoken commands (work in every context) ----------
+  const NAV = { 'בית': 'home', 'שיחה': 'chat', 'קניות': 'shop', 'ידע': 'kb', 'הנדסה': 'eng', 'דוח': 'report', 'הגדרות': 'settings' }
+  function globalCmd(t, S) {              // returns a reply string if it was a command, else undefined
+    const n = t.replace(/[?!.,;:״"]+/g, ' ').replace(/\s+/g, ' ').trim()
+    let m
+    if (/^(?:עצור|תעצור|הפסק|תפסיק|עצור הקלטה|עצור הכתבה|סגור מיקרופון|כבה מיקרופון)$/.test(n)) { S.flush(true); return '⏹️ עצרתי את ההקלטה' }
+    if (/^(?:שלח|תשלח|בצע|תבצע|סיימתי|סוף)$/.test(n)) { S.flush(true); return '' }
+    if (/^(?:נקה|תנקה|מחק|תמחק|אפס)\s+(?:את\s+)?(?:ה)?(?:שיחה|שיחות|צ.?אט|היסטוריה)$/.test(n) || /^שיחה חדשה$/.test(n)) { S.drop(); clearChat(); return '🗑️ נקיתי את השיחה (אפשר לבטל)' }
+    if (/^(?:נקה|תנקה|מחק|תמחק|אפס)\s+(?:את\s+)?(?:ה)?(?:שדה|תיבה|טקסט|הכל|כתוב)$/.test(n)) { S.clear(); return '🧹 ניקיתי את השדה' }
+    if ((S.kind === 'chat' || S.kind === 'field') && /^(?:מחק|תמחק)\s+(?:את\s+)?(?:ה)?(?:מילה אחרונה|אחרון|מילה)$/.test(n)) { const el = S.kind === 'chat' ? $('user-input') : S.el; if (el) { el.value = el.value.replace(/\s*\S+\s*$/, ''); el.dispatchEvent(new Event('input', { bubbles: true })) } return '⌫ מחקתי מילה' }
+    if (learnOpen() && /^(?:שמור|תשמור|שמור תשובה|אשר|אישור)$/.test(n)) {
+      if (!$('active-learn-input').value.trim()) return '✏️ אין עדיין תשובה לשמירה – הכתב אותה קודם'
+      submitActiveLearning(); S.stop(); return '✅ נשמר'
+    }
+    if (modalOpen() && /^(?:שמור|תשמור|אשר|אישור)$/.test(n)) { addFromModal(); S.stop(); return '✅ נשמר' }
+    if ((learnOpen() || modalOpen()) && /^(?:בטל|ביטול|תבטל)$/.test(n)) { closeTop(); S.stop(); return '↩️ סגרתי' }
+    if ((learnOpen() || modalOpen() || sheetOpen()) && /^(?:סגור|תסגור|סגור חלון|חזור)$/.test(n)) { closeTop(); S.stop(); return '↩️ סגרתי' }
+    try { if (pend && /^(?:אשר|אישור|תאשר|הוסף הכל)$/.test(n)) { pendCommit(); return '✅ אושר' } } catch (e) {}
+    if ((m = n.match(/^(?:עבור|תעבור|לך|פתח|תפתח|הצג|תציג|תראה|הראה|חזור)\s+(?:ל|אל\s+)?(?:ה)?(בית|שיחה|צ.?אט|קניות|ידע|הנדסה|דוח|הגדרות|עוד)$/)) || (m = n.match(/^(?:דף הבית|מסך הבית|הביתה)$/) && ['', 'בית'])) {
+      const w = /^צ.?אט$/.test(m[1]) ? 'שיחה' : m[1]
+      S.stop()
+      if (w === 'עוד') { const b = document.querySelector('#tabbar [data-tab=more]'); if (b) b.click() } else goStation(NAV[w])
+      return '➡️ ' + w
+    }
+    if ((m = n.match(/^(?:זמן )?שקט\s+(?:של\s+)?(\d+(?:\.\d+)?)\s*(?:שניות|שניה|שנ.?)?$/))) return '⏱ זמן שקט: ' + setSilence(parseFloat(m[1]), true) + ' שניות'
+    if (/^(?:הארך|תארך|הגדל|תגדיל)\s+(?:את\s+)?(?:ה)?שקט$/.test(n)) return '⏱ זמן שקט: ' + setSilence(num(SIL, 3) + 1, true) + ' שניות'
+    if (/^(?:קצר|תקצר|הקטן|תקטין)\s+(?:את\s+)?(?:ה)?שקט$/.test(n)) return '⏱ זמן שקט: ' + setSilence(num(SIL, 3) - 1, true) + ' שניות'
+    if (/^(?:כבה|תכבה|השתק)\s+(?:את\s+)?(?:ה)?(?:קול|הקראה)$/.test(n)) { if (ttsOn) shopTtsToggle(); return '🔇 הקראה כבויה' }
+    if (/^(?:הפעל|תפעיל|הדלק)\s+(?:את\s+)?(?:ה)?(?:קול|הקראה)$/.test(n)) { if (!ttsOn) shopTtsToggle(); return '🔊 הקראה פעילה' }
+    if (/^(?:עזרה|פקודות)$/.test(n)) { S.stop(); const b = document.querySelector('[data-act=help]'); if (b) b.click(); return '❓ פתחתי עזרה' }
+    return undefined
+  }
+
+  // ---------- one dictation session = one mic press ----------
+  function makeSession(kind, onText) {
+    const S = { kind, onText, buf: [], tm: null, ended: false, started: false, heard: false, el: kind === 'field' ? Dict.target : null }
+    S.arm = () => {
+      if (S.ended) return
+      clearTimeout(S.tm)
+      const sil = window.getSilenceMs()
+      S.tm = setTimeout(() => { S.flush(true) }, S.heard ? sil : Math.max(sil * 2 + 2000, 8000))
+    }
+    S.stop = () => {
+      Voice.want = false; const r = Voice.rec
+      try { r && r.stop() } catch (e) {}
+      setTimeout(() => { if (r && Voice.rec === r) voiceReset() }, 1500)
+    }
+    S.drop = () => { S.buf = [] }
+    S.clear = () => {
+      S.buf = []
+      const el = S.kind === 'chat' ? $('user-input') : S.kind === 'field' ? S.el : $('home-cmd-in')
+      if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })) }
+    }
+    S.flush = stopAfter => {
+      clearTimeout(S.tm)
+      try {
+        if (S.kind === 'chat') { const i = $('user-input'); if (i && i.value.trim() && autoSend()) sendMessage() }
+        else if (S.kind === 'home' || S.kind === 'shop') {
+          const t = S.buf.join(' ').trim(); S.buf = []
+          if (t) { const rep = S.onText(t); if (rep) Voice.speak = rep }
+        }
+      } catch (e) { vlog('flush: ' + e.message) }
+      if (stopAfter) S.stop()
+    }
+    S.finish = () => {
+      if (S.ended) return
+      S.flush(false); S.ended = true; clearTimeout(S.tm)
+      if (Voice.S === S) { Voice.S = null; Voice.onAct = Voice.onEnd = Voice.onStart = null }
+    }
+    S.handle = raw => {
+      let t = String(raw || '').trim(); if (!t || S.ended) return null
+      S.heard = true; S.arm()
+      const g = globalCmd(t, S)
+      if (g !== undefined) { if (g) say(t, g); return null }
+      let exec = false
+      if (/(?:^|\s)(?:שלח|תשלח|בצע|תבצע|סיימתי)$/.test(t)) { t = t.replace(/(?:^|\s)(?:שלח|תשלח|בצע|תבצע|סיימתי)$/, '').trim(); exec = true }
+      if (S.kind === 'chat') appendTo($('user-input'), t)
+      else if (S.kind === 'field') appendTo(S.el, t)
+      else if (t) S.buf.push(t)
+      if (exec) S.flush(true)
+      return null
+    }
+    return S
+  }
+  const _vs = window.voiceStart
+  window.voiceStart = function (kind, onText) {
+    if (Voice.S) Voice.S.finish()
+    if (kind === 'field' && !voiceSupported()) {
+      const el = Dict.target; if (el) el.focus(); toast('אין זיהוי דיבור בדפדפן הזה – לחץ על 🎤 שבמקלדת ודבר', '#f59e0b'); return
+    }
+    const S = makeSession(kind, onText); Voice.S = S
+    Voice.onStart = () => { if (!S.started) { S.started = true; S.arm() } }
+    Voice.onAct = () => { S.heard = true; S.arm() }
+    Voice.onEnd = () => S.finish()
+    Dict.starting = true
+    try { _vs(kind, S.handle) } finally { Dict.starting = false }
+  }
+  const _vr = window.voiceReset
+  window.voiceReset = function () { if (Voice.S && !Dict.starting) Voice.S.finish(); _vr() }
+
+  // ---------- UI state of field mic buttons ----------
+  const _vu = window.voiceUI
+  window.voiceUI = (on, kind, label) => {
+    document.querySelectorAll('.fmic').forEach(b => {
+      const t = fieldOf(b), act = on && kind === 'field' && t && t === Dict.target
+      if (!b.dataset.l) b.dataset.l = b.textContent
+      b.classList.toggle('rec', !!act); b.textContent = act ? '⏹️ עצור' : b.dataset.l
+    })
+    if (kind === 'field') {
+      const f = $('fab'); if (f) { f.classList.toggle('recording', on); const ic = f.querySelector('i'); if (ic) ic.textContent = on ? '⏹️' : '🎙️' }
+      return
+    }
+    _vu(on, kind, label)
+  }
+  function fieldOf(b) {
+    if (b.dataset.for) return $(b.dataset.for)
+    if (b.dataset.prev) return b.parentNode.previousElementSibling
+    return null
+  }
+  function dictateField(el) {
+    if (!el) return
+    Dict.target = el
+    voiceToggle('field', () => null)
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.fmic'); if (!b) return
+    e.preventDefault(); dictateField(fieldOf(b))
   })
-  document.addEventListener('focusout', e => {                          // סגירת המקלדת / יציאה מהשדה אחרי הכתבה
-    const el = e.target; if (el && el.dataset && el.dataset.dict === '1') { clearTimeout(el._dt); setTimeout(() => submit(el), 150) }
-  })
+
+  // inject 🎤 next to dynamic text fields
+  const FIELDS = ['dom-in', 'ed-t', 'ed-n', 'nd-n', 'modal-q', 'modal-a', 'quick-q']
+  let decQ = false
+  function decorate() {
+    decQ = false
+    FIELDS.forEach(id => {
+      const el = $(id); if (!el || el.dataset.fm) return
+      el.dataset.fm = '1'
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'fmic'; b.dataset.for = id; b.textContent = '🎤'; b.title = 'הכתבה'
+      el.insertAdjacentElement('afterend', b)
+    })
+  }
+  new MutationObserver(() => { if (!decQ) { decQ = true; requestAnimationFrame(decorate) } }).observe(document.body, { childList: true, subtree: true })
+  decorate()
+
+  // ---------- mic button picks its target by context ----------
+  function pickField() {
+    if (learnOpen()) return $('active-learn-input')
+    const a = document.activeElement
+    if (modalOpen()) return a && (a.id === 'modal-q' || a.id === 'modal-a') ? a : ($('modal-q').value.trim() ? $('modal-a') : $('modal-q'))
+    if (sheetOpen()) {
+      const sh = $('crm-sheet')
+      if (a && sh.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type !== 'date') return a
+      return sh.querySelector('#dom-in,#ed-t,#nd-n')
+    }
+    return null
+  }
+  window.toggleVoice = function () { voiceToggle('chat', () => null) }
+  window.fabVoice = function () {
+    const f = pickField(); if (f) return dictateField(f)
+    const id = STATIONS[stationIdx].id
+    if (id === 'chat') return window.toggleVoice()
+    voiceToggle('home', t => { const r = crmRoute(t, id === 'shop' ? 'shopping' : null); say(t, r); return r })
+  }
+
+  // ---------- chat understands the CRM commands too ----------
+  const _gr = window.generateResponse
+  window.generateResponse = async function (msg) {
+    try { const r = window.crmTry && window.crmTry(msg); if (r != null) return r } catch (e) { vlog('crmTry: ' + e.message) }
+    return _gr(msg)
+  }
+
+  // ---------- learn bar: show the question that is being asked ----------
+  const bar = $('active-learn-bar')
+  if (bar) new MutationObserver(() => {
+    if (bar.classList.contains('hidden')) return
+    const q = $('al-q'); if (q) q.textContent = activeLearningQ || ''
+    const i = $('active-learn-input'); if (i) setTimeout(() => { try { i.focus() } catch (e) {} }, 50)
+  }).observe(bar, { attributes: true, attributeFilter: ['class'] })
+
+  // ---------- settings + quick silence chip ----------
+  const p2 = $('panel-2')
+  if (p2) {
+    const g = document.createElement('details'); g.className = 'grp'; g.open = true
+    g.innerHTML = '<summary>🎙️ מיקרופון והקלטה</summary><div class="grp-b" style="display:flex;flex-direction:column;gap:12px">' +
+      '<div><div style="margin-bottom:6px">⏱ זמן שקט לפני סיום אוטומטי: <b id="sil-val"></b> שניות</div><input id="sil-range" type="range" min="1" max="15" step="0.5" style="width:100%"></div>' +
+      '<label style="display:flex;gap:8px;align-items:center"><input id="auto-send" type="checkbox"> שליחה אוטומטית בצ׳אט אחרי השקט</label>' +
+      '<div style="font-size:12px;opacity:.7;line-height:1.6">פקודות קוליות בכל מקום: ״שלח״ · ״עצור״ · ״בטל״ · ״נקה שיחה״ · ״נקה שדה״ · ״מחק מילה״ · ״עבור לקניות/בית/שיחה/הגדרות״ · ״שמור״ · ״סגור״ · ״זמן שקט 5 שניות״ · ״הארך שקט״ · ״קצר שקט״ · ״כבה הקראה״</div></div>'
+    p2.prepend(g)
+    $('sil-range').addEventListener('input', e => setSilence(parseFloat(e.target.value), true))
+    const as = $('auto-send'); as.checked = autoSend()
+    as.addEventListener('change', () => { try { localStorage.setItem(AUTO, as.checked ? '1' : '0') } catch (e) {} })
+  }
+  const pill = $('cmdpill')
+  if (pill) {
+    const c = document.createElement('button'); c.type = 'button'; c.id = 'sil-chip'; c.className = 'sil'; c.title = 'זמן שקט לפני סיום אוטומטי (לחץ להחלפה)'
+    c.addEventListener('click', () => { const o = [1.5, 2, 3, 4, 6, 8, 10], cur = num(SIL, 3), nx = o.find(x => x > cur) || o[0]; setSilence(nx) })
+    pill.insertBefore(c, pill.querySelector('.sendb'))
+  }
+  setSilence(num(SIL, 3), true)
 })()
+
 </script>
 </body>
 </html>
