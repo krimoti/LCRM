@@ -364,6 +364,123 @@ button[onclick="shopAddFromBox()"]{align-self:center!important;width:52px;height
 #shop-voice-status:empty,#shop-pending:empty{display:none}
 #shop-chips .chip.on{box-shadow:none}
 </style>
+<style id="ui5">
+/* ===== UI v5: flat rounded look + 7 themes (same family as the CRM example) ===== */
+:root{--green:#35c98a;--amber:#f4b74f;--red:#f07171;--shadow:0 12px 32px rgba(0,0,0,.22)}
+:root,[data-theme="night"]{--bg:#0b1220;--surface:#111c2e;--card:#172438;--line:#2c405b;--txt:#edf3fb;--muted:#9aabc0;--accent:#55c2ef;--accent2:#2e9fca;--on-accent:#082033;--glow:#1c3853;--hero1:#17334d;--hero2:#16273c;--htxt:#edf3fb}
+[data-theme="forest"]{--bg:#0b1510;--surface:#12211a;--card:#182a21;--line:#2a4638;--txt:#e9f5ee;--muted:#9bb5a5;--accent:#4ade80;--accent2:#22a55a;--on-accent:#052e16;--glow:#1a3a2a;--hero1:#14452d;--hero2:#12281d;--htxt:#e9f5ee}
+[data-theme="dusk"]{--bg:#130f24;--surface:#1c1634;--card:#251d44;--line:#3d3366;--txt:#f1ecff;--muted:#b0a6d1;--accent:#b79cff;--accent2:#8b6cf0;--on-accent:#1e1245;--glow:#3a2570;--hero1:#3b2a73;--hero2:#21183f;--htxt:#f1ecff}
+[data-theme="graphite"]{--bg:#000;--surface:#0e0e10;--card:#17171a;--line:#2e2e33;--txt:#f4f4f5;--muted:#a1a1aa;--accent:#fbbf24;--accent2:#d99a0b;--on-accent:#1c1303;--glow:#2a2108;--hero1:#2b2108;--hero2:#121212;--htxt:#f4f4f5}
+[data-theme="paper"]{--bg:#f4f5f7;--surface:#fff;--card:#fff;--line:#dfe3ea;--txt:#1c2433;--muted:#667085;--accent:#2563eb;--accent2:#1d4ed8;--on-accent:#fff;--glow:#dbe6ff;--hero1:#dbe7ff;--hero2:#eef3ff;--htxt:#14213d;--green:#16a34a;--amber:#d97706;--red:#dc2626;--shadow:0 12px 32px rgba(30,41,59,.10)}
+[data-theme="sunrise"]{--bg:#fff6ec;--surface:#fffdf9;--card:#fff;--line:#f1ddc6;--txt:#3b2414;--muted:#8a6a52;--accent:#f97316;--accent2:#ea580c;--on-accent:#2a1204;--glow:#ffe1c2;--hero1:#ffd9b0;--hero2:#ffeed9;--htxt:#3b2414;--green:#16a34a;--amber:#c2710c;--red:#dc2626;--shadow:0 12px 32px rgba(120,60,10,.12)}
+[data-theme="mint"]{--bg:#effaf6;--surface:#fff;--card:#fff;--line:#cfe9df;--txt:#12332b;--muted:#5b8176;--accent:#0d9488;--accent2:#0f766e;--on-accent:#fff;--glow:#c8f1e4;--hero1:#c4f0e2;--hero2:#e3f8f1;--htxt:#0b2e27;--green:#16a34a;--amber:#d97706;--red:#dc2626;--shadow:0 12px 32px rgba(15,80,65,.10)}
+:root{--logo-sh:color-mix(in srgb,var(--accent) 32%,transparent);--nav-act:color-mix(in srgb,var(--accent) 18%,var(--surface));--chip:color-mix(in srgb,var(--card) 85%,var(--txt));--hline:color-mix(in srgb,var(--accent) 30%,var(--line));--mut:var(--muted);--acc:var(--accent)}
+body{background:radial-gradient(ellipse at 85% -10%,var(--glow) 0,transparent 35%),var(--bg)!important;color:var(--txt)}
+body::before{display:none}
+[style*="background:#030712"],[style*="background:#0d1117"],[style*="background:#111827"],.bg-gray-950{background:var(--card)!important}
+[style*="#1f2937"],[style*="#0f172a"],.border-gray-900{border-color:var(--line)!important}
+[style*="color:#6b7280"],[style*="color:#4b5563"],[style*="color:#374151"],[style*="color:#9ca3af"]{color:var(--muted)!important}
+[style*="color:#00d4ff"]{color:var(--accent)!important}
+[style*="background:#00d4ff"]{background:var(--accent)!important;color:var(--on-accent)!important}
+#sidebar{background:var(--surface)!important;backdrop-filter:none;border-color:var(--line)!important}
+#main-area>div:first-child,#main-area>div:last-child{background:var(--bg)!important;backdrop-filter:none;border-color:var(--line)!important}
+#messages,#messages.dot-bg{background:transparent!important}
+h1,#main-area .font-medium.text-sm{background:none!important;-webkit-background-clip:border-box;background-clip:border-box;color:var(--txt)!important}
+input,textarea,select{color:var(--txt)!important}
+input:not([type=range]):not([type=radio]):not([type=file]):not(#user-input),textarea,select{background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:16px}
+.sidebar-section .glow{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;box-shadow:0 8px 20px var(--logo-sh)!important;animation:none;border-radius:50%}
+.tab-btn{color:var(--muted)}.tab-active{background:var(--nav-act)!important;color:var(--accent)!important;box-shadow:none!important}
+.chat-bubble-user{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;color:var(--on-accent)!important;box-shadow:none}
+.chat-bubble-ai,.knowledge-item,.report-section,.pend,.sugg,.grp{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:22px;box-shadow:var(--shadow);backdrop-filter:none}
+.shop-row{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:16px;backdrop-filter:none}
+.chat-bubble-ai{color:var(--txt)}
+.knowledge-item:hover,.report-section:hover,.grp:hover,.shop-row:hover{transform:none;box-shadow:var(--shadow);border-color:var(--accent)!important}
+.btn-primary,html.light .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;color:var(--on-accent)!important;box-shadow:0 6px 16px var(--logo-sh)}
+.btn-primary::after{display:none}.btn-primary:hover{box-shadow:0 6px 16px var(--logo-sh);transform:none}
+.btn-ghost,.chip,.clarify,.btn-ghost:hover,.chip:hover,.clarify:hover{background:var(--surface)!important;color:var(--txt)!important;border:1px solid var(--line)!important;backdrop-filter:none;box-shadow:none;transform:none}
+.chip.on,#shop-aisle.on,#shop-dict.on{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;color:var(--on-accent)!important;border-color:transparent!important}
+#shop-mic{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;color:var(--on-accent)!important;box-shadow:0 10px 26px var(--logo-sh);animation:none!important}
+#shop-mic.recording,.recording{background:var(--red)!important;color:#fff!important}
+.rip{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+#main-area .rounded-3xl{background:var(--surface)!important;border-color:var(--line)!important}
+#main-area .rounded-3xl:focus-within{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent);border-color:var(--accent)!important}
+#add-modal>div{background:var(--surface)!important;border-color:var(--line)!important;box-shadow:var(--shadow);backdrop-filter:none}
+#active-learn-bar{background:var(--card)!important;border-color:var(--amber)!important}
+.typing-dot{background:var(--accent)!important;box-shadow:none}
+::-webkit-scrollbar-thumb{background:var(--line)}
+/* floating pill navigation (carousel) */
+#pipe{top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:580px;margin:0 auto;padding:5px!important;background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:30px;box-shadow:var(--shadow);backdrop-filter:none}
+#pipe-bar{display:none!important}
+.pipe-btn{min-height:50px;border-radius:24px;color:var(--muted)}
+.pipe-btn.on{background:var(--nav-act);color:var(--accent);text-shadow:none}.pipe-btn.on .pipe-ic{transform:none;filter:none}
+.pipe-badge{background:var(--accent)!important;color:var(--on-accent)!important}
+#track{top:env(safe-area-inset-top)!important}
+.station{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}
+body>div[style*="bottom:24px"]{bottom:calc(96px + env(safe-area-inset-bottom))!important;color:var(--txt)}
+#undo-toast{background:var(--surface)!important;border-color:var(--line)!important}
+/* home */
+#home-panel{padding:16px 14px 24px}
+.hero{background:linear-gradient(120deg,var(--hero1),var(--hero2));border:1px solid var(--hline);border-radius:30px;padding:20px;position:relative;overflow:hidden;box-shadow:var(--shadow);flex-shrink:0}
+.hero::before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;top:-110px;left:-70px;background:radial-gradient(var(--accent),transparent 70%);opacity:.2;pointer-events:none}
+.hero>*{position:relative}.hero h2{font-size:1.3rem;font-weight:700;color:var(--htxt)}.hero p{color:var(--htxt);opacity:.75;font-size:.9rem;margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.stat{background:color-mix(in srgb,var(--htxt) 9%,transparent);border:1px solid var(--hline);border-radius:20px;padding:12px;cursor:pointer;text-align:right}
+.stat b{display:block;font-size:1.5rem;color:var(--htxt)}.stat span{font-size:.76rem;color:var(--htxt);opacity:.75}
+.sh{margin:20px 2px 2px;font-weight:700}
+.dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:10px}
+.tile{border:1px solid var(--line);background:linear-gradient(155deg,var(--card),var(--surface));color:var(--txt);border-radius:26px;padding:16px 14px;text-align:right;min-height:112px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
+.tile .ti{font-size:1.7rem}.tile b{font-size:1rem}.tile small{color:var(--muted);font-size:.76rem}.tile:active{transform:scale(.97)}
+/* themes picker */
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.theme-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 8px 12px;border-radius:22px;border:2px solid var(--line);background:var(--card);color:var(--txt);font-size:.8rem;font-weight:650}
+.theme-btn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 24%,transparent)}
+.sw{display:block;width:100%;height:40px;border-radius:16px;border:1px solid rgba(128,128,128,.35);background:linear-gradient(135deg,var(--bg) 0 38%,var(--card) 38% 66%,var(--accent) 66%)}
+</style>
+<style id="ui6">
+/* ===== UI v6: CRM home (domains, voice router, help) ===== */
+#home-panel{padding:0 14px 28px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 2px 8px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:22px;box-shadow:0 8px 20px var(--logo-sh)}
+.brand h1{font-size:1.15rem;font-weight:700}.brand small{display:block;color:var(--muted);font-size:.74rem}
+.top-actions{display:flex;gap:8px}
+.ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--txt);display:grid;place-items:center;font-size:1.05rem;box-shadow:var(--shadow)}
+.cmdbar{position:sticky;top:0;z-index:5;margin:0 -14px 6px;padding:6px 14px 10px;background:linear-gradient(var(--bg) 82%,transparent);display:flex;flex-direction:column;gap:8px}
+#home-voice{padding:20px;font-size:1.2rem;font-weight:800;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on-accent);box-shadow:0 12px 30px var(--logo-sh)}
+#home-voice.recording{background:var(--red)!important;color:#fff!important}
+.cmdin{display:flex;gap:8px;align-items:center}
+.cmdin input{flex:1}
+#home-cmd-in,#dom-in{border-radius:999px!important;padding:11px 18px}
+.sendb{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:var(--surface);border:1px solid var(--line);color:var(--accent);font-size:1.1rem}
+.hint{color:var(--muted);font-size:.78rem;text-align:center;min-height:1.2em;line-height:1.5}
+.sticky{display:flex;justify-content:space-between;align-items:center;background:var(--nav-act);border:1px solid var(--accent);border-radius:999px;padding:6px 8px 6px 14px;font-size:.82rem}
+.sticky[hidden],#home-ask[hidden]{display:none!important}
+.ask{background:var(--card);border:1px solid var(--accent);border-radius:22px;padding:12px;font-size:.85rem}
+.ask .opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.xb{width:30px;height:30px;border-radius:50%;background:var(--chip);color:var(--txt);flex-shrink:0}
+.sh{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 2px;font-weight:700}
+.sh small{color:var(--muted);font-weight:400;font-size:.76rem}
+.tile{position:relative}
+.cnt{position:absolute;top:12px;left:12px;font-style:normal;font-size:.72rem;background:var(--nav-act);color:var(--accent);border-radius:999px;padding:2px 9px;font-weight:700}
+.addtile{border:2px dashed var(--line);background:transparent;color:var(--muted);border-radius:26px;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.quickc{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:16px;margin-top:16px;box-shadow:var(--shadow)}
+.quickc p{color:var(--muted);font-size:.8rem;margin:2px 0 10px}
+.quickc .qb{display:flex;gap:8px}
+.emptyx{border:1px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:.85rem;margin-top:8px}
+.modalx{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-end;justify-content:center;padding:12px;z-index:60}
+.modalx[hidden]{display:none}
+.dlg{width:100%;max-width:620px;max-height:90vh;overflow:auto;background:var(--surface);color:var(--txt);border:1px solid var(--line);border-radius:30px;padding:18px;box-shadow:var(--shadow)}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.dh h2{font-size:1.1rem;font-weight:700}
+.trow{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 10px;margin-top:8px}
+.trow .tt{flex:1;min-width:0;cursor:pointer}.trow small{color:var(--muted);display:block}
+.chk{font-size:1.2rem;min-width:36px;min-height:36px;color:var(--txt)}
+.dchip{font-size:.72rem;border-radius:999px;padding:3px 9px;background:var(--chip);color:var(--txt);white-space:nowrap}.dchip.late{background:color-mix(in srgb,var(--red) 20%,var(--card));color:var(--red)}
+.fl{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px}
+.ex{display:block;width:100%;text-align:right;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-top:6px;color:var(--txt);font-size:.85rem}
+.hg{margin:16px 0 2px;font-weight:700;font-size:.9rem}
+.okr{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:.84rem}.okr small{color:var(--muted);display:block}
+.icos{display:flex;gap:8px;flex-wrap:wrap}.icos button{font-size:1.4rem;width:46px;height:46px;border-radius:14px;border:2px solid var(--line);background:var(--card)}.icos button.on{border-color:var(--accent)}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -1352,7 +1469,7 @@ function clearChat() {
 
 function resetAllData() {
     if (!confirm('⚠️ למחוק הכל? (ידע, שיחות, הגדרות)')) return
-    ['gl_kb','gl_chat','gl_sens','gl_syns','gl_eng','gl_shop','gl_conv'].forEach(k => localStorage.removeItem(k))
+    ['gl_kb','gl_chat','gl_sens','gl_syns','gl_eng','gl_shop','gl_conv','gl_crm'].forEach(k => localStorage.removeItem(k))
     location.reload()
 }
 
@@ -2506,6 +2623,7 @@ window.onload = () => {
       ? 'באפליקציה ממסך הבית של האייפון זיהוי הדיבור של הדפדפן לא נתמך'
       : 'הדפדפן הזה לא תומך בזיהוי דיבור'
     vlog('מעבר להכתבה במקלדת: ' + why)
+    if (kind === 'home' && window.homeFallback) return window.homeFallback(why)
     if (kind === 'chat') {
       const i = document.getElementById('user-input'); if (i) i.focus()
       toast('לחץ על 🎤 שבמקלדת, דבר, ואז Enter', '#f59e0b'); return
@@ -2705,6 +2823,314 @@ window.onload = () => {
     p2.prepend(d)
   }
   const sh = document.querySelector('button[onclick="shopShare()"]'); if (sh && sh.parentNode) sh.parentNode.classList.add('sharebar')
+})()
+
+;(function () {                                                   // UI v5: themes, home screen, voice "bought = delete"
+  const html = document.documentElement
+  html.classList.remove('light'); try { localStorage.removeItem('gl_theme') } catch (e) {}
+  window.applyTheme = () => html.classList.remove('light')
+  const T = [['night', '🌙 לילה כחול', '#101827'], ['forest', '🌲 יער', '#0b1510'], ['dusk', '🔮 דמדומים', '#130f24'], ['graphite', '⚫ גרפיט', '#000000'],
+    ['paper', '📄 נייר', '#f4f5f7'], ['sunrise', '🌅 זריחה', '#fff6ec'], ['mint', '🌿 מנטה', '#effaf6']]
+  const LIGHT = ['paper', 'sunrise', 'mint']
+  const saved = () => { try { return localStorage.getItem('gl_palette') } catch (e) { return null } }
+  const cur = () => T.some(t => t[0] === saved()) ? saved() : 'night'
+  window.setPalette = id => {
+    const t = T.find(x => x[0] === id) || T[0]
+    html.dataset.theme = t[0]; try { localStorage.setItem('gl_palette', t[0]) } catch (e) {}
+    document.querySelectorAll('.theme-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t[0])))
+    let m = document.querySelector('meta[name="theme-color"]'); if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m) }
+    m.content = t[2]
+    const b = document.getElementById('theme-btn'); if (b) b.textContent = LIGHT.includes(t[0]) ? '🌙' : '☀️'
+  }
+  window.toggleTheme = () => setPalette(LIGHT.includes(cur()) ? 'night' : 'paper')
+  const p2 = document.getElementById('panel-2')
+  if (p2) {
+    p2.querySelectorAll('details.grp').forEach(d => { if (/ערכת נושא/.test(d.firstChild.textContent)) d.remove() })
+    const d = document.createElement('details'); d.className = 'grp'; d.open = true
+    d.innerHTML = '<summary>🎨 ערכת נושא</summary><div class="grp-b"><div class="themes">' + T.map(t =>
+      '<button type="button" class="theme-btn" data-t="' + t[0] + '" aria-pressed="false" onclick="setPalette(this.dataset.t)"><span class="sw" data-theme="' + t[0] + '"></span>' + t[1] + '</button>').join('') + '</div></div>'
+    p2.prepend(d)
+  }
+  setPalette(cur())
+
+  // ---- home screen (carousel only)
+  document.body.insertAdjacentHTML('beforeend', '<div id="home-panel" class="hidden flex-col"></div>')
+  window.renderHome = function () {
+    const h = document.getElementById('home-panel'); if (!h) return
+    const hr = new Date().getHours(), g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
+    const st = [['shop', remaining().length, 'ברשימת הקניות'], ['kb', kb.length, 'פריטי ידע'], ['eng', eng.connectors.length + eng.rules.length, 'מחברים וכללים'], ['chat', chat.length, 'הודעות בשיחה']]
+    const tl = [['chat', '💬', 'שיחה', 'שאל או למד את ה-AI'], ['shop', '🛒', 'קניות', 'קול, ורשימה לפי סדר הסופר'], ['kb', '📚', 'ידע', 'מה שלימדת אותי'],
+      ['eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['report', '📊', 'דוח', 'למידה וכיסוי'], ['settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי']]
+    h.innerHTML = '<div class="hero"><h2>' + g + ' 👋</h2><p>המרכז האישי שלך – הכול רץ מקומית בדפדפן</p><div class="stats">' +
+      st.map(x => '<div class="stat" onclick="goStation(\'' + x[0] + '\')"><b>' + x[1] + '</b><span>' + x[2] + '</span></div>').join('') + '</div></div><div class="sh">לאן הולכים?</div><div class="dgrid">' +
+      tl.map(x => '<button type="button" class="tile" onclick="goStation(\'' + x[0] + '\')"><span class="ti">' + x[1] + '</span><b>' + x[2] + '</b><small>' + x[3] + '</small></button>').join('') + '</div>'
+  }
+  STATIONS.unshift({ id: 'home', icon: '🏠', label: 'בית', sel: '#home-panel', on: () => renderHome() })
+  try { if (!localStorage.getItem('gl_home_v1')) { localStorage.setItem('gl_station', '0'); localStorage.setItem('gl_home_v1', '1') } } catch (e) {}
+  const _up = window.updatePipe
+  window.updatePipe = function () { _up(); if (STATIONS[stationIdx] && STATIONS[stationIdx].id === 'home') renderHome() }
+  const hint = document.querySelector('#panel-5 > div[style*="opacity:.65"]')
+  if (hint) { hint.style.display = ''; hint.textContent = 'אמור פריטים להוספה · ״קניתי חלב״ מוחק מהרשימה · ״בטל״ מחזיר' }
+
+  // ---- "קניתי X" = מחיקה מהרשימה (גם מתיבת האישור), ו"בטל" מחזיר
+  let lastSnap = null
+  const _us = window.undoShop
+  window.undoShop = function (snap, msg) { lastSnap = snap; _us(snap, msg) }
+  window.shopBought = function (text) {
+    const snap = snapShop(), done = [], missing = [], ask = []
+    splitItems(text).forEach(it => {
+      const P = stemsOf(it.name); if (!P.length) return
+      if (pend) {                                                  // עדיין בחלון האישור
+        const k = pend.items.findIndex(x => stemsOf(x.name).some(a => P.some(b => stemEq(a, b))))
+        if (k >= 0) { done.push(pend.items.splice(k, 1)[0].name); if (pend.items.length) pendRender(); else pendCancel(); return }
+      }
+      const cand = remaining().map(x => ({ x, sh: stemsOf(x.name).filter(a => P.some(b => stemEq(a, b))).length })).filter(c => c.sh > 0)
+      if (!cand.length) { missing.push(it.name); return }
+      const exact = cand.filter(c => sameStems(stemsOf(c.x.name), P))
+      const pick = exact.length ? exact : (cand.length === 1 ? cand : (() => { const mx = Math.max(...cand.map(c => c.sh)), top = cand.filter(c => c.sh === mx); return top.length === 1 ? top : null })())
+      if (!pick) { ask.push(cand.map(c => c.x.name)); return }
+      pick.forEach(c => { recordBuy(c.x); shop.items = shop.items.filter(y => y !== c.x); done.push(c.x.name) })
+    })
+    saveShop(); renderShop()
+    const out = []
+    if (done.length) { out.push('🗑️ נמחק מהרשימה (נקנה): ' + done.map(escHtml).join(', ')); undoShop(snap, 'נקנה ונמחק: ' + done.join(', ')) }
+    if (missing.length) out.push('לא מצאתי ברשימה: ' + missing.map(escHtml).join(', '))
+    ask.forEach(names => out.push('יש כמה אפשרויות — איזה קנית?<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' + names.map(n => '<button class="clarify" data-q="קניתי ' + escHtml(n) + '" onclick="ask(this.dataset.q)">' + escHtml(n) + '</button>').join('') + '</div>'))
+    return out.length ? out.join('<br>') + '<br>📝 נשארו ' + remaining().length + ' לקנות.' : null
+  }
+  const _afs = window.answerFromShop
+  window.answerFromShop = function (raw) {
+    let m = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, '')
+      .replace(/(?<![\u0590-\u05FF])קני?תי(?![\u0590-\u05FF])/, 'קניתי').replace(/^(קניתי|קנינו|לקחתי|לקחנו)\s+את\s+/, '$1 ')
+    if (/^(?:בטל|תבטל|ביטול|בטל פעולה|תחזיר|תחזיר אחורה|מחק)$/.test(m)) {
+      if (!lastSnap) return 'אין פעולה אחרונה לבטל.'
+      shop = JSON.parse(lastSnap); lastSnap = null; saveShop(); renderShop(); return '↩️ ביטלתי את הפעולה האחרונה.'
+    }
+    return _afs(m)
+  }
+})()
+;(function () {                                                   // UI v6: CRM domains + voice router + help
+  const $ = id => document.getElementById(id), esc = escHtml
+  const DEF = [
+    { id: 'tasks', name: 'משימות', icon: '✅', kw: ['משימה', 'משימות'], desc: 'משימות ומעקב' },
+    { id: 'clients', name: 'לקוחות', icon: '👥', kw: ['לקוח', 'לקוחות', 'איש קשר', 'אנשי קשר'], desc: 'אנשי קשר, פגישות ומעקב' },
+    { id: 'dept', name: 'מחלקה', icon: '🏢', kw: ['מחלקה', 'מחלקת'], desc: 'משימות צוות ועבודה' },
+    { id: 'shopping', name: 'קניות', icon: '🛒', kw: ['קניות', 'סופר'], desc: 'רשימות מוצרים ורכש', link: 'shop' },
+    { id: 'general', name: 'כללי', icon: '📝', kw: ['הערה', 'הערות', 'רעיון', 'רעיונות', 'כללי', 'תזכורת', 'תזכורות'], desc: 'הערות, רעיונות ותזכורות' }]
+  let crm = (() => { try { const x = JSON.parse(localStorage.getItem('gl_crm')); if (x && Array.isArray(x.domains) && Array.isArray(x.records)) return x } catch (e) {} return { domains: DEF.map(d => ({ ...d })), records: [] } })()
+  let scope = null, askText = null, last = null, sheet = null, newIco = '📁', fb = false, fbTimer = null, testRes = null
+  const dom = id => crm.domains.find(d => d.id === id)
+  const snap = () => JSON.stringify(crm)
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  const today = () => fmt(new Date())
+  const dueLabel = s => { if (!s) return ''; const t = today(); if (s === t) return 'היום'; const n = Math.round((new Date(s + 'T00:00') - new Date(t + 'T00:00')) / 864e5)
+    return n === 1 ? 'מחר' : n === -1 ? 'אתמול' : n < 0 ? 'באיחור ' + (-n) + ' ימים' : new Date(s + 'T00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) }
+  function saveCrm() { try { localStorage.setItem('gl_crm', JSON.stringify(crm)) } catch (e) { toast('השמירה נכשלה – האחסון מלא', '#ef4444') } renderAll() }
+  function renderAll() { renderHome(); if (sheet) renderSheet() }
+
+  // ---------- domain keywords + date parsing ----------
+  const kwStems = d => [...(d.kw || []), ...rawWords(d.name)].map(relStem)
+  function domOf(word) {
+    const w = normPhrase(word).replace(/\s/g, ''); if (!w) return null
+    const c = [w]; if (w.length > 3 && 'לבהו'.includes(w[0])) c.push(w.slice(1))
+    for (const d of crm.domains) { const ks = kwStems(d); for (const x of c) { const st = relStem(x); if (st.length >= 2 && ks.some(k => stemEq(k, st))) return d } }
+    return null
+  }
+  const FILL = /^(?:תוסיף|תוסיפי|הוסף|הוסיפי|תרשום|רשום|צור|תיצור|שמור|תשמור|חדש|חדשה|ל|אל|את)$/
+  function splitDomain(t) {
+    const w = t.split(/\s+/)
+    for (let i = 0; i < Math.min(3, w.length); i++) {
+      if (i > 0 && !w.slice(0, i).every(x => FILL.test(x))) break
+      const d = domOf(w[i]); if (!d) continue
+      let r = w.slice(i + 1); while (r.length && /^(?:חדש|חדשה|בשם|ל|אל|את|של)$/.test(r[0])) r.shift()
+      return { d, rest: r.join(' ').replace(/^[:\-–]\s*/, '').trim() }
+    }
+    return null
+  }
+  const NB = '(?<![\\u0590-\\u05FF])', NA = '(?![\\u0590-\\u05FF])'
+  function parseDue(t) {
+    const d = new Date(); let off = null, m
+    const cut = re => { t = t.replace(re, ' ').replace(/\s+/g, ' ').trim() }
+    const R = w => new RegExp(NB + w + NA)
+    if (R('מחרתיים').test(t)) { off = 2; cut(R('מחרתיים')) } else if (R('מחר').test(t)) { off = 1; cut(R('מחר')) } else if (R('היום').test(t)) { off = 0; cut(R('היום')) }
+    else if ((m = t.match(/בעוד\s+(\d+)\s+ימים?/))) { off = +m[1]; cut(m[0]) }
+    else if ((m = t.match(/(?:ב)?יום\s+(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)/))) { off = (['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].indexOf(m[1]) - d.getDay() + 7) % 7 || 7; cut(m[0]) }
+    if (off === null) return { title: t, due: '' }
+    d.setDate(d.getDate() + off); return { title: t, due: fmt(d) }
+  }
+
+  // ---------- actions ----------
+  function addRec(d, text) {
+    if (!text) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
+    if (d.link === 'shop') return shopAdd(text, true)
+    let title = text.trim(), due = ''
+    if (d.id !== 'clients') { const p = parseDue(title); if (p.title) { title = p.title; due = p.due } }
+    if (!title) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
+    const before = snap(); crm.records.unshift({ id: newId(), domain: d.id, title, note: '', due, done: false, ts: Date.now() }); last = before; saveCrm()
+    toastUndo('נוסף ל' + d.name, () => { crm = JSON.parse(before); saveCrm() })
+    return d.icon + ' נוסף ל<b>' + esc(d.name) + '</b>: ' + esc(title) + (due ? ' · ' + esc(dueLabel(due)) : '')
+  }
+  function doneRec(q) {
+    const P = stemsOf(q); if (!P.length) return null
+    const c = crm.records.filter(r => !r.done).map(r => ({ r, sh: stemsOf(r.title).filter(a => P.some(b => stemEq(a, b))).length })).filter(x => x.sh > 0).sort((a, b) => b.sh - a.sh)
+    if (!c.length) return 'לא מצאתי משימה פתוחה שמתאימה ל"' + esc(q) + '".'
+    last = snap(); c[0].r.done = true; saveCrm(); return '✔ סומן כבוצע: ' + esc(c[0].r.title)
+  }
+  function crmUndo() { if (!last) return answerFromShop('בטל'); crm = JSON.parse(last); last = null; saveCrm(); return '↩️ ביטלתי את הפעולה האחרונה.' }
+  function newDomain(name, icon) {
+    name = String(name || '').trim(); if (!name) return 'איך לקרוא לתחום?'
+    if (domOf(name)) return 'כבר קיים תחום דומה: ' + esc(domOf(name).name)
+    last = snap(); crm.domains.push({ id: 'd' + Math.random().toString(36).slice(2, 7), name, icon: icon || '📁', kw: [], desc: 'תחום מותאם' }); saveCrm()
+    return '📁 נוסף תחום חדש: <b>' + esc(name) + '</b> – אמור "' + esc(name) + ' ..." כדי להוסיף אליו.'
+  }
+
+  // ---------- THE VOICE ROUTER ----------
+  function route(raw) {
+    const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
+    if (!t) return null
+    if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
+    if (/^(?:בטל|תבטל|ביטול|תחזיר|מחק)$/.test(t)) return crmUndo()
+    if (/^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
+    if ((m = t.match(/^(?:תוסיף|הוסף|צור|תיצור|פתח)\s+תחום(?:\s+חדש)?\s+(.+)$/))) return newDomain(m[1])
+    if ((m = t.match(/^(?:סיימתי|בוצע|בוצעה|סמן כבוצע|סגור)\s+(?!עם\s)(?:את\s+)?(?:משימה\s+)?(.+)$/))) return doneRec(m[1])
+    if (/^(?:קניתי|קנתי|קנינו|לקחתי|לקחנו|סיימתי עם)\s/.test(t)) return answerFromShop(t)
+    if ((m = t.match(/^(?:הצג|תציג|תראה|הראה)(?:\s+לי)?\s+(?:את\s+)?(.+)$/))) { const d = domOf(m[1].split(/\s+/)[0]); if (d) { openDomain(d.id); return '📂 פותח ' + esc(d.name) } }
+    const sp = splitDomain(t)
+    if (sp) {
+      if (!sp.rest) { scope = sp.d.id; renderSticky(); return sp.d.icon + ' מצב <b>' + esc(sp.d.name) + '</b> – אמור את הפרטים (״יציאה״ לסיום)' }
+      return addRec(sp.d, sp.rest)
+    }
+    if (scope && dom(scope)) return addRec(dom(scope), t)
+    const r = answerFromShop(t); if (r !== null) return r
+    askText = t; renderAsk(); return '🤔 לאיזה תחום לשמור? בחר למטה.'
+  }
+  window.crmRoute = route
+
+  // ---------- home ----------
+  const home = $('home-panel')
+  home.innerHTML = '<div class="topbar"><div class="brand"><div class="logo">🧠</div><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div>' +
+    '<div class="cmdbar"><button type="button" id="home-voice" data-act="voice">🎙️ לחץ ודבר</button><div class="hint" id="home-status">אמור: ״משימה לשלם חשבון מחר״ · ״לקוח חדש דנה״ · ״קניות חלב״ · ״עזרה״</div>' +
+    '<div class="sticky" id="home-sticky" hidden></div><div id="home-ask" hidden></div><div class="cmdin"><input id="home-cmd-in" placeholder="או כתוב / הכתב פקודה…" autocomplete="off"><button class="sendb" data-act="send">➤</button></div></div><div id="home-body"></div>'
+  function setStatus(heard, reply) { const el = $('home-status'); if (el) el.innerHTML = '🗣️ ' + esc(heard) + '<br>' + (reply == null ? 'לא הבנתי – נסה שוב או לחץ ❓' : reply) }
+  function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
+  function renderAsk() {
+    const el = $('home-ask'); if (!el) return; el.hidden = !askText; if (!askText) return
+    el.innerHTML = '<div class="ask"><div style="display:flex;justify-content:space-between;gap:8px"><span>לאיזה תחום לשמור: <b>״' + esc(askText) + '״</b></span><button type="button" class="xb" data-act="askx">✕</button></div><div class="opts">' +
+      crm.domains.map(d => '<button type="button" class="chip" data-act="askpick" data-v="' + d.id + '">' + d.icon + ' ' + esc(d.name) + '</button>').join('') + '</div></div>'
+  }
+  const cnt = d => d.link === 'shop' ? remaining().length : crm.records.filter(r => r.domain === d.id && !r.done).length
+  function trow(r) { return '<div class="trow"><button class="chk" data-act="tog" data-v="' + r.id + '">' + (r.done ? '☑️' : '⬜') + '</button><div class="tt" data-act="edit" data-v="' + r.id + '"><div' + (r.done ? ' style="text-decoration:line-through;opacity:.55"' : '') + '>' + esc(r.title) + '</div>' +
+    (dom(r.domain) ? '<small>' + dom(r.domain).icon + ' ' + esc(dom(r.domain).name) + (r.note ? ' · ' + esc(r.note) : '') + '</small>' : '') + '</div>' + (r.due ? '<span class="dchip' + (r.due < today() && !r.done ? ' late' : '') + '">' + esc(dueLabel(r.due)) + '</span>' : '') + '<button class="chk" data-act="del" data-v="' + r.id + '">🗑️</button></div>' }
+  window.renderHome = function () {
+    const b = $('home-body'); if (!b) return; renderSticky(); renderAsk()
+    const open = crm.records.filter(r => !r.done && r.domain !== 'clients'), t = today(), hr = new Date().getHours()
+    const g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
+    const st = [[open.length, 'משימות פתוחות', 'tasks'], [open.filter(r => r.due && r.due <= t).length, 'לטיפול היום', 'tasks'], [crm.records.filter(r => r.domain === 'clients').length, 'אנשי קשר', 'clients'], [remaining().length, 'ברשימת קניות', 'shopping']]
+    const soon = open.filter(r => r.due).sort((a, c) => a.due < c.due ? -1 : 1).slice(0, 6)
+    b.innerHTML = '<div class="hero"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h2>' + g + ' 👋</h2><span class="dchip">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span></div><p>כל המשימות, האנשים והרעיונות במקום אחד.</p><div class="stats">' +
+      st.map(x => '<div class="stat" data-act="open" data-v="' + x[2] + '"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div></div>' +
+      '<div class="sh"><span>＋ פעולה חדשה</span><small>לחץ על תחום כדי לראות את הרשומות שלו</small></div><div class="dgrid">' +
+      crm.domains.map(d => '<button type="button" class="tile" data-act="open" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>' + esc(d.desc || '') + '</small><em class="cnt">' + cnt(d) + '</em></button>').join('') +
+      '<button type="button" class="addtile" data-act="newdom"><span style="font-size:1.6rem">＋</span>תחום חדש</button></div>' +
+      '<div class="quickc"><b>⚡ קיצור דרך</b><p>הוספה מהירה ללא בחירת תחום.</p><div class="qb"><button class="btn-primary" data-act="quick" data-v="tasks">＋ משימה</button><button class="btn-ghost" data-act="quick" data-v="general">📝 הערה</button></div></div>' +
+      '<div class="sh"><span>היום והמשימות הקרובות</span><button class="btn-ghost" data-act="open" data-v="tasks" style="padding:6px 14px;font-size:.8rem">כל המשימות</button></div>' +
+      (soon.length ? soon.map(trow).join('') : '<div class="emptyx">אין כרגע משימות שמועדן היום או עבר. אמור ״משימה … מחר״ כדי להוסיף.</div>')
+  }
+
+  // ---------- sheets ----------
+  function sheetEl() { let s = $('crm-sheet'); if (!s) { s = document.createElement('div'); s.id = 'crm-sheet'; s.className = 'modalx'; s.hidden = true; document.body.appendChild(s) } return s }
+  function showSheet(h) { const s = sheetEl(); s.innerHTML = '<div class="dlg">' + h + '</div>'; s.hidden = false }
+  function closeSheet() { const s = $('crm-sheet'); if (s) s.hidden = true; sheet = null }
+  const head = (t, extra) => '<div class="dh"><h2>' + t + '</h2><div>' + (extra || '') + '<button class="chk" data-act="close">✕</button></div></div>'
+  function openDomain(id) { const d = dom(id); if (!d) return; if (d.link === 'shop') { closeSheet(); goStation('shop'); return } sheet = { type: 'dom', id }; renderSheet() }
+  function openHelp() { sheet = { type: 'help' }; testRes = null; renderSheet() }
+  function renderSheet() {
+    if (!sheet) return
+    if (sheet.type === 'dom') {
+      const d = dom(sheet.id); if (!d) return closeSheet()
+      const rs = crm.records.filter(r => r.domain === d.id), open = rs.filter(r => !r.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1), done = rs.filter(r => r.done)
+      showSheet(head(d.icon + ' ' + esc(d.name), DEF.some(x => x.id === d.id) ? '' : '<button class="chk" data-act="deldom" data-v="' + d.id + '" title="מחק תחום">🗑️ תחום</button>') +
+        '<div class="cmdin"><input id="dom-in" placeholder="הוסף ל' + esc(d.name) + '…" autocomplete="off"><button class="btn-primary" data-act="domadd" style="padding:10px 18px">＋</button></div>' +
+        (open.length ? open.map(trow).join('') : '<div class="emptyx">אין רשומות פתוחות. הוסף למעלה או אמור ״' + esc(d.name) + ' …״</div>') + (done.length ? '<div class="hg">✔ בוצעו (' + done.length + ')</div>' + done.map(trow).join('') : ''))
+    } else if (sheet.type === 'edit') {
+      const r = crm.records.find(x => x.id === sheet.id); if (!r) return closeSheet()
+      showSheet(head('✎ עריכה') + '<label class="fl">כותרת</label><input id="ed-t" value="' + esc(r.title) + '"><label class="fl">הערה</label><textarea id="ed-n" rows="3">' + esc(r.note || '') + '</textarea><label class="fl">תאריך יעד</label><input id="ed-d" type="date" value="' + esc(r.due || '') + '">' +
+        '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn-primary" style="flex:1" data-act="saveedit">שמור</button><button class="btn-ghost" data-act="del" data-v="' + r.id + '">🗑️</button></div>')
+    } else if (sheet.type === 'newdom') {
+      showSheet(head('＋ תחום חדש') + '<label class="fl">שם התחום</label><input id="nd-n" placeholder="למשל: ספקים, פרויקטים, רכב"><label class="fl">אייקון</label><div class="icos">' +
+        ['📁', '🏷️', '🚗', '🏠', '💼', '📞', '📦', '⭐', '🧾', '🔧'].map(i => '<button type="button" data-act="ico" data-v="' + i + '" class="' + (i === newIco ? 'on' : '') + '">' + i + '</button>').join('') + '</div><button class="btn-primary" style="width:100%;margin-top:16px" data-act="savedom">צור תחום</button>')
+    } else if (sheet.type === 'help') {
+      const e = voiceEnv(), sr = voiceSupported() && !(e.ios && e.standalone); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
+      const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
+        [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
+      const EX = [['✅ משימות', ['משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
+        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ על 🎙️ ואמור פקודה. המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה.</div>' +
+        EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
+        '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
+        '<button class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
+        (testRes ? '<div style="margin-top:8px">' + testRes.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '❌') + '</span><div><b>' + esc(c[1]) + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') + '</div><div class="hint">הבדיקה רצה על עותק – הנתונים שלך לא שונו.</div>' : ''))
+    }
+  }
+  function selfTest() {
+    const c0 = snap(), s0 = snapShop(), sc = scope, lastBak = last, res = [], ok = (v, n, d) => res.push([!!v, n, d])
+    try {
+      crm = { domains: DEF.map(d => ({ ...d })), records: [] }; shop = JSON.parse(s0); scope = null
+      route('משימה לבדוק ציוד מחר'); const a = crm.records[0]; ok(a && a.domain === 'tasks' && a.due === fmt(new Date(Date.now() + 864e5)), 'משימה עם תאריך', '״משימה לבדוק ציוד מחר״ → תחום משימות, יעד מחר')
+      route('לקוח חדש דנה כהן'); ok(crm.records[0] && crm.records[0].domain === 'clients' && /דנה/.test(crm.records[0].title), 'לקוח חדש', '״לקוח חדש דנה כהן״ → תחום לקוחות')
+      route('הערה: רעיון לפרויקט'); ok(crm.records[0] && crm.records[0].domain === 'general', 'הערה', '״הערה: …״ → תחום כללי')
+      route('סיימתי לבדוק ציוד'); ok(crm.records.some(r => r.domain === 'tasks' && r.done), 'סימון כבוצע', '״סיימתי …״ → המשימה סומנה')
+      route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
+      route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
+      route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
+    } catch (e) { ok(false, 'שגיאה בבדיקה', String(e.message || e)) }
+    crm = JSON.parse(c0); shop = JSON.parse(s0); scope = sc; last = lastBak; askText = null
+    try { saveShop(); localStorage.setItem('gl_crm', JSON.stringify(crm)) } catch (e) {}
+    pend && pendCancel(); const u = $('undo-toast'); if (u) u.remove(); renderShop(); return res
+  }
+
+  // ---------- events ----------
+  const send = () => { const i = $('home-cmd-in'), v = i.value.trim(); if (!v) return; clearTimeout(fbTimer); i.value = ''; const r = route(v); setStatus(v, r) }
+  document.addEventListener('click', e => {
+    if (e.target.id === 'crm-sheet') return closeSheet()
+    const el = e.target.closest('[data-act]'); if (!el) return
+    const a = el.dataset.act, v = el.dataset.v
+    if (a === 'voice') voiceToggle('home', t => { const r = route(t); setStatus(t, r); return r })
+    else if (a === 'send') send()
+    else if (a === 'help') openHelp()
+    else if (a === 'backup') backupAll()
+    else if (a === 'settings') goStation('settings')
+    else if (a === 'open') openDomain(v)
+    else if (a === 'quick') { openDomain(v); setTimeout(() => { const i = $('dom-in'); if (i) i.focus() }, 50) }
+    else if (a === 'newdom') { sheet = { type: 'newdom' }; renderSheet() }
+    else if (a === 'ico') { newIco = v; renderSheet() }
+    else if (a === 'savedom') { const r = newDomain($('nd-n').value, newIco); closeSheet(); setStatus('תחום חדש', r) }
+    else if (a === 'close') closeSheet()
+    else if (a === 'scopeoff') { scope = null; renderSticky() }
+    else if (a === 'askx') { askText = null; renderAsk() }
+    else if (a === 'askpick') { const t = askText, d = dom(v); askText = null; renderAsk(); if (d && t) setStatus(t, addRec(d, t)) }
+    else if (a === 'tog') { const r = crm.records.find(x => x.id === v); if (r) { last = snap(); r.done = !r.done; saveCrm() } }
+    else if (a === 'del') { const before = snap(); crm.records = crm.records.filter(x => x.id !== v); last = before; if (sheet && sheet.type === 'edit') sheet = { type: 'dom', id: sheet.back || 'tasks' }; saveCrm(); toastUndo('נמחק', () => { crm = JSON.parse(before); saveCrm() }) }
+    else if (a === 'edit') { const r = crm.records.find(x => x.id === v); if (r) { sheet = { type: 'edit', id: v, back: r.domain }; renderSheet() } }
+    else if (a === 'saveedit') { const r = crm.records.find(x => x.id === sheet.id); if (r) { last = snap(); r.title = $('ed-t').value.trim() || r.title; r.note = $('ed-n').value.trim(); r.due = $('ed-d').value; sheet = { type: 'dom', id: r.domain }; saveCrm() } }
+    else if (a === 'domadd') { const i = $('dom-in'), t = i && i.value.trim(); if (t) addRec(dom(sheet.id), t) }
+    else if (a === 'deldom') { if (confirm('למחוק את התחום ואת כל הרשומות שבו?')) { const before = snap(); crm.domains = crm.domains.filter(d => d.id !== v); crm.records = crm.records.filter(r => r.domain !== v); if (scope === v) scope = null; closeSheet(); last = before; saveCrm(); toastUndo('התחום נמחק', () => { crm = JSON.parse(before); saveCrm() }) } }
+    else if (a === 'ex') { closeSheet(); const i = $('home-cmd-in'); goStation('home'); i.value = v; i.focus() }
+    else if (a === 'runtest') { testRes = selfTest(); renderSheet() }
+  })
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return
+    if (e.target.id === 'home-cmd-in') send(); else if (e.target.id === 'dom-in') { const t = e.target.value.trim(); if (t) addRec(dom(sheet.id), t) }
+  })
+  $('home-cmd-in').addEventListener('input', () => { if (!fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if ($('home-cmd-in').value.trim().length >= 3) send() }, 3500) })
+  window.homeFallback = why => { fb = true; const i = $('home-cmd-in'); i.focus(); const st = $('home-status'); if (st) st.textContent = '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.' }
+
+  // voice button state (kind "home")
+  const _vu = window.voiceUI
+  window.voiceUI = (on, kind, label) => { if (kind === 'home') { const b = $('home-voice'); if (b) { b.classList.toggle('recording', on); b.textContent = on ? (label || '⏹️ מקשיב… (לחץ לעצירה)') : '🎙️ לחץ ודבר' } return } _vu(on, kind, label) }
+  const _vr = window.voiceReset
+  window.voiceReset = () => { _vr(); const b = $('home-voice'); if (b) { b.classList.remove('recording'); b.textContent = '🎙️ לחץ ודבר' } }
+  renderHome()
 })()
 </script>
 </body>
