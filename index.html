@@ -536,6 +536,60 @@ body.hide-home #tabbar [data-tab=home],body.hide-chat #tabbar [data-tab=chat],bo
 body.hide-chat #tab-0,body.hide-kb #tab-1,body.hide-report #tab-3,body.hide-eng #tab-4,body.hide-shop #tab-5{display:none!important}
 #ex-text{font-size:.82rem;line-height:1.5;resize:none}
 </style>
+<style id="ui13">
+/* ===== UI v13: Apple-Watch style ===== */
+[data-theme="watch"]{--bg:#000;--surface:#1c1c1e;--card:#1c1c1e;--line:#2c2c2e;--txt:#fff;--muted:#8e8e93;--accent:#32d74b;--accent2:#1fb83a;--on-accent:#00170a;--glow:#050505;--hero1:#1c1c1e;--hero2:#1c1c1e;--htxt:#fff;--shadow:none}
+html[data-theme="watch"] body{background:#000!important}
+*{font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Heebo,Arial,sans-serif}
+.wtop{display:flex;justify-content:space-between;align-items:flex-start;padding:calc(14px + env(safe-area-inset-top)) 2px 4px}
+.wtime{font-size:2.8rem;font-weight:700;line-height:1;letter-spacing:-1px;color:var(--accent);direction:ltr}
+.wdate{color:var(--muted);font-size:.9rem;margin-top:6px}
+.wtop .top-actions{gap:6px}.wtop .ib{width:40px;height:40px;box-shadow:none;background:var(--card)}
+.wr{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:32px;padding:16px;margin-top:10px}
+.wring{position:relative;width:118px;height:118px;flex-shrink:0}.wring svg{display:block}
+.wc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.wc b{font-size:2.3rem;line-height:1;font-weight:700;color:var(--txt)!important}.wc small{font-size:.7rem;color:var(--muted);margin-top:2px}
+.wside{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.wchip{display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--dc) 20%,var(--card));border-radius:18px;padding:9px 12px;font-weight:600;color:var(--txt);text-align:right;font-size:.92rem}
+.wchip b{margin-inline-start:auto;font-size:1.15rem;color:var(--dc)}
+.wgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.wt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px;border-radius:28px;background:color-mix(in srgb,var(--dc) 20%,var(--card));color:var(--txt);text-align:right;min-height:100px}
+.wt .wi{width:40px;height:40px;border-radius:50%;background:var(--dc);display:grid;place-items:center;font-size:1.25rem}
+.wt b{font-size:1.02rem}.wt em{position:absolute;top:12px;left:16px;font-style:normal;font-size:1.6rem;font-weight:700;color:var(--dc)}
+.wt.add{background:transparent;border:2px dashed var(--line);color:var(--muted);align-items:center;justify-content:center;min-height:100px}.wt.add .wi{background:var(--line);color:var(--txt)}
+.wsec{margin:20px 4px 2px;font-weight:700;color:var(--muted);font-size:.85rem}
+.wrow{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--dc) 14%,var(--card));border-radius:22px;padding:8px 12px;margin-top:8px}
+.wrow .tt{flex:1;min-width:0;cursor:pointer}.wrow small{color:var(--dc);font-weight:600;display:block}
+.wempty{background:var(--card);border-radius:22px;padding:18px;text-align:center;color:var(--muted);margin-top:8px;font-size:.9rem}
+#tabbar{left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));padding:6px 8px;border-radius:34px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,transparent)}
+#tabbar button span{display:none}
+#tabbar button{min-height:46px;justify-content:center}
+#tabbar button i{font-size:25px}
+#tabbar button.on{background:color-mix(in srgb,var(--accent) 20%,transparent);border-radius:22px;color:var(--accent)}
+#tabbar #fab{margin-top:-26px}
+#floatbar{bottom:calc(88px + env(safe-area-inset-bottom))}
+.station{padding-bottom:calc(100px + env(safe-area-inset-bottom))!important}
+body.st-home .station[data-id=home]{padding-bottom:calc(168px + env(safe-area-inset-bottom))!important}
+</style>
+<style id="ui14">
+/* ===== UI v14: roomy teach/answer bar (the input used to shrink to a tiny pill) ===== */
+#active-learn-bar{padding:12px 14px!important}
+#active-learn-bar>div{flex-wrap:wrap;gap:10px}
+#active-learn-bar>div>span{flex:1 0 100%;font-size:.95rem;line-height:1.5}
+#active-learn-bar #active-learn-input{flex:1 1 0;min-width:0;width:auto;height:48px;padding:10px 18px!important;font-size:16px!important;border-radius:999px!important;background:var(--surface)!important;border:1px solid var(--accent)!important;color:var(--txt)!important}
+#active-learn-bar button{flex-shrink:0;min-height:44px;padding:0 16px;border-radius:999px}
+#user-input{font-size:16px!important;color:var(--txt)!important}
+</style>
+<style id="ui15">
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chat-bubble-ai .clarify{white-space:normal;text-align:right;line-height:1.35;padding:7px 12px;max-width:100%}
+.hrow{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px 12px;margin-top:8px}
+.hrow.cur{border-color:var(--accent)}
+.hrow .ht{flex:1;min-width:0;cursor:pointer}.hrow .ht b{display:block;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .ht small{display:block;color:var(--muted);font-size:.74rem}.hrow .hs{display:block;color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.hrow button{font-size:1.1rem;min-width:36px;min-height:36px}
+#hist-q{border-radius:999px!important;padding:11px 18px}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -2915,11 +2969,11 @@ window.onload = () => {
   const html = document.documentElement
   html.classList.remove('light'); try { localStorage.removeItem('gl_theme') } catch (e) {}
   window.applyTheme = () => html.classList.remove('light')
-  const T = [['night', '🌙 לילה כחול', '#101827'], ['forest', '🌲 יער', '#0b1510'], ['dusk', '🔮 דמדומים', '#130f24'], ['graphite', '⚫ גרפיט', '#000000'],
+  const T = [['watch', '⌚ ווטש', '#000000'], ['night', '🌙 לילה כחול', '#101827'], ['forest', '🌲 יער', '#0b1510'], ['dusk', '🔮 דמדומים', '#130f24'], ['graphite', '⚫ גרפיט', '#000000'],
     ['paper', '📄 נייר', '#f4f5f7'], ['sunrise', '🌅 זריחה', '#fff6ec'], ['mint', '🌿 מנטה', '#effaf6']]
   const LIGHT = ['paper', 'sunrise', 'mint']
   const saved = () => { try { return localStorage.getItem('gl_palette') } catch (e) { return null } }
-  const cur = () => T.some(t => t[0] === saved()) ? saved() : 'night'
+  const cur = () => T.some(t => t[0] === saved()) ? saved() : 'watch'
   window.setPalette = id => {
     const t = T.find(x => x[0] === id) || T[0]
     html.dataset.theme = t[0]; try { localStorage.setItem('gl_palette', t[0]) } catch (e) {}
@@ -3175,7 +3229,7 @@ window.onload = () => {
       const o = sheet, doms = crm.domains.filter(d => d.link !== 'shop')
       const tg = (k, label) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="extoggle" data-v="' + k + '" aria-pressed="' + !!o[k] + '"></button></div>'
       showSheet(head('📤 ייצוא משימות') + '<label class="fl">מה לייצא</label><select id="ex-dom"><option value="all">כל התחומים</option>' + doms.map(d => '<option value="' + d.id + '"' + (o.dom === d.id ? ' selected' : '') + '>' + d.icon + ' ' + esc(d.name) + '</option>').join('') + '</select>' +
-        tg('done', 'כולל משימות שבוצעו') + tg('shop', 'כולל רשימת קניות') + '<label class="fl">תצוגה מקדימה</label><textarea id="ex-text" rows="9" readonly>' + esc(exportText(o)) + '</textarea>' +
+        tg('done', 'כולל משימות שבוצעו') + tg('shop', 'כולל רשימת קניות') + '<label class="fl">תצוגה מקדימה</label><textarea id="ex-text" rows="5" readonly>' + esc(exportText(o)) + '</textarea>' +
         '<div class="mgrid" style="margin-top:12px"><button class="btn-primary" data-act="exwa">💬 וואטסאפ</button><button class="btn-ghost" data-act="exol">📧 Outlook</button><button class="btn-ghost" data-act="exmail">✉️ מייל</button><button class="btn-ghost" data-act="exics">📅 יומן (ICS)</button></div>' +
         '<button class="btn-ghost" style="width:100%;margin-top:8px" data-act="excopy">📋 העתק טקסט</button><div class="hint" style="margin-top:8px">קובץ היומן כולל תזכורת 15 דקות לפני כל משימה עם שעה, ונפתח ב-Outlook או ביומן של האייפון.</div>')
     } else if (sheet.type === 'brief') {
@@ -3373,6 +3427,7 @@ window.onload = () => {
   for (let i = STATIONS.length - 1; i >= 0; i--) if (ui.hideTab.includes(STATIONS[i].id)) STATIONS.splice(i, 1)
   { const p2 = $('panel-2')
     if (p2) { const d = document.createElement('details'); d.className = 'grp'; d.id = 'vis-grp'; d.innerHTML = '<summary>🧩 מה להציג</summary><div class="grp-b" id="vis-body"></div>'; p2.insertBefore(d, p2.children[1] || null); renderVis() } }
+  window.__crm = { data: () => crm, dom, visDom, today, fmt, dueLabel, cnt, renderSticky, esc }
   renderHome()
 })()
 
@@ -3490,6 +3545,340 @@ window.onload = () => {
 })()
 /* ui11-marker */
 /* ui12-marker */
+
+;(function () {                                                   // ui13-marker: Watch-style home
+  const $ = id => document.getElementById(id), C = window.__crm
+  const COL = { tasks: '#32d74b', clients: '#0a84ff', dept: '#ff9f0a', shopping: '#ff375f', general: '#bf5af2' }, EXTRA = ['#64d2ff', '#ffd60a', '#ac8e68', '#5e5ce6']
+  const colorOf = (d, i) => COL[d.id] || EXTRA[i % EXTRA.length]
+  const clock = () => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const ring = (pct, size, sw) => { const r = (size - sw) / 2, c = 2 * Math.PI * r
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '"><circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="var(--accent)" stroke-opacity=".22" stroke-width="' + sw + '"/>' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="var(--accent)" stroke-width="' + sw + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - pct)).toFixed(1) + '" transform="rotate(-90 ' + size / 2 + ' ' + size / 2 + ')"/></svg>' }
+  // top: big watch-face time + date, small icon buttons
+  const tb = document.querySelector('#home-panel .topbar')
+  if (tb) { const w = document.createElement('div'); w.className = 'wtop'
+    w.innerHTML = '<div><div class="wtime" id="wtime">' + clock() + '</div><div class="wdate">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div></div>' +
+      '<div class="top-actions"><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div>'
+    tb.replaceWith(w) }
+  setInterval(() => { const t = $('wtime'); if (t) t.textContent = clock() }, 20000)
+  window.renderHome = function () {
+    const b = $('home-body'); if (!b) return; C.renderSticky()
+    const crm = C.data(), t = C.today(), tomorrow = C.fmt(new Date(Date.now() + 864e5))
+    const open = crm.records.filter(r => !r.done && r.domain !== 'clients' || (!r.done && r.due))
+    const due = open.filter(r => r.due && r.due <= t), doneToday = crm.records.filter(r => r.done && r.due === t).length, total = due.length + doneToday
+    const pct = total ? doneToday / total : 1
+    const side = [['tasks', '✅', 'משימות', open.length], ['clients', '👥', 'לקוחות', crm.records.filter(r => r.domain === 'clients').length], ['shopping', '🛒', 'קניות', remaining().length]]
+      .filter(x => { const d = C.dom(x[0]); return d && C.visDom(d) }).map(x => '<button type="button" class="wchip" style="--dc:' + COL[x[0]] + '" data-act="open" data-v="' + x[0] + '"><span>' + x[1] + '</span>' + x[2] + '<b>' + x[3] + '</b></button>').join('')
+    const doms = crm.domains.filter(C.visDom)
+    const soon = open.filter(r => r.due).sort((a, c) => (a.due + (a.time || '99')) < (c.due + (c.time || '99')) ? -1 : 1).slice(0, 4)
+    const idx = d => crm.domains.indexOf(d)
+    b.innerHTML = '<div class="wr"><div class="wring">' + ring(pct, 118, 14) + '<div class="wc"><b>' + (total && due.length ? due.length : '✓') + '</b><small>' + (due.length ? 'להיום' : 'הכול בוצע') + '</small></div></div><div class="wside">' + side + '</div></div>' +
+      '<div class="wgrid">' + doms.map(d => '<button type="button" class="wt" style="--dc:' + colorOf(d, idx(d)) + '" data-act="open" data-v="' + d.id + '"><span class="wi">' + d.icon + '</span><b>' + C.esc(d.name) + '</b><em>' + C.cnt(d) + '</em></button>').join('') +
+      '<button type="button" class="wt add" data-act="newdom"><span class="wi">＋</span><b>תחום חדש</b></button></div>' +
+      '<div class="wsec">היום והקרוב</div>' +
+      (soon.length ? soon.map(r => { const d = C.dom(r.domain) || {}; return '<div class="wrow" style="--dc:' + colorOf(d, idx(d)) + '"><button class="chk" data-act="tog" data-v="' + r.id + '">⬜</button><div class="tt" data-act="edit" data-v="' + r.id + '"><div>' + (r.pri === 'urgent' ? '🔴 ' : r.pri === 'high' ? '🟠 ' : '') + C.esc(r.title) + '</div><small>' + C.esc(C.dueLabel(r.due) + (r.time ? ' · ' + r.time : '')) + '</small></div></div>' }).join('')
+        : '<div class="wempty">אין משימות מתוזמנות 🎉<br>אמור ״משימה … מחר בשעה 14:00״</div>')
+  }
+  renderHome()
+})()
+;(function () {                                                   // chat-engine-v2-marker: sessions + conversational engine + learning from dialogue
+  const $ = id => document.getElementById(id), esc = escHtml
+  const attr = s => esc(String(s)).replace(/"/g, '&quot;')
+  const pick = a => a[Math.floor(Math.random() * a.length)]
+  const nrm = t => normPhrase(t)
+  const toText = h => String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+
+  // =================== SESSIONS (history) ===================
+  let S = (() => { try { const x = JSON.parse(localStorage.getItem('gl_sessions')); if (x && Array.isArray(x.list)) return x } catch (e) {} return { list: [], cur: null } })()
+  const newCtx = () => ({ lastQ: '', lastUserQ: '', lastId: null, topic: '', opts: [], offer: null, elab: {}, turn: 0 })
+  const sid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)
+  const curS = () => S.list.find(x => x.id === S.cur)
+  const saveS = () => { try { localStorage.setItem('gl_sessions', JSON.stringify(S)) } catch (e) { toast('השמירה נכשלה – האחסון מלא', '#ef4444') } }
+  const titleOf = msgs => { const u = (msgs || []).find(m => m.role === 'user'); return u ? toText(u.content).replace(/\s+/g, ' ').trim().slice(0, 42) : 'שיחה חדשה' }
+  if (!S.list.length || !curS()) {
+    if (!S.list.length) S.list.push({ id: sid(), title: titleOf(chat), ts: Date.now(), upd: Date.now(), msgs: chat, ctx: newCtx() })
+    S.cur = S.list[0].id
+  }
+  { const s = curS(); if (s && s.msgs !== chat) chat = s.msgs && s.msgs.length >= chat.length ? s.msgs : chat }
+  let ctx = (curS() && curS().ctx) || newCtx(); if (!ctx.elab) ctx.elab = {}
+  function sync() { const s = curS(); if (!s) return; s.msgs = chat; s.upd = Date.now(); s.ctx = ctx; const t = titleOf(chat); if (t !== 'שיחה חדשה') s.title = t; saveS() }
+  const _save = window.save; window.save = function () { _save(); sync() }
+  const greeting = () => 'שלום! 👋 אני <b>KMS-CRM</b>. אפשר לשאול אותי, ללמד אותי תוך כדי שיחה, או לבקש דוגמאות.' + chips([chip('💡 דוגמאות', 'ask', 'דוגמאות'), chip('איך מלמדים אותך?', 'ask', 'איך מלמדים אותך'), chip('מה אתה יודע?', 'ask', 'מה אתה יודע')])
+  function newSession() {
+    sync(); const id = sid(); chat = [{ role: 'ai', content: greeting(), ts: Date.now() }]
+    S.list.unshift({ id, title: 'שיחה חדשה', ts: Date.now(), upd: Date.now(), msgs: chat, ctx: ctx = newCtx() }); S.cur = id
+    dismissActiveLearning(); save(); renderMessages()
+  }
+  function openSession(id) {
+    const s = S.list.find(x => x.id === id); if (!s) return
+    sync(); S.cur = id; chat = s.msgs; ctx = s.ctx || newCtx(); if (!ctx.elab) ctx.elab = {}
+    dismissActiveLearning(); save(); renderMessages()
+  }
+  function delSession(id) {
+    const snap = JSON.stringify(S), isCur = S.cur === id
+    S.list = S.list.filter(x => x.id !== id)
+    if (!S.list.length) { S.cur = null; newSession() } else if (isCur) { S.cur = S.list[0].id; chat = S.list[0].msgs; ctx = S.list[0].ctx || newCtx(); renderMessages(); save() } else saveS()
+    toastUndo('השיחה נמחקה', () => { S = JSON.parse(snap); const s = curS(); chat = s.msgs; ctx = s.ctx || newCtx(); save(); renderMessages(); renderHist() })
+  }
+  const dstr = ts => new Date(ts).toLocaleString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  function sessText(s) { return 'שיחה: ' + s.title + '\nתאריך: ' + new Date(s.ts).toLocaleString('he-IL') + '\n\n' + s.msgs.map(m => (m.role === 'user' ? 'אני: ' : 'KMS: ') + toText(m.content).trim()).join('\n\n') }
+  async function exportSess(s) {
+    const text = sessText(s), name = 'kms-chat-' + new Date(s.ts).toISOString().slice(0, 10) + '.txt', f = new File([text], name, { type: 'text/plain' })
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: s.title }); return } } catch (e) { if (e && e.name === 'AbortError') return }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href) }, 1500)
+  }
+  // ---- history sheet
+  let hq = ''
+  function histEl() { let e = $('hist-sheet'); if (!e) { e = document.createElement('div'); e.id = 'hist-sheet'; e.className = 'modalx'; e.hidden = true; document.body.appendChild(e)
+    e.addEventListener('click', ev => {
+      if (ev.target === e) return closeHist()
+      const x = ev.target.closest('[data-hx]'); if (!x) return
+      const row = ev.target.closest('[data-sid]'), id = row && row.dataset.sid, a = x.dataset.hx
+      if (a === 'close') closeHist(); else if (a === 'new') { newSession(); closeHist() } else if (a === 'open') { openSession(id); closeHist() }
+      else if (a === 'del') delSession(id).constructor === Promise || renderHist(); else if (a === 'exp') { const s = S.list.find(z => z.id === id); if (s) exportSess(s) }
+    })
+    e.addEventListener('input', ev => { if (ev.target.id === 'hist-q') { hq = ev.target.value; renderHist(true) } }) } return e }
+  function renderHist(keepFocus) {
+    const e = histEl(), q = nrm(hq)
+    const rows = S.list.slice().sort((a, b) => b.upd - a.upd).filter(s => !q || nrm(s.title).includes(q) || s.msgs.some(m => nrm(toText(m.content)).includes(q)))
+    const body = rows.length ? rows.map(s => { const last = [...s.msgs].reverse().find(m => m.role === 'ai' || m.role === 'user'); return '<div class="hrow' + (s.id === S.cur ? ' cur' : '') + '" data-sid="' + s.id + '"><div class="ht" data-hx="open"><b>' + esc(s.title) + '</b><small>' + dstr(s.upd) + ' · ' + s.msgs.length + ' הודעות</small><span class="hs">' + esc(toText(last && last.content).replace(/\s+/g, ' ').slice(0, 70)) + '</span></div><button data-hx="exp" title="ייצוא">📤</button><button data-hx="del" title="מחיקה">🗑️</button></div>' }).join('') : '<div class="emptyx">לא נמצאו שיחות.</div>'
+    if (keepFocus && $('hist-list')) { $('hist-list').innerHTML = body; return }
+    e.innerHTML = '<div class="dlg"><div class="grab"></div><div class="dh"><h2>🕘 היסטוריית שיחות</h2><div><button class="done" data-hx="close">סגור</button></div></div><input id="hist-q" placeholder="חיפוש בשיחות…" value="' + attr(hq) + '" autocomplete="off"><button class="btn-primary" style="width:100%;margin:10px 0" data-hx="new">➕ שיחה חדשה</button><div id="hist-list">' + body + '</div></div>'
+  }
+  function openHist() { hq = ''; renderHist(); histEl().hidden = false }
+  function closeHist() { const e = $('hist-sheet'); if (e) e.hidden = true }
+  { const bar = document.querySelector('#main-area > div:first-child .flex.items-center.gap-4')
+    if (bar) { const mk = (t, title, f) => { const b = document.createElement('button'); b.textContent = t; b.title = title; b.className = 'hover:text-white'; b.onclick = f; return b }
+      bar.prepend(mk('➕', 'שיחה חדשה', newSession), mk('🕘', 'היסטוריית שיחות', openHist)) } }
+  window.chatHistory = { open: openHist, newSession, list: () => S.list }
+
+  // =================== LEARNING ===================
+  const LU = {}; let luN = 0
+  const pushUndo = () => { const k = 'u' + (++luN); LU[k] = JSON.stringify({ kb, synonymMap }); const ks = Object.keys(LU); if (ks.length > 25) delete LU[ks[0]]; return k }
+  window.undoLearn = function (k) {
+    const s = LU[k]; if (!s) { toast('אי אפשר לבטל (כבר בוטל)', '#f59e0b'); return }
+    const o = JSON.parse(s); kb = o.kb; synonymMap = o.synonymMap; synIndex = null; try { localStorage.setItem('gl_syns', JSON.stringify(synonymMap)) } catch (e) {}
+    delete LU[k]; save(); renderKB(); updateBadge(); chat.push({ role: 'ai', content: '↩️ ביטלתי את הלמידה האחרונה.', ts: Date.now() }); save(); renderMessages()
+  }
+  function addSyn(a, b) { synonymMap[a] = [...new Set([...(synonymMap[a] || []), b])]; synonymMap[b] = [...new Set([...(synonymMap[b] || []), a])]; try { localStorage.setItem('gl_syns', JSON.stringify(synonymMap)) } catch (e) {} synIndex = null }
+  function learnItem(q, a, opt) {
+    opt = opt || {}; q = String(q || '').trim().replace(/^["״“]|["״”]$/g, ''); a = String(a || '').trim(); if (!q || !a) return null
+    const u = pushUndo(); let item, mode
+    const dup = opt.targetId ? { id: opt.targetId, score: 1 } : semanticSearch(q, kb)[0]
+    if (dup && dup.score >= 0.85 && kb.find(i => i.id === dup.id)) { item = kb.find(i => i.id === dup.id); item.a = a; item.ts = Date.now(); mode = 'upd' }
+    else { item = { q, a, ts: Date.now(), id: newId(), source: opt.source || 'chat' }; kb.unshift(item); mode = 'new' }
+    ;(opt.aliases || []).forEach(al => { al = String(al).trim(); if (al && al !== item.q) { item.aliases = item.aliases || []; if (!item.aliases.includes(al) && item.aliases.length < 8) item.aliases.push(al) } })
+    if (opt.syn) addSyn(opt.syn[0], opt.syn[1])
+    if (embedder) embed(item.q).then(v => { item.vec = v.map(x => +x.toFixed(4)); save() })
+    save(); renderKB(); updateBadge()
+    if (!opt.quiet) { ctx.lastId = item.id; ctx.topic = item.q; ctx.lastQ = item.q; activeTopic = item.q; toastUndo(mode === 'upd' ? 'התשובה עודכנה' : 'נוסף לבסיס הידע', () => window.undoLearn(u)) }
+    return { item, mode, u }
+  }
+  function learnCard(r) {
+    if (!r) return 'לא הצלחתי להבין מה ללמוד. למשל: ״תלמד ש-חלב זה מוצר חלבי״.'
+    return '✅ ' + (r.mode === 'upd' ? 'עדכנתי' : 'למדתי') + ':<br><b>' + esc(r.item.q) + '</b><br>→ ' + fmtText(r.item.a) +
+      chips([chip('↩️ בטל', 'undo', r.u), chip('✏️ תקן', 'edit', r.item.id), chip('🔎 נסה אותי', 'ask', r.item.q)])
+  }
+  const syn1 = (x, y) => (x.trim().split(/\s+/).length === 1 && y.trim().split(/\s+/).length === 1) ? [x.trim(), y.trim()] : null
+  function teachCmd(raw) {
+    const t = raw.trim().replace(/[.!]+$/, ''); let m
+    if ((m = t.match(/^(?:תוסיף|תוסיפי|הוסף|הוסיפי)\s+(?:לזה|לה|לו|על\s+זה)\s+(?:ש-?\s*)?(.+)$/))) {
+      const it = kb.find(i => i.id === ctx.lastId); if (!it) return 'על מה להוסיף? שאל אותי קודם משהו, ואז ״תוסיף לזה ש…״.'
+      return learnCard(learnItem(it.q, it.a.replace(/[.\s]+$/, '') + '. ' + m[1].trim() + '.', { targetId: it.id }))
+    }
+    if ((m = t.match(/^(?:מעכשיו\s+)?(?:כששואלים|כשואלים|כשאני\s+שואל(?:ת)?|כשמישהו\s+שואל)(?:\s+אותך)?\s+(.+?)\s+(?:ה?תשובה(?:\s+היא|\s+תהיה)?|תענה(?:\s+לי)?|תשיב(?:\s+לי)?|תגיד(?:\s+לי)?)\s*[:\-–—]?\s*(.+)$/)))
+      return learnCard(learnItem(m[1], m[2], { aliases: [m[1]] }))
+    if ((m = t.match(/^(?:תלמד|תלמדי|למד|למדי)(?:\s+אותי)?\s+ש-?\s*(.+?)\s+(זה|זאת|הוא|היא|הם|הן)\s+(.+)$/))) {
+      const x = m[1].trim(), cop = m[2], y = m[3].trim()
+      return learnCard(learnItem('מה ' + (cop === 'זה' || cop === 'זאת' ? 'זה ' : 'זה ') + x, x + ' ' + cop + ' ' + y, { aliases: [x, 'מהו ' + x, 'מי זה ' + x], syn: syn1(x, y) }))
+    }
+    if ((m = t.match(/^(?:תלמד|תלמדי|למד|למדי)(?:\s+אותי)?\s*:\s*(.+?)\s*(?:—|–|\s-\s|=|→|:)\s*(.+)$/)) || (m = t.match(/^(?:תלמד|תלמדי|למד|למדי)\s+(.+?)\s*(?:—|–|=|→|:)\s*(.+)$/))) {
+      const q = m[1].trim(), al = q.split(/\s+/).length <= 4 ? ['מה זה ' + q, 'מהו ' + q] : []
+      return learnCard(learnItem(q, m[2], { aliases: al, syn: syn1(q, m[2]) }))
+    }
+    if ((m = t.match(/^(?:תזכור|תזכרי|זכור|זכרי|תשמור|שמור)(?:\s+לי)?\s+ש-?\s*(.+)$/))) {
+      const st = m[1].trim(), c = st.match(/^(.+?)\s+(?:היא|הוא|זה|זאת|הם|הן)\s+(.+)$/)
+      if (c) return learnCard(learnItem('מה ' + (/^ה/.test(c[1]) ? '' : 'זה ') + c[1].trim(), st, { aliases: [c[1].trim()] }))
+      return learnCard(learnItem(st.slice(0, 60), st))
+    }
+    if (/^(?:תלמד|תלמדי|למד|למדי)(?:\s+אותי)?$/.test(t)) return examplesCard('learn')
+    return null
+  }
+  // corrections of the previous answer
+  function corrCmd(raw) {
+    if (!ctx.lastUserQ) return null
+    const t = raw.trim().replace(/[.!]+$/, ''); let m
+    if ((m = t.match(/^(?:(?:לא|טעות|לא\s+נכון|שגוי|לא\s+מדויק)[,.\s:–-]+)+(?:ה?נכון|ה?תשובה(?:\s+ה?נכונה)?)(?:\s+(?:הוא|היא|זה))?\s*[:,\-–—]?\s*(.+)$/)) ||
+        (m = t.match(/^(?:ה?נכון|ה?תשובה\s+ה?נכונה)\s+(?:הוא|היא|זה)\s+(.+)$/))) {
+      const it = kb.find(i => i.id === ctx.lastId)
+      return learnCard(it ? learnItem(it.q, m[1], { targetId: it.id }) : learnItem(ctx.lastUserQ, m[1], { aliases: [ctx.lastUserQ] }))
+    }
+    if ((m = t.match(/^(?:לא[,.\s]+)?(?:אני\s+)?התכוונתי\s+(?:ל-?|ש-?)?\s*(.+)$/))) return { relink: m[1].trim() }
+    return null
+  }
+  // =================== CONVERSATION ===================
+  const chip = (label, a, q) => '<button class="clarify" data-a="' + a + '" data-q="' + attr(q || '') + '" onclick="chatAct(this)">' + esc(label) + '</button>'
+  const chips = arr => arr.length ? '<div class="chips">' + arr.join('') + '</div>' : ''
+  window.chatAct = function (b) {
+    const a = b.dataset.a, q = b.dataset.q
+    if (a === 'ask') ask(q)
+    else if (a === 'elab') ask('תפרט')
+    else if (a === 'undo') window.undoLearn(q)
+    else if (a === 'teach') openTeach(q, '')
+    else if (a === 'edit') { const it = kb.find(i => i.id === q); if (it) openTeach(it.q, it.a) }
+    else if (a === 'rephrase') { const i = $('user-input'); if (i) i.focus() }
+  }
+  function openTeach(q, prefill) {
+    openLearnBar(q); const bar = $('active-learn-bar'); if (!bar) return
+    const sp = bar.querySelector('span'); if (sp) sp.textContent = '✍️ מה התשובה ל«' + (q.length > 46 ? q.slice(0, 46) + '…' : q) + '»?'
+    const i = $('active-learn-input'); if (i) { i.value = prefill || ''; i.focus() }
+  }
+  window.submitActiveLearning = function () {
+    const inp = $('active-learn-input'), ans = inp && inp.value.trim(), q = activeLearningQ; if (!ans || !q) return
+    const r = learnItem(q, ans, { source: 'active', aliases: [q] }); dismissActiveLearning()
+    chat.push({ role: 'ai', content: learnCard(r), ts: Date.now() }); save(); renderMessages()
+  }
+  window.addKnowledge = function (q, a, source) { const r = learnItem(q, a, { source, quiet: true }); return r && r.item }
+  const isQ = m => { const n = nrm(m); return /[?？]/.test(m) || /^(?:מה|מי|איך|למה|מתי|איפה|כמה|האם|איזה|איזו|אילו|מדוע|לאן|מאיפה|אפשר|יש)(?:\s|$)/.test(n) || n.split(' ').length >= 4 }
+  function examplesCard(focus) {
+    const g = (t, a) => '<div style="margin-top:10px"><b>' + t + '</b>' + chips(a.map(x => chip(x, 'ask', x))) + '</div>'
+    return '💡 <b>דוגמאות להקלדה</b> (לחץ כדי לשלוח):' +
+      g('🎓 ללמד אותי', ['תלמד ש-מק״ט 123 זה מחבר 12 פינים', 'למד: שעות פעילות — ראשון עד חמישי 8:00 עד 17:00', 'תזכור שהסיסמה של הוואי-פיי היא 4821', 'מעכשיו כששואלים מי המנהל התשובה היא דנה כהן']) +
+      g('🔎 לשאול', ['מה זה מק״ט 123', 'מה הסיסמה של הוואי-פיי', 'מי המנהל', 'מה שעות פעילות']) +
+      g('↪️ שאלות המשך (אחרי תשובה)', ['תפרט', 'תוסיף לזה שיש לו גם מגן', 'ומה עם שעות פעילות', 'לגבי זה — כמה פינים', 'מה זאת אומרת']) +
+      g('✏️ לתקן', ['טעות, הנכון הוא מחבר 14 פינים', 'לא, התכוונתי לשעות פעילות'])
+  }
+  // answer card -------------------------------------------------
+  function card(best, original, matches, kind) {
+    const full = sentences(best.a), picked = sentences(pickSentences(best.a, original)), show = picked.slice(0, 2), more = full.length > show.length
+    const others = (matches || []).filter(x => x.id !== best.id && x.score >= 0.12).slice(0, 2)
+    let intro = ''
+    if (kind === 'med') intro = pick(['נראה לי שהתכוונת ל«' + best.q + '». ', 'הכי קרוב למה שמצאתי («' + best.q + '»): ', 'לפי מה שלימדת אותי על «' + best.q + '»: '])
+    else if (kind === 'low') intro = 'לא לגמרי בטוח שזה מה שחיפשת, אבל זה הכי קרוב ש' + 'יש לי («' + best.q + '»): '
+    else if (kind === 'amb') intro = 'אני מניח שהתכוונת ל«' + best.q + '»: '
+    else if (kind === 'sent') intro = pick(['מצאתי את זה בתוך מה שלימדת אותי: ', 'לפי מה שנשמר אצלי: '])
+    else if (kind === 'strong' && Math.random() < 0.3) intro = pick(['בטח: ', 'הנה: ', 'לפי מה שלימדת אותי: '])
+    const body = fmtText(toSecondPerson(show.join(' ') || best.a))
+    const cs = []
+    if (more) cs.push(chip('📖 תפרט', 'elab'))
+    others.forEach(o => cs.push(chip('גם: ' + o.q, 'ask', o.q)))
+    if (kind === 'med' || kind === 'low' || kind === 'amb') cs.push(chip('✍️ זו לא התשובה – אלמד', 'teach', original))
+    ctx.lastId = best.id; ctx.topic = best.q; ctx.lastQ = best.q; ctx.lastUserQ = original; ctx.opts = others.map(o => ({ id: o.id, q: o.q })); ctx.offer = more ? { type: 'elab', turn: ctx.turn } : null
+    activeTopic = best.q; lastAnswer = { id: best.id, userQ: original }
+    let out = esc(intro) + body + chips(cs)
+    if (!best.approved) out += '<div style="margin-top:6px;font-size:12px"><button onclick="feedback(\'' + best.id + '\',1,this)">👍</button> <button onclick="feedback(\'' + best.id + '\',-1,this)">👎</button></div>' +
+      '<details style="margin-top:6px;font-size:11px;opacity:.7"><summary style="cursor:pointer">למה התשובה הזו?</summary>מילים תואמות: ' + esc((best.matched || []).join(', ') || '—') + '<br>ציון: ' + best.score.toFixed(2) + ' • משוב: ' + (best.fb || 0) + '<br>שאלה בבסיס: ' + esc(best.q) + '</details>'
+    return out
+  }
+  function none(original, matches) {
+    const near = (matches || []).slice(0, 3)
+    ctx.opts = near.map(o => ({ id: o.id, q: o.q })); ctx.offer = { type: 'teach', q: original, turn: ctx.turn }; ctx.lastUserQ = ''
+    const cs = near.map(o => chip(o.q, 'ask', o.q))
+    if (!isQ(original)) return pick(['לא בטוח שהבנתי את ״' + esc(original) + '״ 🙂', 'הממ, ״' + esc(original) + '״ לא ברור לי עד הסוף.']) + (near.length ? ' אולי התכוונת ל:' : ' אפשר לנסח אחרת, או ללמד אותי:') + chips([...cs, chip('✍️ אלמד אותך', 'teach', original), chip('💡 דוגמאות', 'ask', 'דוגמאות')])
+    return pick(['לא מצאתי לזה תשובה בבסיס הידע שלי.', 'את זה אני עוד לא יודע.', 'אין לי על זה מידע עדיין.']) + (near.length ? ' אולי אחד מאלה קרוב:' : '') + chips([...cs, chip('✍️ אני אלמד אותך', 'teach', original), chip('🔄 אנסח אחרת', 'rephrase')])
+  }
+  function elaborate(simpler) {
+    const it = kb.find(i => i.id === ctx.lastId)
+    if (!it) return 'על מה להרחיב? שאל אותי משהו קודם 🙂' + chips([chip('💡 דוגמאות', 'ask', 'דוגמאות')])
+    const full = sentences(it.a), seen = ctx.elab[it.id] || 0; ctx.elab[it.id] = full.length; ctx.offer = null
+    const body = fmtText(toSecondPerson(it.a))
+    if (simpler) return 'בוא ננסה שוב, בצורה מלאה:<br>' + body + chips([chip('✍️ לתקן / להוסיף', 'edit', it.id)])
+    if (seen >= full.length && full.length <= 1) return 'זה כל מה שיש לי על «' + esc(it.q) + '»:<br>' + body + chips([chip('➕ להוסיף פרט', 'edit', it.id)])
+    return 'הנה הפירוט המלא על «' + esc(it.q) + '»:<br>' + body + chips([chip('➕ להוסיף פרט', 'edit', it.id)])
+  }
+  const ORD = { ראשון: 0, הראשון: 0, ראשונה: 0, הראשונה: 0, שני: 1, השני: 1, שנייה: 1, השנייה: 1, שניה: 1, השניה: 1, שלישי: 2, השלישי: 2, שלישית: 2, השלישית: 2, אחרון: -1, האחרון: -1, אחרונה: -1, האחרונה: -1 }
+  async function followUp(t) {
+    const n = nrm(t), w = n.split(' ')
+    if (/^(?:אני\s+)?(?:לא\s+הבנתי|לא\s+ברור)|^מה\s+זאת\s+אומרת|^תסביר(?:י)?\s+שוב|^תסביר(?:י)?$/.test(n)) return elaborate(true)
+    if (/^(?:תפרט|תפרטי|תרחיב|תרחיבי|עוד(?:\s+קצת)?|ספר\s+לי\s+עוד|תספר\s+לי\s+עוד|המשך|תמשיך|ועוד|פרט|הרחב|תסביר(?:\s+יותר)?|תן\s+פרטים|פרטים)$/.test(n)) return elaborate(false)
+    if (/^(?:שוב|תחזור\s+על\s+זה|תחזרי\s+על\s+זה|מה\s+אמרת)$/.test(n)) { const it = kb.find(i => i.id === ctx.lastId); if (it) return fmtText(toSecondPerson(it.a)) }
+    if (ctx.opts.length && w.length <= 5) { const k = w.find(x => x in ORD); if (k !== undefined) { const o = ctx.opts[ORD[k] === -1 ? ctx.opts.length - 1 : ORD[k]]; if (o) return await core(o.q, true, o.q) } }
+    let m
+    if ((m = n.match(/^ו?(?:מה\s+)?(?:לגבי|בקשר\s+ל-?|בנוגע\s+ל-?)\s*(?:זה|זאת|אותו|אותה|הנושא)\s*(.*)$/))) { const rest = m[1].trim(); if (!rest) return elaborate(false); if (ctx.topic) return await core(ctx.topic + ' ' + rest, true, t) }
+    if ((m = n.match(/^ו?מה\s+(?:עם|לגבי|בקשר\s+ל-?|בנוגע\s+ל-?)\s*(.+)$/))) {
+      const x = m[1].trim(), a = searchKB(x)
+      if (a.length && a[0].score >= 0.3) return await core(x, true, t)
+      if (ctx.topic) { const b = searchKB(ctx.topic + ' ' + x); if (b.length && b[0].score >= 0.2) return await core(ctx.topic + ' ' + x, true, t) }
+      return await core(x, true, t)
+    }
+    if (/^(?:מה\s+אתה\s+(?:יכול|יודע)|מי\s+אתה|במה\s+אתה\s+יכול|איך\s+מלמדים\s+אותך|איך\s+אני\s+מלמד\s+אותך|דוגמאות|תן\s+דוגמאות|מה\s+אפשר\s+(?:לשאול|לכתוב)|עזרה)$/.test(n)) return examplesCard()
+    return null
+  }
+  function offerReply(t) {
+    const o = ctx.offer; if (!o || ctx.turn - o.turn > 3) return null
+    const n = nrm(t)
+    if (/^(?:כן|בטח|כן בבקשה|בכיף|יאללה|אשמח|כן תודה|ברור|למה לא|בסדר גמור|סבבה)$/.test(n)) {
+      ctx.offer = null
+      if (o.type === 'elab') return elaborate(false)
+      if (o.type === 'teach') { openTeach(o.q, ''); return 'מעולה – כתוב לי למטה מה התשובה ל«' + esc(o.q) + '» ואזכור 🧠' }
+    }
+    if (/^(?:לא|לא תודה|לא צריך|עזוב|עזוב את זה|ממש לא)$/.test(n)) { ctx.offer = null; return pick(['בסדר גמור 🙂', 'אין בעיה, אני כאן.', 'סבבה, תגיד אם תצטרך.']) }
+    return null
+  }
+  const DEIC = new Set(['זה', 'זאת', 'אותו', 'אותה', 'שלו', 'שלה', 'עליו', 'עליה', 'לגביו', 'לגביה', 'בו', 'בה', 'לו', 'לה'])
+  function resolveCtx(t) {
+    if (!ctx.topic) return t
+    const w = nrm(t).split(' ')
+    if (w.length <= 6 && w.some(x => DEIC.has(x)) && !/^(?:מה|מי)\s+(?:זה|זאת)\s+\S+/.test(nrm(t)) && !/^(?:תלמד|למד|תזכור)/.test(nrm(t))) return t + ' ' + ctx.topic
+    return t
+  }
+  // ---- the core: replaces generateCore
+  window.generateCore = async function (msg, mayLearn, original) {
+    original = original || msg
+    if (mayLearn) {
+      const t = parseTeach(original); if (t) return t
+      const act = classifyAct(original)
+      if (act) { const km = searchKB(original); if (!(km.length && km[0].score >= 0.6)) return fmtText(applyAct(act, original)) }
+      lastAnswer = null
+      const sh = answerFromShop(original); if (sh) return sh
+      const e = answerFromEng(original); if (e) return e
+      const f = answerFromFacts(original); if (f) return fmtText(f)
+    } else lastAnswer = null
+    let matches = searchKB(msg)
+    if (msg !== original) {
+      const own = searchKB(original.split(/\s+/).filter(x => !DEIC.has(x) && !PRONOUNS.has(x)).join(' '))
+      if (own.length && own[0].score >= 0.3) matches = own
+    }
+    if (embedder) matches = applyVectors(matches, await embed(msg))
+    const top = matches[0], sc = top ? top.score : 0
+    if (SMALLTALK.test(original.trim()) && sc < 0.3) return pick(['שלום! 👋 שאל אותי משהו, או למד אותי ידע חדש.', 'היי 🙂 במה אפשר לעזור?'])
+    if (top && (sc >= 0.5 || (top.approved && sc >= 0.3))) return card(top, original, matches, 'strong')
+    if (top && sc >= 0.3) { const amb = matches[1] && matches[1].score >= sc * 0.92 && matches[1].a !== top.a; return card(top, original, matches, amb ? 'amb' : 'med') }
+    if (mayLearn) { const hit = sentenceSearch(original); if (hit) { const it = kb.find(i => i.id === hit.id); if (it) { ctx.lastId = it.id; ctx.topic = it.q; ctx.lastUserQ = original; ctx.offer = null; activeTopic = it.q; lastAnswer = { id: it.id, userQ: original }; return esc('מצאתי את זה בתוך מה שלימדת אותי: ') + fmtText(toSecondPerson(hit.s)) + chips([chip('📖 תפרט', 'elab')]) } } }
+    if (top && sc >= 0.15) return card(top, original, matches, 'low')
+    return none(original, matches)
+  }
+  window.generateResponse = async function (userMsg) {
+    ctx.turn = (ctx.turn || 0) + 1
+    const sens = isSensitive(userMsg)
+    if (sens) { const lvl = getSensLevel(); if (lvl === 'high') return '🚫 זוהה תוכן רגיש – אני לא עונה על נושא זה.<br><small style="color:#6b7280">ניתן לשנות את הגדרות הרגישות בטאב "הגדרות".</small>' }
+    const mayLearn = !(sens && getSensLevel() === 'medium'), pre = (sens && getSensLevel() === 'medium') ? '⚠️ <b>שים לב:</b> הנושא הזה זוהה כרגיש.<br><br>' : ''
+    const t = userMsg.trim()
+    let r
+    if (mayLearn) {
+      if ((r = teachCmd(t))) return r
+      const c = corrCmd(t)
+      if (c && c.relink) {
+        const res = searchKB(c.relink)
+        if (res.length && res[0].score >= 0.3) {
+          const it = kb.find(i => i.id === res[0].id), u = pushUndo(), prevQ = ctx.lastUserQ
+          if (it && prevQ && prevQ !== it.q) { it.aliases = it.aliases || []; if (!it.aliases.includes(prevQ) && it.aliases.length < 8) it.aliases.push(prevQ) }
+          save(); renderKB()
+          const ans = card(res[0], c.relink, res, 'strong'); ctx.lastUserQ = prevQ || c.relink
+          return 'סליחה, הבנתי 🙂 קישרתי את «' + esc(prevQ || c.relink) + '» לתשובה הזו:<br>' + ans + chips([chip('↩️ בטל קישור', 'undo', u)])
+        }
+        return await window.generateCore(c.relink, true, c.relink)
+      } else if (c) return c
+      if ((r = offerReply(t))) return pre + r
+      if ((r = await followUp(t))) return pre + r
+    }
+    return pre + await window.generateCore(mayLearn ? resolveCtx(t) : t, mayLearn, t)
+  }
+  // more small-talk words so they never trigger the teaching flow
+  ;['אה', 'הממ', 'רגע', 'חכה', 'לא משנה', 'מעניין', 'אחלה', 'סבבה תודה'].forEach(x => { if (!ACTS.ack.includes(x)) ACTS.ack.push(x) })
+  save()
+})()
+
 </script>
 </body>
 </html>
