@@ -2728,7 +2728,7 @@ window.onload = () => {
       const rep = onText(t); if (rep) Voice.speak = rep
     }
     on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start'); if (Voice.onStart) Voice.onStart() });
-    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n); if (n !== 'audiostart' && Voice.onAct) Voice.onAct() }))
+    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n); if (n === 'audiostart' && Voice.onAudio) Voice.onAudio(); if (n !== 'audiostart' && Voice.onAct) Voice.onAct() }))
     const deliverMulti = t => {                                   // כל משפט סופי = פקודה נפרדת
       got = true; heard = true; Voice.fails = 0; last = ''; lastAct = Date.now()
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
@@ -3314,7 +3314,7 @@ window.onload = () => {
 ;(function () {                                                   // ui9-marker: dictation everywhere + silence control + voice commands
   const $ = id => document.getElementById(id)
   const say = (h, r) => { try { window.say(h, r) } catch (e) {} }
-  const Dict = { target: null, starting: false, lastStop: 0, everStarted: false, pending: null }
+  const Dict = { target: null, starting: false, lastStop: 0, everStarted: false, pending: null, tok: 0, deafTries: 0, lastRec: null }
 
   // ---------- settings ----------
   const SIL = 'gl_silence', AUTO = 'gl_autosend'
@@ -3418,7 +3418,8 @@ window.onload = () => {
     S.finish = () => {
       if (S.ended) return
       S.flush(false); S.ended = true; clearTimeout(S.tm); Dict.lastStop = Date.now()
-      if (Voice.S === S) { Voice.S = null; Voice.onAct = Voice.onEnd = Voice.onStart = null }
+      clearTimeout(S.dead)
+      if (Voice.S === S) { Voice.S = null; Voice.onAct = Voice.onEnd = Voice.onStart = Voice.onAudio = null }
     }
     S.handle = raw => {
       let t = String(raw || '').trim(); if (!t || S.ended) return null
@@ -3442,15 +3443,39 @@ window.onload = () => {
     if (kind === 'field' && !voiceSupported()) {
       const el = Dict.target; if (el) el.focus(); toast('אין זיהוי דיבור בדפדפן הזה – לחץ על 🎤 שבמקלדת ודבר', '#f59e0b'); return
     }
-    const run = () => {
+    const ios = isIOS()
+    const warm = async () => {            // iOS: "מעורר" את שכבת השמע לפני כל הקשבה – אחרי סשן קודם / הקראה היא נשארת חרשת
+      try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); await new Promise(r => setTimeout(r, 250)) } }
+      catch (e) { vlog('warm: ' + (e.name || e)) }
+    }
+    const fallbackKeyboard = S => {
+      const el = S.kind === 'chat' ? $('user-input') : S.kind === 'field' ? S.el : S.kind === 'shop' ? ($('shop-in') || $('home-cmd-in')) : $('home-cmd-in')
+      if (el) { try { el.focus() } catch (e) {} }
+      toast('המיקרופון של הדפדפן לא קולט – עברתי להכתבה במקלדת: לחץ על 🎤 שבמקלדת ודבר (הפקודה תתבצע אחרי השקט)', '#f59e0b')
+    }
+    const run = async () => {
+      const my = ++Dict.tok
       Dict.pending = null
+      if (Dict.lastRec) { try { Dict.lastRec.abort() } catch (e) {} Dict.lastRec = null }
+      if (ios) { voiceUI(true, kind, '⏳ מתכונן…'); await warm(); if (my !== Dict.tok) return }
       const S = makeSession(kind, onText); Voice.S = S
-      Voice.onStart = () => { Dict.everStarted = true; if (!S.started) { S.started = true; S.arm() } }
-      Voice.onAct = () => { S.heard = true; S.arm() }
+      Voice.onStart = () => { Dict.everStarted = true; Dict.lastRec = Voice.rec; if (!S.started) { S.started = true; S.arm() } }
+      Voice.onAct = () => { S.heard = true; S.sound = true; Dict.deafTries = 0; clearTimeout(S.dead); S.arm() }
       Voice.onEnd = () => S.finish()
+      Voice.onAudio = () => {             // המיקרופון נפתח – אם אחרי 3.5 שנ׳ לא נקלט שום קול (באג iOS) מאתחלים
+        if (!ios) return
+        clearTimeout(S.dead)
+        S.dead = setTimeout(() => {
+          if (S.ended || S.stopping || S.sound) return
+          const n = ++Dict.deafTries
+          vlog('המיקרופון פתוח אבל לא קולט קול – ניסיון ' + n)
+          S.finish(); voiceReset(); Dict.lastStop = Date.now()
+          if (n <= 2) window.voiceStart(kind, onText)
+          else { Dict.deafTries = 0; fallbackKeyboard(S) }
+        }, 3500)
+      }
       Dict.starting = true
       try { _vs(kind, S.handle) } finally { Dict.starting = false }
-      // המיקרופון כבר אושר בעבר אבל לא התחיל (באג של iOS אחרי סשן קודם) → ניסיון חוזר אוטומטי אחד
       if (Dict.everStarted) setTimeout(() => {
         if (Voice.S === S && Voice.state === 'starting' && !Dict.retrying) {
           Dict.retrying = true; vlog('המיקרופון לא התחיל – ניסיון חוזר'); S.finish(); voiceReset(); Dict.lastStop = 0
@@ -3470,6 +3495,7 @@ window.onload = () => {
   const _vt = window.voiceToggle
   window.voiceToggle = function (kind, onText) {
     const S = Voice.S
+    Dict.deafTries = 0
     if (Dict.pending) { clearTimeout(Dict.pending); Dict.pending = null; voiceReset(); return }   // לחיצה בזמן "מתכונן" = ביטול
     if (Voice.rec && !S) voiceReset()
     else if (S && S.stopping) { S.finish(); voiceReset() }
@@ -3478,6 +3504,9 @@ window.onload = () => {
   }
   const _vr = window.voiceReset
   window.voiceReset = function () { if (Voice.S && !Dict.starting) Voice.S.finish(); _vr() }
+
+  const _sh = window.speakHe
+  window.speakHe = function (t) { if (isIOS()) return; return _sh(t) }       // הקראה ב-iOS משבשת את ההקשבה הבאה
 
   // ---------- UI state of field mic buttons ----------
   const _vu = window.voiceUI
