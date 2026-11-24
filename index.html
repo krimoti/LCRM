@@ -3314,7 +3314,7 @@ window.onload = () => {
 ;(function () {                                                   // ui9-marker: dictation everywhere + silence control + voice commands
   const $ = id => document.getElementById(id)
   const say = (h, r) => { try { window.say(h, r) } catch (e) {} }
-  const Dict = { target: null, starting: false }
+  const Dict = { target: null, starting: false, lastStop: 0, everStarted: false, pending: null }
 
   // ---------- settings ----------
   const SIL = 'gl_silence', AUTO = 'gl_autosend'
@@ -3393,9 +3393,10 @@ window.onload = () => {
       S.tm = setTimeout(() => { S.flush(true) }, S.heard ? sil : Math.max(sil * 2 + 2000, 8000))
     }
     S.stop = () => {
+      S.stopping = true; Dict.lastStop = Date.now()
       Voice.want = false; const r = Voice.rec
       try { r && r.stop() } catch (e) {}
-      setTimeout(() => { if (r && Voice.rec === r) voiceReset() }, 1500)
+      setTimeout(() => { if (r && Voice.rec === r) { vlog('stop לא הסתיים – מאפס'); voiceReset() } }, 900)
     }
     S.drop = () => { S.buf = [] }
     S.clear = () => {
@@ -3416,7 +3417,7 @@ window.onload = () => {
     }
     S.finish = () => {
       if (S.ended) return
-      S.flush(false); S.ended = true; clearTimeout(S.tm)
+      S.flush(false); S.ended = true; clearTimeout(S.tm); Dict.lastStop = Date.now()
       if (Voice.S === S) { Voice.S = null; Voice.onAct = Voice.onEnd = Voice.onStart = null }
     }
     S.handle = raw => {
@@ -3435,17 +3436,45 @@ window.onload = () => {
     return S
   }
   const _vs = window.voiceStart
+  const isIOS = () => { try { return voiceEnv().ios } catch (e) { return false } }
   window.voiceStart = function (kind, onText) {
     if (Voice.S) Voice.S.finish()
     if (kind === 'field' && !voiceSupported()) {
       const el = Dict.target; if (el) el.focus(); toast('אין זיהוי דיבור בדפדפן הזה – לחץ על 🎤 שבמקלדת ודבר', '#f59e0b'); return
     }
-    const S = makeSession(kind, onText); Voice.S = S
-    Voice.onStart = () => { if (!S.started) { S.started = true; S.arm() } }
-    Voice.onAct = () => { S.heard = true; S.arm() }
-    Voice.onEnd = () => S.finish()
-    Dict.starting = true
-    try { _vs(kind, S.handle) } finally { Dict.starting = false }
+    const run = () => {
+      Dict.pending = null
+      const S = makeSession(kind, onText); Voice.S = S
+      Voice.onStart = () => { Dict.everStarted = true; if (!S.started) { S.started = true; S.arm() } }
+      Voice.onAct = () => { S.heard = true; S.arm() }
+      Voice.onEnd = () => S.finish()
+      Dict.starting = true
+      try { _vs(kind, S.handle) } finally { Dict.starting = false }
+      // המיקרופון כבר אושר בעבר אבל לא התחיל (באג של iOS אחרי סשן קודם) → ניסיון חוזר אוטומטי אחד
+      if (Dict.everStarted) setTimeout(() => {
+        if (Voice.S === S && Voice.state === 'starting' && !Dict.retrying) {
+          Dict.retrying = true; vlog('המיקרופון לא התחיל – ניסיון חוזר'); S.finish(); voiceReset(); Dict.lastStop = 0
+          try { window.voiceStart(kind, onText) } finally { Dict.retrying = false }
+        }
+      }, 3500)
+    }
+    clearTimeout(Dict.pending)
+    let wait = Math.max(0, Dict.lastStop + (isIOS() ? 1000 : 600) - Date.now())
+    try { if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) { speechSynthesis.cancel(); wait = Math.max(wait, 500) } } catch (e) {}
+    if (wait > 0) {
+      voiceReset(); voiceUI(true, kind, '⏳ מתכונן…')
+      Dict.pending = setTimeout(run, wait)
+    } else run()
+  }
+  // כל לחיצה על המיקרופון חייבת לעשות משהו: סשן שנמצא בעצירה / זומבי לא נחשב "הקשבה פעילה"
+  const _vt = window.voiceToggle
+  window.voiceToggle = function (kind, onText) {
+    const S = Voice.S
+    if (Dict.pending) { clearTimeout(Dict.pending); Dict.pending = null; voiceReset(); return }   // לחיצה בזמן "מתכונן" = ביטול
+    if (Voice.rec && !S) voiceReset()
+    else if (S && S.stopping) { S.finish(); voiceReset() }
+    else if (S && Voice.rec && Voice.state === 'listening' && Voice.kind === kind) { S.stopping = true; Dict.lastStop = Date.now() }
+    _vt(kind, onText)
   }
   const _vr = window.voiceReset
   window.voiceReset = function () { if (Voice.S && !Dict.starting) Voice.S.finish(); _vr() }
