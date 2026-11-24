@@ -3036,20 +3036,36 @@ window.onload = () => {
     d.setDate(d.getDate() + off); return { title: t, due: fmt(d) }
   }
 
+  // ---------- time of day ("בשעה 14:00", "ב-8 בערב", "בצהריים") ----------
+  const PARTS = [['אחר הצהריים', 16, 'pm'], ['אחרי הצהריים', 16, 'pm'], ['אחה"צ', 16, 'pm'], ['אחה״צ', 16, 'pm'], ['בצהריים', 12, 'noon'], ['בצהרים', 12, 'noon'], ['בבוקר', 9, 'am'], ['בערב', 19, 'pm'], ['בלילה', 21, 'pm']]
+  const WHEN = new RegExp('\\d{1,2}:\\d{2}|' + NB + '(?:מחר|מחרתיים|היום|בצהריים|בצהרים|בבוקר|בערב|בעוד \\d+ ימים?|ביום (?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)|בשעה)' + NA)
+  function parseTime(t) {
+    let part = null; for (const p of PARTS) if (t.includes(p[0])) { part = p; t = t.replace(p[0], ' '); break }
+    let h = null, mi = 0, m
+    const cut = re => { t = t.replace(re, ' ').replace(/\s+/g, ' ').trim() }
+    if ((m = t.match(/(?:בשעה\s*|ב[-־]?)?(?<!\d)(\d{1,2}):(\d{2})(?!\d)/))) { h = +m[1]; mi = +m[2]; cut(m[0]) }
+    else if ((m = t.match(/בשעה\s+(\d{1,2})(?![\d:])/))) { h = +m[1]; cut(m[0]) }
+    else if ((m = t.match(new RegExp(NB + 'ב[-־](\\d{1,2})(?![\\d:])')))) { h = +m[1]; cut(m[0]) }
+    if (h !== null && (h > 23 || mi > 59)) h = null
+    if (h === null) { if (!part) return { title: t, time: '' }; h = part[1] }
+    else if (part && h > 0 && h < 12 && (part[2] === 'pm' || (part[2] === 'noon' && h <= 5))) h += 12
+    return { title: t.replace(/\s+/g, ' ').trim(), time: String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0') }
+  }
   // ---------- actions ----------
   function addRec(d, text) {
     if (!text) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
     lastDom = d.id; lastDomTs = Date.now()
     if (d.link === 'shop') return shopAdd(text, true)
     let title = text.trim(), due = ''
-    if (d.id !== 'clients') { const p = parseDue(title); if (p.title) { title = p.title; due = p.due } }
+    let time = ''
+    if (d.id !== 'clients') { const tm = parseTime(title); title = tm.title; time = tm.time; const p = parseDue(title); if (p.title) { title = p.title; due = p.due }; if (time && !due) due = today() }
     let pri = ''
     if (d.id !== 'clients') { const U = new RegExp(NB + '(?:דחוף|מיידי|urgent)' + NA, 'i'), H = new RegExp(NB + '(?:חשוב|important)' + NA, 'i')
       if (U.test(title)) { pri = 'urgent'; title = title.replace(U, ' ').replace(/\s+/g, ' ').trim() } else if (H.test(title)) { pri = 'high'; title = title.replace(H, ' ').replace(/\s+/g, ' ').trim() } }
     if (!title) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
-    const before = snap(); crm.records.unshift({ id: newId(), domain: d.id, title, note: '', due, pri, done: false, ts: Date.now() }); last = before; saveCrm()
+    const before = snap(); crm.records.unshift({ id: newId(), domain: d.id, title, note: '', due, time, pri, done: false, ts: Date.now() }); last = before; saveCrm()
     toastUndo('נוסף ל' + d.name, () => { crm = JSON.parse(before); saveCrm() })
-    return d.icon + ' נוסף ל<b>' + esc(d.name) + '</b>: ' + (pri === 'urgent' ? '🔴 ' : pri === 'high' ? '🟠 ' : '') + esc(title) + (due ? ' · ' + esc(dueLabel(due)) : '')
+    return d.icon + ' נוסף ל<b>' + esc(d.name) + '</b>: ' + (pri === 'urgent' ? '🔴 ' : pri === 'high' ? '🟠 ' : '') + esc(title) + (due ? ' · ' + esc(dueLabel(due)) + (time ? ' ' + time : '') : '')
   }
   function doneRec(q) {
     const P = stemsOf(q); if (!P.length) return null
@@ -3082,6 +3098,7 @@ window.onload = () => {
       return addRec(sp.d, sp.rest)
     }
     { const sc = scope || defScope; if (sc && dom(sc)) return addRec(dom(sc), t) }
+    if (WHEN.test(t)) return addRec(dom('tasks') || crm.domains[0], t)       // יש תאריך/שעה בלי תחום → משימה
     const r = answerFromShop(t); if (r !== null) return r
     const cx = Date.now() - lastDomTs < 90000 ? dom(lastDom) : null          // המשך לאותו תחום של הפקודה הקודמת
     if (cx) return addRec(cx, t)
@@ -3091,19 +3108,19 @@ window.onload = () => {
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
   function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
   function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
   const cnt = d => d.link === 'shop' ? remaining().length : crm.records.filter(r => r.domain === d.id && !r.done).length
   function trow(r) { return '<div class="trow"><button class="chk" data-act="tog" data-v="' + r.id + '">' + (r.done ? '☑️' : '⬜') + '</button><div class="tt" data-act="edit" data-v="' + r.id + '"><div' + (r.done ? ' style="text-decoration:line-through;opacity:.55"' : '') + '>' + (r.pri === 'urgent' ? '🔴 ' : r.pri === 'high' ? '🟠 ' : '') + esc(r.title) + '</div>' +
-    (dom(r.domain) ? '<small>' + dom(r.domain).icon + ' ' + esc(dom(r.domain).name) + (r.note ? ' · ' + esc(r.note) : '') + '</small>' : '') + '</div>' + (r.due ? '<span class="dchip' + (r.due < today() && !r.done ? ' late' : '') + '">' + esc(dueLabel(r.due)) + '</span>' : '') + '<button class="chk" data-act="del" data-v="' + r.id + '">🗑️</button></div>' }
+    (dom(r.domain) ? '<small>' + dom(r.domain).icon + ' ' + esc(dom(r.domain).name) + (r.note ? ' · ' + esc(r.note) : '') + '</small>' : '') + '</div>' + (r.due ? '<span class="dchip' + (r.due < today() && !r.done ? ' late' : '') + '">' + esc(dueLabel(r.due) + (r.time ? ' ' + r.time : '')) + '</span>' : '') + '<button class="chk" data-act="del" data-v="' + r.id + '">🗑️</button></div>' }
   window.renderHome = function () {
     const b = $('home-body'); if (!b) return; renderSticky()
     const open = crm.records.filter(r => !r.done && r.domain !== 'clients'), t = today(), hr = new Date().getHours()
     const g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
     const st = [[open.length, 'משימות פתוחות', 'tasks'], [open.filter(r => r.due && r.due <= t).length, 'לטיפול היום', 'tasks'], [crm.records.filter(r => r.domain === 'clients').length, 'אנשי קשר', 'clients'], [remaining().length, 'ברשימת קניות', 'shopping']]
-    const soon = open.filter(r => r.due).sort((a, c) => a.due < c.due ? -1 : 1).slice(0, 6)
+    const soon = open.filter(r => r.due).sort((a, c) => (a.due + (a.time || '99')) < (c.due + (c.time || '99')) ? -1 : 1).slice(0, 6)
     b.innerHTML = '<div class="hero"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h2>' + g + ' 👋</h2><span class="dchip">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span></div><p>כל המשימות, האנשים והרעיונות במקום אחד.</p><div class="stats">' +
       st.map(x => '<div class="stat" data-act="open" data-v="' + x[2] + '"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div></div>' +
       '<div class="sh"><span>＋ פעולה חדשה</span><small>לחץ על תחום כדי לראות את הרשומות שלו</small></div><div class="dgrid">' +
@@ -3125,17 +3142,26 @@ window.onload = () => {
     if (!sheet) return
     if (sheet.type === 'dom') {
       const d = dom(sheet.id); if (!d) return closeSheet()
-      const rs = crm.records.filter(r => r.domain === d.id), open = rs.filter(r => !r.done).sort((a, b) => { const pa = a.pri === 'urgent' ? 0 : a.pri === 'high' ? 1 : 2, pb = b.pri === 'urgent' ? 0 : b.pri === 'high' ? 1 : 2; return pa - pb || ((a.due || '9') < (b.due || '9') ? -1 : 1) }), done = rs.filter(r => r.done)
+      const rs = crm.records.filter(r => r.domain === d.id), open = rs.filter(r => !r.done).sort((a, b) => { const pa = a.pri === 'urgent' ? 0 : a.pri === 'high' ? 1 : 2, pb = b.pri === 'urgent' ? 0 : b.pri === 'high' ? 1 : 2; return pa - pb || (((a.due || '9') + (a.time || '99')) < ((b.due || '9') + (b.time || '99')) ? -1 : 1) }), done = rs.filter(r => r.done)
       showSheet(head(d.icon + ' ' + esc(d.name), DEF.some(x => x.id === d.id) ? '' : '<button class="chk" data-act="deldom" data-v="' + d.id + '" title="מחק תחום">🗑️ תחום</button>') +
         '<div class="cmdin"><input id="dom-in" placeholder="הוסף ל' + esc(d.name) + '…" autocomplete="off"><button class="btn-primary" data-act="domadd" style="padding:10px 18px">＋</button></div>' +
         (open.length ? open.map(trow).join('') : '<div class="emptyx">אין רשומות פתוחות. הוסף למעלה או אמור ״' + esc(d.name) + ' …״</div>') + (done.length ? '<div class="hg">✔ בוצעו (' + done.length + ')</div>' + done.map(trow).join('') : ''))
     } else if (sheet.type === 'edit') {
       const r = crm.records.find(x => x.id === sheet.id); if (!r) return closeSheet()
-      showSheet(head('✎ עריכה') + '<label class="fl">כותרת</label><input id="ed-t" value="' + esc(r.title) + '"><label class="fl">הערה</label><textarea id="ed-n" rows="3">' + esc(r.note || '') + '</textarea><label class="fl">תאריך יעד</label><input id="ed-d" type="date" value="' + esc(r.due || '') + '">' +
+      showSheet(head('✎ עריכה') + '<label class="fl">כותרת</label><input id="ed-t" value="' + esc(r.title) + '"><label class="fl">הערה</label><textarea id="ed-n" rows="3">' + esc(r.note || '') + '</textarea><label class="fl">תאריך יעד</label><input id="ed-d" type="date" value="' + esc(r.due || '') + '"><label class="fl">שעה</label><input id="ed-tm" type="time" value="' + esc(r.time || '') + '">' +
         '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn-primary" style="flex:1" data-act="saveedit">שמור</button><button class="btn-ghost" data-act="del" data-v="' + r.id + '">🗑️</button></div>')
     } else if (sheet.type === 'newdom') {
       showSheet(head('＋ תחום חדש') + '<label class="fl">שם התחום</label><input id="nd-n" placeholder="למשל: ספקים, פרויקטים, רכב"><label class="fl">אייקון</label><div class="icos">' +
         ['📁', '🏷️', '🚗', '🏠', '💼', '📞', '📦', '⭐', '🧾', '🔧'].map(i => '<button type="button" data-act="ico" data-v="' + i + '" class="' + (i === newIco ? 'on' : '') + '">' + i + '</button>').join('') + '</div><button class="btn-primary" style="width:100%;margin-top:16px" data-act="savedom">צור תחום</button>')
+    } else if (sheet.type === 'brief') {
+      const b = briefItems(), n = remaining().length, sec = (t, a) => a.length ? '<div class="hg">' + t + '</div>' + a.map(trow).join('') : ''
+      const hr = new Date().getHours(), g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
+      showSheet(head('📅 ' + g) + '<div class="hint" style="text-align:right">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div>' +
+        sec('⚠️ באיחור', b.over) + sec('🗓️ היום', b.now) + sec('🔴 דחוף ללא תאריך', b.urgent) +
+        (b.over.length || b.now.length || b.urgent.length ? '' : '<div class="emptyx">אין משימות להיום 🎉</div>') +
+        (n ? '<div class="okr"><span>🛒</span><div><b>' + n + ' פריטים ברשימת הקניות</b></div><button class="btn-ghost" data-act="go" data-v="shop" style="padding:6px 14px;font-size:.8rem">פתח</button></div>' : '') +
+        (b.next ? '<div class="okr"><span>➡️</span><div><b>מחר: ' + b.next + ' ' + (b.next === 1 ? 'משימה' : 'משימות') + '</b></div></div>' : '') +
+        '<button class="btn-ghost" style="width:100%;margin-top:12px" data-act="open" data-v="tasks">כל המשימות</button>')
     } else if (sheet.type === 'ask') {
       showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
@@ -3144,9 +3170,9 @@ window.onload = () => {
       const e = voiceEnv(), sr = voiceSupported(), offl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
-      const EX = [['✅ משימות', ['משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
+      const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
         ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
-      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה.</div>' +
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
         '<div class="hint" style="text-align:right;margin-top:10px">📴 אופליין: האפליקציה עצמה עובדת בלי רשת אחרי שנטענה פעם אחת מאתר (דורש את הקבצים sw.js, manifest.json ו-icon.png לצד הקובץ). זיהוי הדיבור של הדפדפן עשוי להזדקק לרשת – במצב טיסה השתמש ב-🎤 שבמקלדת, שפועל במכשיר.</div><button class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
@@ -3161,6 +3187,7 @@ window.onload = () => {
       route('לקוח חדש דנה כהן'); ok(crm.records[0] && crm.records[0].domain === 'clients' && /דנה/.test(crm.records[0].title), 'לקוח חדש', '״לקוח חדש דנה כהן״ → תחום לקוחות')
       route('הערה: רעיון לפרויקט'); ok(crm.records[0] && crm.records[0].domain === 'general', 'הערה', '״הערה: …״ → תחום כללי')
       route('סיימתי לבדוק ציוד'); ok(crm.records.some(r => r.domain === 'tasks' && r.done), 'סימון כבוצע', '״סיימתי …״ → המשימה סומנה')
+      route('תתקשר מחר למוטי בצהריים בשעה 14:00'); const tk = crm.records[0]; ok(tk && tk.domain === 'tasks' && tk.time === '14:00' && tk.due === fmt(new Date(Date.now() + 864e5)) && tk.title === 'תתקשר למוטי', 'תאריך ושעה', '״תתקשר מחר למוטי בצהריים בשעה 14:00״ → משימה למחר 14:00')
       route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
       lastDomTs = 0; route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
       route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
@@ -3193,10 +3220,11 @@ window.onload = () => {
     else if (a === 'tog') { const r = crm.records.find(x => x.id === v); if (r) { last = snap(); r.done = !r.done; saveCrm() } }
     else if (a === 'del') { const before = snap(); crm.records = crm.records.filter(x => x.id !== v); last = before; if (sheet && sheet.type === 'edit') sheet = { type: 'dom', id: sheet.back || 'tasks' }; saveCrm(); toastUndo('נמחק', () => { crm = JSON.parse(before); saveCrm() }) }
     else if (a === 'edit') { const r = crm.records.find(x => x.id === v); if (r) { sheet = { type: 'edit', id: v, back: r.domain }; renderSheet() } }
-    else if (a === 'saveedit') { const r = crm.records.find(x => x.id === sheet.id); if (r) { last = snap(); r.title = $('ed-t').value.trim() || r.title; r.note = $('ed-n').value.trim(); r.due = $('ed-d').value; sheet = { type: 'dom', id: r.domain }; saveCrm() } }
+    else if (a === 'saveedit') { const r = crm.records.find(x => x.id === sheet.id); if (r) { last = snap(); r.title = $('ed-t').value.trim() || r.title; r.note = $('ed-n').value.trim(); r.due = $('ed-d').value; r.time = $('ed-tm').value; sheet = { type: 'dom', id: r.domain }; saveCrm() } }
     else if (a === 'domadd') { const i = $('dom-in'), t = i && i.value.trim(); if (t) addRec(dom(sheet.id), t) }
     else if (a === 'deldom') { if (confirm('למחוק את התחום ואת כל הרשומות שבו?')) { const before = snap(); crm.domains = crm.domains.filter(d => d.id !== v); crm.records = crm.records.filter(r => r.domain !== v); if (scope === v) scope = null; closeSheet(); last = before; saveCrm(); toastUndo('התחום נמחק', () => { crm = JSON.parse(before); saveCrm() }) } }
     else if (a === 'ex') { closeSheet(); const i = $('home-cmd-in'); goStation('home'); i.value = v; i.focus() }
+    else if (a === 'brief') openBrief(false)
     else if (a === 'fab') window.fabVoice()
     else if (a === 'tab') { if (v === 'more') { sheet = { type: 'more' }; renderSheet() } else goStation(v) }
     else if (a === 'go') { closeSheet(); goStation(v) }
@@ -3214,6 +3242,31 @@ window.onload = () => {
   window.voiceUI = (on, kind, label) => { const f = $('fab'); if (f) { f.classList.toggle('recording', on); const ic = f.querySelector('i'); if (ic) ic.textContent = on ? '⏹️' : '🎙️' } if (kind === 'home') return; _vu(on, kind, label) }
   const _vr = window.voiceReset
   window.voiceReset = () => { _vr(); const f = $('fab'); if (f) { f.classList.remove('recording'); const ic = f.querySelector('i'); if (ic) ic.textContent = '🎙️' } }
+  // ---- daily brief on launch / when coming back to the app
+  const briefMode = () => { try { return localStorage.getItem('gl_brief') || 'always' } catch (e) { return 'always' } }
+  function briefItems() {
+    const t = today(), tm = fmt(new Date(Date.now() + 864e5)), open = crm.records.filter(r => !r.done && (r.domain !== 'clients' || r.due))
+    const key = r => (r.due || '') + (r.time || '99')
+    return { over: open.filter(r => r.due && r.due < t).sort((a, b) => key(a) < key(b) ? -1 : 1), now: open.filter(r => r.due === t).sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : 1),
+      urgent: open.filter(r => !r.due && r.pri === 'urgent'), next: open.filter(r => r.due === tm).length }
+  }
+  function openBrief(auto) {
+    const b = briefItems()
+    if (auto) { if (!(b.over.length || b.now.length || b.urgent.length) || sheet || (Voice && Voice.state !== 'idle')) return false }
+    sheet = { type: 'brief' }; renderSheet(); return true
+  }
+  window.openBrief = openBrief
+  setTimeout(() => {
+    const m = briefMode(); if (m === 'off') return
+    if (m === 'daily') { try { if (localStorage.getItem('gl_brief_day') === today()) return } catch (e) {} }
+    if (openBrief(true)) { try { localStorage.setItem('gl_brief_day', today()) } catch (e) {} }
+  }, 700)
+  let hiddenAt = 0
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); return }
+    if (hiddenAt && Date.now() - hiddenAt > 5 * 60000 && briefMode() === 'always') openBrief(true)
+    hiddenAt = 0
+  })
   renderHome()
 })()
 
@@ -3319,6 +3372,15 @@ window.onload = () => {
   document.addEventListener('focusout', e => {                          // סגירת המקלדת / יציאה מהשדה אחרי הכתבה
     const el = e.target; if (el && el.dataset && el.dataset.dict === '1') { clearTimeout(el._dt); setTimeout(() => submit(el), 150) }
   })
+})()
+
+;(function () {                                                   // ui10-marker: brief setting
+  const g = [...document.querySelectorAll('#panel-2 details.grp')].find(d => /התנהגות/.test(d.firstChild.textContent)); if (!g) return
+  const w = document.createElement('div')
+  w.innerHTML = '<div class="text-xs uppercase tracking-widest mb-3" style="color:#4b5563">סיכום יומי בפתיחה</div><select id="brief-mode" style="font-size:13px;padding:8px 14px"><option value="always">בכל פתיחה (אם יש מה להציג)</option><option value="daily">פעם ביום</option><option value="off">כבוי</option></select>'
+  g.querySelector('.grp-b').appendChild(w)
+  const sel = w.querySelector('select'); try { sel.value = localStorage.getItem('gl_brief') || 'always' } catch (e) {}
+  sel.onchange = () => { try { localStorage.setItem('gl_brief', sel.value) } catch (e) {} }
 })()
 </script>
 </body>
