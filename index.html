@@ -527,6 +527,15 @@ body.st-home .station[data-id=home]{padding-bottom:calc(160px + env(safe-area-in
 .tile{box-shadow:none;border:0;background:var(--card);border-radius:24px}
 .hero{border-radius:28px}
 </style>
+<style id="ui12">
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.tg{width:52px;height:30px;border-radius:99px;background:var(--line);position:relative;flex-shrink:0;transition:background .2s}
+.tg::after{content:'';position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .2s}
+.tg[aria-pressed="true"]{background:var(--green)}.tg[aria-pressed="true"]::after{transform:translateX(-22px)}
+body.hide-home #tabbar [data-tab=home],body.hide-chat #tabbar [data-tab=chat],body.hide-shop #tabbar [data-tab=shop]{display:none}
+body.hide-chat #tab-0,body.hide-kb #tab-1,body.hide-report #tab-3,body.hide-eng #tab-4,body.hide-shop #tab-5{display:none!important}
+#ex-text{font-size:.82rem;line-height:1.5;resize:none}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
 
@@ -2995,7 +3004,7 @@ window.onload = () => {
     { id: 'shopping', name: 'קניות', icon: '🛒', kw: ['קניות', 'סופר'], desc: 'רשימות מוצרים ורכש', link: 'shop' },
     { id: 'general', name: 'כללי', icon: '📝', kw: ['הערה', 'הערות', 'רעיון', 'רעיונות', 'כללי', 'תזכורת', 'תזכורות'], desc: 'הערות, רעיונות ותזכורות' }]
   let crm = (() => { try { const x = JSON.parse(localStorage.getItem('gl_crm')); if (x && Array.isArray(x.domains) && Array.isArray(x.records)) return x } catch (e) {} return { domains: DEF.map(d => ({ ...d })), records: [] } })()
-  let lastDom = null, lastDomTs = 0, scope = null, askText = null, last = null, sheet = null, newIco = '📁', fb = false, fbTimer = null, testRes = null
+  let lastRecId = null, lastRecTs = 0, lastDom = null, lastDomTs = 0, scope = null, askText = null, last = null, sheet = null, newIco = '📁', fb = false, fbTimer = null, testRes = null
   const dom = id => crm.domains.find(d => d.id === id)
   const snap = () => JSON.stringify(crm)
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
@@ -3003,7 +3012,7 @@ window.onload = () => {
   const dueLabel = s => { if (!s) return ''; const t = today(); if (s === t) return 'היום'; const n = Math.round((new Date(s + 'T00:00') - new Date(t + 'T00:00')) / 864e5)
     return n === 1 ? 'מחר' : n === -1 ? 'אתמול' : n < 0 ? 'באיחור ' + (-n) + ' ימים' : new Date(s + 'T00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) }
   function saveCrm() { try { localStorage.setItem('gl_crm', JSON.stringify(crm)) } catch (e) { toast('השמירה נכשלה – האחסון מלא', '#ef4444') } renderAll() }
-  function renderAll() { renderHome(); if (sheet) renderSheet() }
+  function renderAll() { renderHome(); renderVis(); if (sheet) renderSheet() }
 
   // ---------- domain keywords + date parsing ----------
   const kwStems = d => [...(d.kw || []), ...rawWords(d.name)].map(relStem)
@@ -3051,6 +3060,11 @@ window.onload = () => {
     else if (part && h > 0 && h < 12 && (part[2] === 'pm' || (part[2] === 'noon' && h <= 5))) h += 12
     return { title: t.replace(/\s+/g, ' ').trim(), time: String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0') }
   }
+  function whenOnly(t) {                                         // משפט שמכיל רק תאריך/שעה ("בשעה 14:00", "מחר")
+    const a = parseTime(t), b = parseDue(a.title)
+    const left = b.title.replace(new RegExp(NB + '(?:ב|ל|את|גם|אז|בשעה|ביום)' + NA, 'g'), ' ').trim()
+    return left || !(a.time || b.due) ? null : { time: a.time, due: b.due }
+  }
   // ---------- actions ----------
   function addRec(d, text) {
     if (!text) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
@@ -3058,12 +3072,12 @@ window.onload = () => {
     if (d.link === 'shop') return shopAdd(text, true)
     let title = text.trim(), due = ''
     let time = ''
-    if (d.id !== 'clients') { const tm = parseTime(title); title = tm.title; time = tm.time; const p = parseDue(title); if (p.title) { title = p.title; due = p.due }; if (time && !due) due = today() }
+    { const tm = parseTime(title); title = tm.title; time = tm.time; const p = parseDue(title); if (p.title) { title = p.title; due = p.due }; if (time && !due) due = today() }
     let pri = ''
-    if (d.id !== 'clients') { const U = new RegExp(NB + '(?:דחוף|מיידי|urgent)' + NA, 'i'), H = new RegExp(NB + '(?:חשוב|important)' + NA, 'i')
+    { const U = new RegExp(NB + '(?:דחוף|מיידי|urgent)' + NA, 'i'), H = new RegExp(NB + '(?:חשוב|important)' + NA, 'i')
       if (U.test(title)) { pri = 'urgent'; title = title.replace(U, ' ').replace(/\s+/g, ' ').trim() } else if (H.test(title)) { pri = 'high'; title = title.replace(H, ' ').replace(/\s+/g, ' ').trim() } }
     if (!title) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
-    const before = snap(); crm.records.unshift({ id: newId(), domain: d.id, title, note: '', due, time, pri, done: false, ts: Date.now() }); last = before; saveCrm()
+    const before = snap(); lastRecId = newId(); lastRecTs = Date.now(); crm.records.unshift({ id: lastRecId, domain: d.id, title, note: '', due, time, pri, done: false, ts: Date.now() }); last = before; saveCrm()
     toastUndo('נוסף ל' + d.name, () => { crm = JSON.parse(before); saveCrm() })
     return d.icon + ' נוסף ל<b>' + esc(d.name) + '</b>: ' + (pri === 'urgent' ? '🔴 ' : pri === 'high' ? '🟠 ' : '') + esc(title) + (due ? ' · ' + esc(dueLabel(due)) + (time ? ' ' + time : '') : '')
   }
@@ -3090,6 +3104,10 @@ window.onload = () => {
     if (/^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
     if ((m = t.match(/^(?:תוסיף|הוסף|צור|תיצור|פתח)\s+תחום(?:\s+חדש)?\s+(.+)$/))) return newDomain(m[1])
     if ((m = t.match(/^(?:סיימתי|בוצע|בוצעה|סמן כבוצע|סגור)\s+(?!עם\s)(?:את\s+)?(?:משימה\s+)?(.+)$/))) return doneRec(m[1])
+    { const fw = lastRecId && Date.now() - lastRecTs < 90000 ? whenOnly(t) : null
+      const rr = fw && crm.records.find(x => x.id === lastRecId)
+      if (rr) { last = snap(); if (fw.time) rr.time = fw.time; if (fw.due) rr.due = fw.due; else if (!rr.due) rr.due = today(); saveCrm()
+        return '🕒 עודכן: <b>' + esc(rr.title) + '</b> · ' + esc(dueLabel(rr.due)) + (rr.time ? ' ' + rr.time : '') } }
     if (/^(?:קניתי|קנתי|קנינו|לקחתי|לקחנו|סיימתי עם)\s/.test(t)) return answerFromShop(t)
     if ((m = t.match(/^(?:הצג|תציג|תראה|הראה)(?:\s+לי)?\s+(?:את\s+)?(.+)$/))) { const d = domOf(m[1].split(/\s+/)[0]); if (d) { openDomain(d.id); return '📂 פותח ' + esc(d.name) } }
     const sp = splitDomain(t)
@@ -3097,7 +3115,7 @@ window.onload = () => {
       if (!sp.rest) { scope = sp.d.id; renderSticky(); return sp.d.icon + ' מצב <b>' + esc(sp.d.name) + '</b> – אמור את הפרטים (״יציאה״ לסיום)' }
       return addRec(sp.d, sp.rest)
     }
-    { const sc = scope || defScope; if (sc && dom(sc)) return addRec(dom(sc), t) }
+    { let sc = scope || defScope; if (sc && dom(sc) && dom(sc).link === 'shop' && WHEN.test(t)) sc = null; if (sc && dom(sc)) return addRec(dom(sc), t) }
     if (WHEN.test(t)) return addRec(dom('tasks') || crm.domains[0], t)       // יש תאריך/שעה בלי תחום → משימה
     const r = answerFromShop(t); if (r !== null) return r
     const cx = Date.now() - lastDomTs < 90000 ? dom(lastDom) : null          // המשך לאותו תחום של הפקודה הקודמת
@@ -3119,14 +3137,14 @@ window.onload = () => {
     const b = $('home-body'); if (!b) return; renderSticky()
     const open = crm.records.filter(r => !r.done && r.domain !== 'clients'), t = today(), hr = new Date().getHours()
     const g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
-    const st = [[open.length, 'משימות פתוחות', 'tasks'], [open.filter(r => r.due && r.due <= t).length, 'לטיפול היום', 'tasks'], [crm.records.filter(r => r.domain === 'clients').length, 'אנשי קשר', 'clients'], [remaining().length, 'ברשימת קניות', 'shopping']]
+    const st = [[open.length, 'משימות פתוחות', 'tasks'], [open.filter(r => r.due && r.due <= t).length, 'לטיפול היום', 'tasks'], [crm.records.filter(r => r.domain === 'clients').length, 'אנשי קשר', 'clients'], [remaining().length, 'ברשימת קניות', 'shopping']].filter(x => { const d = dom(x[2]); return !d || visDom(d) })
     const soon = open.filter(r => r.due).sort((a, c) => (a.due + (a.time || '99')) < (c.due + (c.time || '99')) ? -1 : 1).slice(0, 6)
     b.innerHTML = '<div class="hero"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h2>' + g + ' 👋</h2><span class="dchip">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span></div><p>כל המשימות, האנשים והרעיונות במקום אחד.</p><div class="stats">' +
       st.map(x => '<div class="stat" data-act="open" data-v="' + x[2] + '"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div></div>' +
       '<div class="sh"><span>＋ פעולה חדשה</span><small>לחץ על תחום כדי לראות את הרשומות שלו</small></div><div class="dgrid">' +
-      crm.domains.map(d => '<button type="button" class="tile" data-act="open" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>' + esc(d.desc || '') + '</small><em class="cnt">' + cnt(d) + '</em></button>').join('') +
+      crm.domains.filter(visDom).map(d => '<button type="button" class="tile" data-act="open" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>' + esc(d.desc || '') + '</small><em class="cnt">' + cnt(d) + '</em></button>').join('') +
       '<button type="button" class="addtile" data-act="newdom"><span style="font-size:1.6rem">＋</span>תחום חדש</button></div>' +
-      '<div class="quickc"><b>⚡ קיצור דרך</b><p>הוספה מהירה ללא בחירת תחום.</p><div class="qb"><button class="btn-primary" data-act="quick" data-v="tasks">＋ משימה</button><button class="btn-ghost" data-act="quick" data-v="general">📝 הערה</button></div></div>' +
+      '<div class="quickc"><b>⚡ קיצור דרך</b><p>הוספה מהירה ללא בחירת תחום.</p><div class="qb">' + (qv('tasks') ? '<button class="btn-primary" data-act="quick" data-v="tasks">＋ משימה</button>' : '') + (qv('general') ? '<button class="btn-ghost" data-act="quick" data-v="general">📝 הערה</button>' : '') + '</div></div>' +
       '<div class="sh"><span>היום והמשימות הקרובות</span><button class="btn-ghost" data-act="open" data-v="tasks" style="padding:6px 14px;font-size:.8rem">כל המשימות</button></div>' +
       (soon.length ? soon.map(trow).join('') : '<div class="emptyx">אין כרגע משימות שמועדן היום או עבר. אמור ״משימה … מחר״ כדי להוסיף.</div>')
   }
@@ -3153,6 +3171,13 @@ window.onload = () => {
     } else if (sheet.type === 'newdom') {
       showSheet(head('＋ תחום חדש') + '<label class="fl">שם התחום</label><input id="nd-n" placeholder="למשל: ספקים, פרויקטים, רכב"><label class="fl">אייקון</label><div class="icos">' +
         ['📁', '🏷️', '🚗', '🏠', '💼', '📞', '📦', '⭐', '🧾', '🔧'].map(i => '<button type="button" data-act="ico" data-v="' + i + '" class="' + (i === newIco ? 'on' : '') + '">' + i + '</button>').join('') + '</div><button class="btn-primary" style="width:100%;margin-top:16px" data-act="savedom">צור תחום</button>')
+    } else if (sheet.type === 'export') {
+      const o = sheet, doms = crm.domains.filter(d => d.link !== 'shop')
+      const tg = (k, label) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="extoggle" data-v="' + k + '" aria-pressed="' + !!o[k] + '"></button></div>'
+      showSheet(head('📤 ייצוא משימות') + '<label class="fl">מה לייצא</label><select id="ex-dom"><option value="all">כל התחומים</option>' + doms.map(d => '<option value="' + d.id + '"' + (o.dom === d.id ? ' selected' : '') + '>' + d.icon + ' ' + esc(d.name) + '</option>').join('') + '</select>' +
+        tg('done', 'כולל משימות שבוצעו') + tg('shop', 'כולל רשימת קניות') + '<label class="fl">תצוגה מקדימה</label><textarea id="ex-text" rows="9" readonly>' + esc(exportText(o)) + '</textarea>' +
+        '<div class="mgrid" style="margin-top:12px"><button class="btn-primary" data-act="exwa">💬 וואטסאפ</button><button class="btn-ghost" data-act="exol">📧 Outlook</button><button class="btn-ghost" data-act="exmail">✉️ מייל</button><button class="btn-ghost" data-act="exics">📅 יומן (ICS)</button></div>' +
+        '<button class="btn-ghost" style="width:100%;margin-top:8px" data-act="excopy">📋 העתק טקסט</button><div class="hint" style="margin-top:8px">קובץ היומן כולל תזכורת 15 דקות לפני כל משימה עם שעה, ונפתח ב-Outlook או ביומן של האייפון.</div>')
     } else if (sheet.type === 'brief') {
       const b = briefItems(), n = remaining().length, sec = (t, a) => a.length ? '<div class="hg">' + t + '</div>' + a.map(trow).join('') : ''
       const hr = new Date().getHours(), g = hr < 5 ? 'לילה טוב' : hr < 12 ? 'בוקר טוב' : hr < 18 ? 'צהריים טובים' : 'ערב טוב'
@@ -3163,9 +3188,9 @@ window.onload = () => {
         (b.next ? '<div class="okr"><span>➡️</span><div><b>מחר: ' + b.next + ' ' + (b.next === 1 ? 'משימה' : 'משימות') + '</b></div></div>' : '') +
         '<button class="btn-ghost" style="width:100%;margin-top:12px" data-act="open" data-v="tasks">כל המשימות</button>')
     } else if (sheet.type === 'ask') {
-      showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
+      showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.filter(visDom).map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
-      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ']].map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
+      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
       const e = voiceEnv(), sr = voiceSupported(), offl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
@@ -3188,6 +3213,7 @@ window.onload = () => {
       route('הערה: רעיון לפרויקט'); ok(crm.records[0] && crm.records[0].domain === 'general', 'הערה', '״הערה: …״ → תחום כללי')
       route('סיימתי לבדוק ציוד'); ok(crm.records.some(r => r.domain === 'tasks' && r.done), 'סימון כבוצע', '״סיימתי …״ → המשימה סומנה')
       route('תתקשר מחר למוטי בצהריים בשעה 14:00'); const tk = crm.records[0]; ok(tk && tk.domain === 'tasks' && tk.time === '14:00' && tk.due === fmt(new Date(Date.now() + 864e5)) && tk.title === 'תתקשר למוטי', 'תאריך ושעה', '״תתקשר מחר למוטי בצהריים בשעה 14:00״ → משימה למחר 14:00')
+      route('מחר פגישה עם הסמנכ"ל'); route('בשעה 14:00'); const sp = crm.records[0]; ok(sp && sp.time === '14:00' && sp.due === fmt(new Date(Date.now() + 864e5)) && crm.records.length === crm.records.filter(x => x).length, 'שעה במשפט נפרד', '״מחר פגישה עם הסמנכ״ל״ ואחריו ״בשעה 14:00״ → אותה משימה')
       route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
       lastDomTs = 0; route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
       route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
@@ -3197,6 +3223,73 @@ window.onload = () => {
     pend && pendCancel(); const u = $('undo-toast'); if (u) u.remove(); renderShop(); return res
   }
 
+  // ---------- display settings + export (Outlook / WhatsApp / calendar) ----------
+  const loadUi = () => { try { const x = JSON.parse(localStorage.getItem('gl_ui')); if (x) return { hideDom: x.hideDom || [], hideTab: x.hideTab || [] } } catch (e) {} return { hideDom: [], hideTab: [] } }
+  const ui = loadUi()
+  const saveUi = () => { try { localStorage.setItem('gl_ui', JSON.stringify(ui)) } catch (e) {} }
+  const visDom = d => !ui.hideDom.includes(d.id)
+  const qv = id => dom(id) && visDom(dom(id))
+  const SECTIONS = [['home', '🏠 בית'], ['chat', '💬 שיחה'], ['shop', '🛒 קניות'], ['kb', '📚 ידע'], ['eng', '🛠️ הנדסה'], ['report', '📊 דוח']]
+  function renderVis() {
+    const b = $('vis-body'); if (!b) return
+    const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="vis" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
+    b.innerHTML = '<div class="fl" style="margin-top:0">מסכים באפליקציה</div>' + SECTIONS.map(x => row('tab:' + x[0], x[1], !ui.hideTab.includes(x[0]))).join('') +
+      '<div class="fl">תחומים במסך הבית</div>' + crm.domains.map(d => row('dom:' + d.id, d.icon + ' ' + esc(d.name), visDom(d))).join('') +
+      '<button class="btn-primary" style="width:100%;margin-top:14px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
+  }
+  function toggleVis(v) {
+    const k = v.split(':')[0], id = v.split(':')[1], arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
+    if (i >= 0) arr.splice(i, 1); else arr.push(id)
+    saveUi()
+    if (k === 'tab') { try { localStorage.setItem('gl_station', '0') } catch (e) {} toast('מעדכן את התצוגה…', '#10b981'); setTimeout(() => location.reload(), 450) }
+    else { renderVis(); renderHome() }
+  }
+  const fullLabel = r => {
+    if (!r.due) return ''
+    const base = r.due === today() ? 'היום' : r.due === fmt(new Date(Date.now() + 864e5)) ? 'מחר' : new Date(r.due + 'T00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' })
+    return base + (r.time ? ' ' + r.time : '')
+  }
+  const exportRows = o => crm.records.filter(r => { const d = dom(r.domain); return d && d.link !== 'shop' && (o.dom === 'all' || r.domain === o.dom) && (o.done || !r.done) })
+  function exportText(o) {
+    const rows = exportRows(o), key = r => (r.due || '9') + (r.time || '99')
+    const out = ['📋 המשימות שלי · ' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })]
+    crm.domains.filter(d => d.link !== 'shop').forEach(d => {
+      const rs = rows.filter(r => r.domain === d.id).sort((a, b) => key(a) < key(b) ? -1 : 1); if (!rs.length) return
+      out.push('', d.icon + ' ' + d.name)
+      rs.forEach(r => out.push('• ' + (r.done ? '✔ ' : '') + (r.pri === 'urgent' ? '🔴 ' : r.pri === 'high' ? '🟠 ' : '') + r.title + (r.due ? ' – ' + fullLabel(r) : '') + (r.note ? ' (' + r.note + ')' : '')))
+    })
+    if (o.shop && remaining().length) { out.push('', '🛒 קניות'); remaining().forEach(i => out.push('• ' + i.name + (i.qty ? ' — ' + i.qty : ''))) }
+    if (out.length === 1) out.push('', 'אין משימות לייצוא.')
+    return out.join('\n')
+  }
+  function exportIcs(o) {
+    const q = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+    const fold = l => { let out = ''; while (l.length > 60) { out += l.slice(0, 60) + '\r\n '; l = l.slice(60) } return out + l }
+    const p2 = n => String(n).padStart(2, '0'), dt = d => d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + 'T' + p2(d.getHours()) + p2(d.getMinutes()) + '00'
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KMS-CRM//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
+    exportRows(o).forEach(r => {
+      const d = dom(r.domain), sum = (r.done ? '✔ ' : '') + (r.pri === 'urgent' ? '🔴 ' : '') + r.title, desc = (d ? d.name : '') + (r.note ? ' – ' + r.note : '')
+      if (r.due) {
+        L.push('BEGIN:VEVENT', 'UID:' + r.id + '@kms-crm', 'DTSTAMP:' + stamp)
+        if (r.time) { const s = new Date(r.due + 'T' + r.time + ':00'); L.push('DTSTART:' + dt(s), 'DTEND:' + dt(new Date(s.getTime() + 3600e3))) }
+        else { const s = new Date(r.due + 'T00:00'), e = new Date(s.getTime() + 864e5); L.push('DTSTART;VALUE=DATE:' + dt(s).slice(0, 8), 'DTEND;VALUE=DATE:' + dt(e).slice(0, 8)) }
+        L.push('SUMMARY:' + q(sum), 'DESCRIPTION:' + q(desc))
+        if (r.time) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + q(r.title), 'TRIGGER:-PT15M', 'END:VALARM')
+        L.push('END:VEVENT')
+      } else L.push('BEGIN:VTODO', 'UID:' + r.id + '@kms-crm', 'DTSTAMP:' + stamp, 'SUMMARY:' + q(sum), 'DESCRIPTION:' + q(desc), 'STATUS:' + (r.done ? 'COMPLETED' : 'NEEDS-ACTION'), 'END:VTODO')
+    })
+    L.push('END:VCALENDAR')
+    return L.map(fold).join('\r\n') + '\r\n'
+  }
+  async function shareFile(name, text, mime) {
+    const f = new File([text], name, { type: mime })
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: name }); return } } catch (e) { if (e && e.name === 'AbortError') return }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name; document.body.appendChild(a); a.click()
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href) }, 1500)
+  }
+  function openExport() { sheet = { type: 'export', dom: 'all', done: false, shop: false }; renderSheet() }
+  window.crmExportText = exportText; window.crmExportIcs = exportIcs
   // ---------- events ----------
   const send = () => { const i = $('home-cmd-in'), v = i.value.trim(); if (!v) return; clearTimeout(fbTimer); i.value = ''; const r = route(v); setStatus(v, r) }
   document.addEventListener('click', e => {
@@ -3224,6 +3317,14 @@ window.onload = () => {
     else if (a === 'domadd') { const i = $('dom-in'), t = i && i.value.trim(); if (t) addRec(dom(sheet.id), t) }
     else if (a === 'deldom') { if (confirm('למחוק את התחום ואת כל הרשומות שבו?')) { const before = snap(); crm.domains = crm.domains.filter(d => d.id !== v); crm.records = crm.records.filter(r => r.domain !== v); if (scope === v) scope = null; closeSheet(); last = before; saveCrm(); toastUndo('התחום נמחק', () => { crm = JSON.parse(before); saveCrm() }) } }
     else if (a === 'ex') { closeSheet(); const i = $('home-cmd-in'); goStation('home'); i.value = v; i.focus() }
+    else if (a === 'vis') toggleVis(v)
+    else if (a === 'export') openExport()
+    else if (a === 'extoggle') { sheet[v] = !sheet[v]; renderSheet() }
+    else if (a === 'exwa') { location.href = 'whatsapp://send?text=' + encodeURIComponent(exportText(sheet)) }
+    else if (a === 'exol') { location.href = 'ms-outlook://compose?subject=' + encodeURIComponent('המשימות שלי') + '&body=' + encodeURIComponent(exportText(sheet)) }
+    else if (a === 'exmail') { location.href = 'mailto:?subject=' + encodeURIComponent('המשימות שלי') + '&body=' + encodeURIComponent(exportText(sheet)) }
+    else if (a === 'exics') shareFile('kms-tasks.ics', exportIcs(sheet), 'text/calendar')
+    else if (a === 'excopy') { try { navigator.clipboard.writeText(exportText(sheet)); toast('הועתק') } catch (e) { toast('ההעתקה לא נתמכת', '#f59e0b') } }
     else if (a === 'brief') openBrief(false)
     else if (a === 'fab') window.fabVoice()
     else if (a === 'tab') { if (v === 'more') { sheet = { type: 'more' }; renderSheet() } else goStation(v) }
@@ -3267,6 +3368,11 @@ window.onload = () => {
     if (hiddenAt && Date.now() - hiddenAt > 5 * 60000 && briefMode() === 'always') openBrief(true)
     hiddenAt = 0
   })
+  document.addEventListener('change', e => { if (e.target.id === 'ex-dom' && sheet && sheet.type === 'export') { sheet.dom = e.target.value; renderSheet() } })
+  ui.hideTab.forEach(t => document.body.classList.add('hide-' + t))                       // החלת הבחירות השמורות
+  for (let i = STATIONS.length - 1; i >= 0; i--) if (ui.hideTab.includes(STATIONS[i].id)) STATIONS.splice(i, 1)
+  { const p2 = $('panel-2')
+    if (p2) { const d = document.createElement('details'); d.className = 'grp'; d.id = 'vis-grp'; d.innerHTML = '<summary>🧩 מה להציג</summary><div class="grp-b" id="vis-body"></div>'; p2.insertBefore(d, p2.children[1] || null); renderVis() } }
   renderHome()
 })()
 
@@ -3382,6 +3488,8 @@ window.onload = () => {
   const sel = w.querySelector('select'); try { sel.value = localStorage.getItem('gl_brief') || 'always' } catch (e) {}
   sel.onchange = () => { try { localStorage.setItem('gl_brief', sel.value) } catch (e) {} }
 })()
+/* ui11-marker */
+/* ui12-marker */
 </script>
 </body>
 </html>
