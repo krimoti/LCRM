@@ -1218,6 +1218,7 @@ async function sendMessage() {
     chat.push({ role:'ai', content: reply, ts: Date.now() })
     save()
     renderMessages()
+    speakHe(reply, 'chat')          // read the answer aloud if voice feedback is on for this area (🔊 in הגדרות)
 }
 
 function showTyping() {
@@ -2277,8 +2278,20 @@ function handleShopPhrase(ph) {
 }
 let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? '0' : '1')) !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-function speakHe(t) {
-    if (!ttsOn || !window.speechSynthesis || (typeof Voice !== 'undefined' && Voice.state !== 'idle')) return     // never talk over the microphone
+// ---- per-area voice-feedback (TTS) preferences: each area (chat / home-crm / shop) can be toggled independently
+let ttsAreas = (() => { try { const x = JSON.parse(localStorage.getItem('gl_tts_areas')); if (x && typeof x === 'object') return x } catch (e) {} return {} })()
+const TTS_AREA_LABEL = { chat: '💬 שיחה (ידע)', home: '🗂️ פקודות קוליות (ניהול/תחומים)', shop: '🛒 רשימת קניות' }
+function ttsOnFor(area) {                      // 'shop' keeps using the old shared toggle for backward-compat; other areas default to ON
+    if (!area || area === 'shop') return ttsOn
+    return ttsAreas[area] !== false
+}
+function saveTtsAreas() { try { localStorage.setItem('gl_tts_areas', JSON.stringify(ttsAreas)) } catch (e) {} }
+function toggleTtsArea(area) {
+    if (area === 'shop') return shopTtsToggle()
+    ttsAreas[area] = ttsOnFor(area) ? false : true; saveTtsAreas()
+}
+function speakHe(t, area) {
+    if (!t || !ttsOnFor(area) || !window.speechSynthesis || (typeof Voice !== 'undefined' && Voice.state !== 'idle')) return     // never talk over the microphone
     try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(t).replace(/[^\u0590-\u05FF0-9a-zA-Z .,:%-]/g, ' ').slice(0, 140)); u.lang = 'he-IL'; speechSynthesis.speak(u) } catch (e) {}
 }
 function shopTtsToggle() { ttsOn = !ttsOn; localStorage.setItem('gl_tts', ttsOn ? '1' : '0'); const b = document.getElementById('shop-tts'); if (b) b.textContent = ttsOn ? '🔊' : '🔇' }
@@ -2372,7 +2385,7 @@ function voiceStart(kind, onText) {
         clearTimeout(Voice.wd); const sp = Voice.speak; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
         voiceUI(false, kind); voiceDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
         if (!heard && !got) voiceFailed('הסתיים בלי שהמיקרופון נפתח')
-        if (sp) speakHe(sp)                        // speak only AFTER listening has fully ended
+        if (sp) speakHe(sp, kind)                  // speak only AFTER listening has fully ended; area = which mic was used
     })
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה אם מופיע)'); voiceDiag('מפעיל את הזיהוי… (ייתכן חלון הרשאה)')
     Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך ' + Math.round(Voice.wdMs / 1000) + ' שניות') } }, Voice.wdMs)
@@ -2634,7 +2647,7 @@ function pendCommit() {
     if (!pend) return
     clearInterval(pend.timer); const items = pend.items; pend = null; pendRender()
     const r = shopAdd(items), st = document.getElementById('shop-voice-status'); if (st) st.innerHTML = r
-    speakHe('נוספו ' + items.length + ' פריטים')
+    speakHe('נוספו ' + items.length + ' פריטים', 'shop')
 }
 function shopSetCat(id, v) { const i = shop.items.find(x => x.id === id); if (!i) return; const c = pickCat(v); if (c) { i.cat = c; learnCat(i.name, c); saveShop() } renderShop() }
 function shopMove(phrase, catText) {            // "תעביר את הסטייק לבשרי"
@@ -2828,7 +2841,7 @@ window.onload = () => {
       voiceUI(false, kind)
       setDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
       if (!got && !heard && quick) voiceFailed('נסגר מיד, המיקרופון לא נפתח')
-      if (sp) speakHe(sp)
+      if (sp) speakHe(sp, kind)
     })
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); setDiag('מפעיל את המיקרופון…')
     // לא הורגים את הסשן בזמן שחלון ההרשאה פתוח: רק הודעה אחרי 6 שנ׳, ואיפוס אחרי 45 שנ׳
@@ -3247,7 +3260,7 @@ window.onload = () => {
 
   // ---------- THE VOICE ROUTER ----------
   function route(raw, defScope) {
-    const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
+    const t = String(raw).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/[\u00a0\u2009\u202f]/g, ' ').trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
     { const kr = window.KMSCal && KMSCal.route(t); if (kr) return kr }
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
@@ -3273,6 +3286,7 @@ window.onload = () => {
     const r = answerFromShop(t); if (r !== null) return r
     const cx = Date.now() - lastDomTs < 90000 ? dom(lastDom) : null          // המשך לאותו תחום של הפקודה הקודמת
     if (cx) return addRec(cx, t)
+    if (/^(?:מתי|איפה|מה|מי|כמה|האם|איך|למה)(?:\s|$)/.test(t) || /[?？]\s*$/.test(String(raw))) return '🤷 לא הבנתי את השאלה. נסה: ״מתי כניסת שבת״, ״מתי יציאת שבת״ או ״מה התאריך העברי״.'
     askText = t; renderAsk(); return '🤔 לאיזה תחום לשמור? בחר למטה.'
   }
   window.crmRoute = route
@@ -3353,7 +3367,7 @@ window.onload = () => {
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
       const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
         ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
-      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ על 🎙️ ואמור את הפקודה – לחיצה נוספת עוצרת מיד ומבצעת (ואם שותקים דקה היא נעצרת לבד). לחיצה שלישית מתחילה הכתבה חדשה. המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
         '<div class="hint" style="text-align:right;margin-top:10px">📴 אופליין: האפליקציה עצמה עובדת בלי רשת אחרי שנטענה פעם אחת מאתר (דורש את הקבצים sw.js, manifest.json ו-icon.png לצד הקובץ). זיהוי הדיבור של הדפדפן עשוי להזדקק לרשת – במצב טיסה השתמש ב-🎤 שבמקלדת, שפועל במכשיר.</div><button class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
@@ -3393,10 +3407,14 @@ window.onload = () => {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="vis" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     b.innerHTML = '<div class="fl" style="margin-top:0">מסכים באפליקציה</div>' + SECTIONS.map(x => row('tab:' + x[0], x[1], !ui.hideTab.includes(x[0]))).join('') +
       '<div class="fl">תחומים במסך הבית</div>' + crm.domains.map(d => row('dom:' + d.id, d.icon + ' ' + esc(d.name), visDom(d))).join('') +
+      '<div class="fl">🔊 חיווי קולי (הקראת תשובות)</div>' + Object.keys(TTS_AREA_LABEL).map(a => row('tts:' + a, TTS_AREA_LABEL[a], ttsOnFor(a))).join('') +
+      '<div class="hint" style="margin-top:4px">כשדולק – אחרי שאתה שואל/מדבר, התשובה גם תוקרא בקול, לא רק תוצג בכתב. אפשר לכבות בנפרד לכל תחום.</div>' +
       '<button class="btn-primary" style="width:100%;margin-top:14px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
   }
   function toggleVis(v) {
-    const k = v.split(':')[0], id = v.split(':')[1], arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
+    const k = v.split(':')[0], id = v.split(':')[1]
+    if (k === 'tts') { toggleTtsArea(id); renderVis(); return }
+    const arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
     if (i >= 0) arr.splice(i, 1); else arr.push(id)
     saveUi()
     if (k === 'tab') { try { localStorage.setItem('gl_station', '0') } catch (e) {} toast('מעדכן את התצוגה…', '#10b981'); setTimeout(() => location.reload(), 450) }
@@ -3495,7 +3513,7 @@ window.onload = () => {
     if (e.key !== 'Enter') return
     if (e.target.id === 'home-cmd-in') send(); else if (e.target.id === 'dom-in') { const t = e.target.value.trim(); if (t) addRec(dom(sheet.id), t) }
   })
-  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3500) })
+  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3800) })
   window.homeFallback = why => { fb = true; goStation('home'); setTimeout(() => { const i = $('home-cmd-in'); if (i) i.focus() }, 350); window.say('', '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.') }
 
   // voice button state (kind "home")
@@ -3635,7 +3653,7 @@ window.onload = () => {
     clearTimeout(el._dt)
     if (e.inputType === 'insertFromDictation' || el.dataset.dict === '1' && e.inputType === 'insertReplacementText') {
       el.dataset.dict = '1'
-      el._dt = setTimeout(() => submit(el), 2200)                         // שקט אחרי הכתבה = סיימת → מבצע
+      el._dt = setTimeout(() => submit(el), 3800)                         // שקט אחרי הכתבה = סיימת → מבצע
     } else el.dataset.dict = ''
   })
   document.addEventListener('focusout', e => {                          // סגירת המקלדת / יציאה מהשדה אחרי הכתבה
@@ -4785,7 +4803,7 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
     return pickBd(l.map(x => x.b), '💬 למי לשלוח ברכה?')
   }
   function route(t) {
-    t = String(t || '').trim().replace(/[?!.,]+$/, '')
+    t = String(t || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/[\u00a0\u2009\u202f]/g, ' ').trim().replace(/[?!.,]+$/, '')
     if (!t) return null
     let m
     // --- calendar
@@ -4849,6 +4867,144 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
   window.KMSCal = { open, check, checkRecord, route, strip, _t: { info, blockOf, findVacations, festivals, nextBd, waUrl, bdMsg, cfg, offDay, absOfISO, isoOfAbs } }
 })()
 
+</script>
+<script id="voice-v3">
+;(function () {                                                   // voice-v3-marker: לחיצה = התחלה · לחיצה = עצירה מיידית · לחיצה = התחלה מחדש (אייפון / אנדרואיד / מחשב)
+  const $ = id => document.getElementById(id)
+  const IDLE_MS = 60000, STOP_WAIT_MS = 700
+  const diag = m => { const el = $('voice-diag'); if (el) el.textContent = m }
+  // joins what the recognizer returned in ONE sentence (never delivers a half sentence)
+  const join = arr => {
+    const out = []
+    arr.forEach(x => {
+      const s = String(x || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/\s+/g, ' ').trim(); if (!s) return
+      const p = out[out.length - 1]
+      if (p && s.startsWith(p)) out[out.length - 1] = s            // some Android / iOS builds resend the text so far
+      else if (!(p && p.startsWith(s))) out.push(s)
+    })
+    return out.join(' ')
+  }
+  const text = s => join([...s.base, join(s.run)])
+  let S = null, prev = { ended: true }                             // S = the live session · prev = the previous recognizer (must end before a new one starts)
+
+  function fallback(kind, why) {                                   // no speech recognition here → keyboard dictation
+    vlog('מעבר להכתבה במקלדת: ' + why)
+    if (kind === 'home' && window.homeFallback) return window.homeFallback(why)
+    if (kind === 'chat') { const i = $('user-input'); if (i) i.focus(); toast('לחץ על 🎤 שבמקלדת, דבר, ואז Enter', '#f59e0b'); return }
+    if (!shopDictate) shopDictateToggle()
+    const st = $('shop-voice-status'); if (st) st.textContent = '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר.'
+  }
+
+  function finish(s, o) {                                          // end of the session: release the mic, deliver the WHOLE text once
+    o = o || {}
+    if (s.done) return; s.done = true
+    ;[s.wd1, s.wd2, s.wd3].forEach(clearTimeout); clearInterval(s.idle)
+    const t = o.discard ? '' : text(s)
+    if (S === s) { S = null; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null; Voice.want = false }
+    voiceUI(false, s.kind); isRecording = false; shopVoiceOn = false
+    if (window.voiceInterim) window.voiceInterim(s.kind, '')
+    try { s.rec && s.rec.abort() } catch (e) {}
+    if (!t) {
+      if (o.fallback) fallback(s.kind, 'זיהוי הדיבור לא התחיל במכשיר הזה (בדוק הרשאת מיקרופון והכתבה בהגדרות)')
+      else if (!o.discard) diag(s.fatal ? 'לא הצלחתי להקשיב – לחץ שוב' : 'לא נקלט דיבור – לחץ שוב')
+      return
+    }
+    Voice.fails = 0; vlog('שמעתי: ' + t); diag('שמעתי: ' + t)
+    let rep = null
+    try { rep = s.onText(t) } catch (e) { vlog('שגיאה בעיבוד: ' + e.message); toast('משהו השתבש בעיבוד הפקודה', '#f59e0b') }
+    if (rep) setTimeout(() => speakHe(rep, s.kind), 350)           // talk only after the mic is fully closed
+  }
+
+  function stop(s) {                                               // 2nd click: stop listening NOW (button flips at once), wait a moment for the last words
+    if (s.done || s.stopping) return
+    s.stopping = true; vlog('עצירה ידנית')
+    Voice.state = 'stopping'; voiceUI(false, s.kind); diag('מעבד…')
+    if (!s.started) return finish(s, { discard: true })            // cancelled before the mic opened
+    try { s.rec.stop() } catch (e) { return finish(s) }
+    s.wd3 = setTimeout(() => finish(s), STOP_WAIT_MS)              // never wait for the browser longer than this
+  }
+
+  function onEnd(s) {                                              // the recognizer closed by itself
+    if (s.stopping || s.fatal) return finish(s)
+    if (Date.now() - s.runAt < 800 && !s.runGot) s.quick++; else s.quick = 0
+    if (s.quick >= 3) { voiceFailed('נסגר מיד, המיקרופון לא נפתח'); return finish(s, { fallback: !text(s) }) }
+    if (Date.now() - s.lastAct > IDLE_MS) return finish(s)
+    // iOS ends the session on every short pause. That is NOT the end of the sentence → keep what was heard and keep listening until the user clicks stop.
+    s.base.push(join(s.run)); s.run = []
+    s.tok.ended = false; s.runAt = Date.now(); s.runGot = false
+    try { s.rec.start(); vlog('restart') } catch (e) { s.tok.ended = true; vlog('restart נכשל: ' + e.message); launch(s, 0) }
+  }
+
+  function launch(s, tries) {
+    if (S !== s || s.done) return
+    if (!prev.ended && tries < 30) return setTimeout(() => launch(s, tries + 1), 50)   // let the previous recognizer close first
+    let r
+    try { r = new (voiceSupported())() } catch (e) { vlog('new SpeechRecognition נכשל: ' + e.message); return finish(s, { fallback: true }) }
+    const tok = prev = { ended: false }
+    s.rec = r; s.tok = tok; s.run = []; s.runAt = Date.now(); s.runGot = false; Voice.rec = r
+    r.lang = 'he-IL'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1
+    const live = f => e => { if (S === s && s.rec === r && !s.done) f(e) }        // an old session can never act on a new one
+    r.onstart = live(() => {
+      s.started = true; clearTimeout(s.wd1); clearTimeout(s.wd2)
+      if (!s.stopping) { Voice.state = 'listening'; voiceUI(true, s.kind); diag('מקשיב… דבר, ולחץ שוב כדי לעצור') }
+      vlog('start')
+    })
+    ;['audiostart', 'soundstart', 'speechstart'].forEach(n => { r['on' + n] = live(() => { s.lastAct = Date.now(); s.runGot = true; vlog(n) }) })
+    r.onresult = live(e => {
+      s.lastAct = Date.now(); s.runGot = true
+      const arr = []; for (let i = 0; i < e.results.length; i++) { const a = e.results[i]; if (a && a[0]) arr[i] = a[0].transcript }
+      s.run = arr
+      const t = text(s); if (t) { diag('…' + t); if (!s.stopping && window.voiceInterim) window.voiceInterim(s.kind, t) }
+    })
+    r.onerror = live(e => {
+      vlog('error: ' + e.error)
+      if (e.error === 'no-speech' || e.error === 'aborted') return               // normal – onend decides
+      const denied = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+      if (VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
+      s.fatal = e.error; voiceFailed(e.error)
+      finish(s, { fallback: denied })
+    })
+    r.onend = () => { tok.ended = true; if (S === s && s.rec === r && !s.done) onEnd(s) }
+    try { r.start(); vlog('start() נקרא') } catch (e) {
+      tok.ended = true; vlog('start נכשל: ' + e.name + ' ' + e.message)
+      if (++s.startFails < 3) return setTimeout(() => launch(s, 0), 250)
+      voiceFailed('start() זרק ' + e.name); finish(s, { fallback: true })
+    }
+  }
+
+  function begin(kind, onText) {
+    if (!voiceSupported()) return fallback(kind, 'הדפדפן הזה לא תומך בזיהוי דיבור')
+    if (kind === 'shop' && shopDictate) shopDictateToggle()
+    try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
+    const s = S = { kind, onText, base: [], run: [], rec: null, tok: null, t0: Date.now(), lastAct: Date.now(), runAt: 0, runGot: false,
+      started: false, stopping: false, done: false, fatal: null, quick: 0, startFails: 0 }
+    Voice.rec = null; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = s.t0; Voice.speak = null
+    voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); diag('מפעיל את המיקרופון…')
+    s.wd1 = setTimeout(() => { if (S === s && !s.started) diag('ממתין להרשאה… אשר בחלון שנפתח') }, 6000)
+    s.wd2 = setTimeout(() => { if (S === s && !s.started) { finish(s, { discard: true }); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך 45 שניות') } }, 45000)
+    s.idle = setInterval(() => { if (S === s && s.started && !s.stopping && Date.now() - s.lastAct > IDLE_MS) { vlog('שקט ארוך – מסיים'); stop(s) } }, 2000)
+    launch(s, 0)
+  }
+
+  window.voiceToggle = function (kind, onText) {
+    if (S && !S.done && !S.stopping) return stop(S)                // listening / starting → stop now
+    if (S && !S.done) finish(S)                                    // previous one is still wrapping up → settle it, then start fresh
+    begin(kind, onText)
+  }
+  window.voiceStart = function (kind, onText) { if (S && !S.done) finish(S, { discard: true }); begin(kind, onText) }
+  window.voiceReset = function () {                                // leaving the screen / app → drop the session
+    if (S && !S.done) finish(S, { discard: true })
+    voiceUI(false, 'home'); voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
+  }
+
+  // keyboard-dictation mode (iPhone home-screen app has no speech recognition): the mic button now also means "I'm done – run it"
+  const _fab = window.fabVoice
+  if (_fab) window.fabVoice = function () {
+    if (!voiceSupported()) { const i = $('home-cmd-in'); if (i && i.value.trim()) { const b = document.querySelector('#cmdpill [data-act=send]'); if (b) return b.click() } }
+    return _fab.apply(this, arguments)
+  }
+  window.__voiceV3 = { state: () => (S ? { kind: S.kind, stopping: S.stopping, text: text(S) } : null) }
+})()
 </script>
 </body>
 </html>
