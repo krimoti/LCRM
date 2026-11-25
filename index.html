@@ -590,8 +590,29 @@ body.st-home .station[data-id=home]{padding-bottom:calc(168px + env(safe-area-in
 .hrow button{font-size:1.1rem;min-width:36px;min-height:36px}
 #hist-q{border-radius:999px!important;padding:11px 18px}
 </style>
+<style id="splashstyle">
+#splash{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;direction:ltr;color:#fff;font-family:"Segoe UI",Arial,sans-serif;background:radial-gradient(120% 90% at 50% 38%,#16275a 0%,#0b1430 55%,#060b1d 100%);animation:spOut .25s ease .75s forwards}
+#splash::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(60% 55% at 50% 45%,#000,transparent);mask-image:radial-gradient(60% 55% at 50% 45%,#000,transparent)}
+#splash .sp{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:0 16px}
+#splash .tile{width:92px;height:92px;border-radius:26px;display:grid;place-items:center;background:linear-gradient(145deg,#1f3270,#0b1430);color:#ffc53d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 18px 44px rgba(0,0,0,.45),0 0 0 8px rgba(255,197,61,.07);animation:spIn .4s cubic-bezier(.2,.8,.2,1) both}
+#splash .tile svg{width:50px;height:50px;filter:drop-shadow(0 0 10px rgba(255,197,61,.55));animation:spGlow .8s ease-in-out both}
+#splash .wm{font-weight:800;font-size:46px;line-height:1;letter-spacing:.3em;margin-right:-.3em;margin-top:4px;animation:spUp .45s ease .1s both}
+#splash .rule{width:44px;height:3px;border-radius:3px;background:#ffc53d;animation:spUp .45s ease .15s both}
+#splash .sub{font-size:11px;letter-spacing:.34em;margin-right:-.34em;color:#9fb0d0;text-transform:uppercase;animation:spUp .45s ease .2s both}
+#splash .bar{width:150px;height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:10px;animation:spUp .4s ease .2s both}
+#splash .bar i{display:block;height:100%;background:linear-gradient(90deg,#ffc53d,#ffdf8a);transform-origin:left center;animation:spBar .8s cubic-bezier(.4,0,.2,1) .1s both}
+@keyframes spIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+@keyframes spUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes spGlow{0%{opacity:.35}60%,100%{opacity:1}}
+@keyframes spOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){#splash .tile,#splash .tile svg,#splash .wm,#splash .rule,#splash .sub,#splash .bar,#splash .bar i{animation:none}}
+@media print{#splash{display:none!important}}
+</style>
 </head>
 <body class="text-gray-100 h-screen overflow-hidden">
+<div id="splash" aria-hidden="true"><div class="sp"><div class="tile"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 9.5h-5.8z"/></svg></div><div class="wm">KMS</div><div class="rule"></div><div class="sub">Client Management</div><div class="bar"><i></i></div></div></div>
+<script id="splashjs">(function(){setTimeout(function(){var e=document.getElementById('splash');if(e&&e.parentNode)e.parentNode.removeChild(e)},1100)})();</script>
 
 <div id="app" class="flex h-screen">
 
@@ -3131,7 +3152,7 @@ window.onload = () => {
     { const U = new RegExp(NB + '(?:דחוף|מיידי|urgent)' + NA, 'i'), H = new RegExp(NB + '(?:חשוב|important)' + NA, 'i')
       if (U.test(title)) { pri = 'urgent'; title = title.replace(U, ' ').replace(/\s+/g, ' ').trim() } else if (H.test(title)) { pri = 'high'; title = title.replace(H, ' ').replace(/\s+/g, ' ').trim() } }
     if (!title) return 'לא קלטתי תוכן ל' + esc(d.name) + '.'
-    const before = snap(); lastRecId = newId(); lastRecTs = Date.now(); crm.records.unshift({ id: lastRecId, domain: d.id, title, note: '', due, time, pri, done: false, ts: Date.now() }); last = before; saveCrm()
+    const before = snap(); lastRecId = newId(); lastRecTs = Date.now(); crm.records.unshift({ id: lastRecId, domain: d.id, title, note: '', due, time, pri, done: false, ts: Date.now() }); last = before; saveCrm(); if (window.KMSCal) { const _rid = lastRecId; setTimeout(() => KMSCal.checkRecord(_rid), 80) }
     toastUndo('נוסף ל' + d.name, () => { crm = JSON.parse(before); saveCrm() })
     return d.icon + ' נוסף ל<b>' + esc(d.name) + '</b>: ' + (pri === 'urgent' ? '🔴 ' : pri === 'high' ? '🟠 ' : '') + esc(title) + (due ? ' · ' + esc(dueLabel(due)) + (time ? ' ' + time : '') : '')
   }
@@ -3153,6 +3174,7 @@ window.onload = () => {
   function route(raw, defScope) {
     const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
+    { const kr = window.KMSCal && KMSCal.route(t); if (kr) return kr }
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
     if (/^(?:בטל|תבטל|ביטול|תחזיר|מחק)$/.test(t)) return crmUndo()
     if (/^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
@@ -3160,7 +3182,7 @@ window.onload = () => {
     if ((m = t.match(/^(?:סיימתי|בוצע|בוצעה|סמן כבוצע|סגור)\s+(?!עם\s)(?:את\s+)?(?:משימה\s+)?(.+)$/))) return doneRec(m[1])
     { const fw = lastRecId && Date.now() - lastRecTs < 90000 ? whenOnly(t) : null
       const rr = fw && crm.records.find(x => x.id === lastRecId)
-      if (rr) { last = snap(); if (fw.time) rr.time = fw.time; if (fw.due) rr.due = fw.due; else if (!rr.due) rr.due = today(); saveCrm()
+      if (rr) { last = snap(); if (fw.time) rr.time = fw.time; if (fw.due) rr.due = fw.due; else if (!rr.due) rr.due = today(); saveCrm(); if (window.KMSCal) { const _rid = rr.id; setTimeout(() => KMSCal.checkRecord(_rid), 80) }
         return '🕒 עודכן: <b>' + esc(rr.title) + '</b> · ' + esc(dueLabel(rr.due)) + (rr.time ? ' ' + rr.time : '') } }
     if (/^(?:קניתי|קנתי|קנינו|לקחתי|לקחנו|סיימתי עם)\s/.test(t)) return answerFromShop(t)
     if ((m = t.match(/^(?:הצג|תציג|תראה|הראה)(?:\s+לי)?\s+(?:את\s+)?(.+)$/))) { const d = domOf(m[1].split(/\s+/)[0]); if (d) { openDomain(d.id); return '📂 פותח ' + esc(d.name) } }
@@ -3180,7 +3202,7 @@ window.onload = () => {
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
   function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
   function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
@@ -3244,13 +3266,13 @@ window.onload = () => {
     } else if (sheet.type === 'ask') {
       showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.filter(visDom).map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
-      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
+      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
       const e = voiceEnv(), sr = voiceSupported(), offl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
       const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
-        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
+        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי נכנסת שבת', 'מתי יוצאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['הוסף יום הולדת לדנה ב-26 בנובמבר', 'שלח ברכה לדנה', 'שלח לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'ימי הולדת']], ['🏖️ חופשה', ['מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג את החופשה בלוח', 'שמור את החופשה']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
       showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
@@ -3367,7 +3389,7 @@ window.onload = () => {
     else if (a === 'tog') { const r = crm.records.find(x => x.id === v); if (r) { last = snap(); r.done = !r.done; saveCrm() } }
     else if (a === 'del') { const before = snap(); crm.records = crm.records.filter(x => x.id !== v); last = before; if (sheet && sheet.type === 'edit') sheet = { type: 'dom', id: sheet.back || 'tasks' }; saveCrm(); toastUndo('נמחק', () => { crm = JSON.parse(before); saveCrm() }) }
     else if (a === 'edit') { const r = crm.records.find(x => x.id === v); if (r) { sheet = { type: 'edit', id: v, back: r.domain }; renderSheet() } }
-    else if (a === 'saveedit') { const r = crm.records.find(x => x.id === sheet.id); if (r) { last = snap(); r.title = $('ed-t').value.trim() || r.title; r.note = $('ed-n').value.trim(); r.due = $('ed-d').value; r.time = $('ed-tm').value; sheet = { type: 'dom', id: r.domain }; saveCrm() } }
+    else if (a === 'saveedit') { const r = crm.records.find(x => x.id === sheet.id); if (r) { last = snap(); r.title = $('ed-t').value.trim() || r.title; r.note = $('ed-n').value.trim(); r.due = $('ed-d').value; r.time = $('ed-tm').value; sheet = { type: 'dom', id: r.domain }; saveCrm(); if (window.KMSCal) { const _rid = r.id; setTimeout(() => KMSCal.checkRecord(_rid), 80) } } }
     else if (a === 'domadd') { const i = $('dom-in'), t = i && i.value.trim(); if (t) addRec(dom(sheet.id), t) }
     else if (a === 'deldom') { if (confirm('למחוק את התחום ואת כל הרשומות שבו?')) { const before = snap(); crm.domains = crm.domains.filter(d => d.id !== v); crm.records = crm.records.filter(r => r.domain !== v); if (scope === v) scope = null; closeSheet(); last = before; saveCrm(); toastUndo('התחום נמחק', () => { crm = JSON.parse(before); saveCrm() }) } }
     else if (a === 'ex') { closeSheet(); const i = $('home-cmd-in'); goStation('home'); i.value = v; i.focus() }
@@ -3427,7 +3449,9 @@ window.onload = () => {
   for (let i = STATIONS.length - 1; i >= 0; i--) if (ui.hideTab.includes(STATIONS[i].id)) STATIONS.splice(i, 1)
   { const p2 = $('panel-2')
     if (p2) { const d = document.createElement('details'); d.className = 'grp'; d.id = 'vis-grp'; d.innerHTML = '<summary>🧩 מה להציג</summary><div class="grp-b" id="vis-body"></div>'; p2.insertBefore(d, p2.children[1] || null); renderVis() } }
-  window.__crm = { data: () => crm, dom, visDom, today, fmt, dueLabel, cnt, renderSticky, esc }
+  window.__crm = { data: () => crm, dom, visDom, today, fmt, dueLabel, cnt, renderSticky, esc, closeSheet, save: saveCrm, parse: t => { const a = parseTime(t), p = parseDue(a.title); return { time: a.time, due: p.due } },
+    addRecord: o => { const before = snap(), id = newId(); crm.records.unshift({ id, domain: o.domain, title: o.title, note: o.note || '', due: o.due || '', time: o.time || '', pri: '', done: false, ts: Date.now() }); last = before; saveCrm(); return id },
+    update: (id, p) => { const r = crm.records.find(x => x.id === id); if (!r) return false; last = snap(); Object.assign(r, p); saveCrm(); return true } }
   renderHome()
 })()
 
@@ -3558,7 +3582,7 @@ window.onload = () => {
   const tb = document.querySelector('#home-panel .topbar')
   if (tb) { const w = document.createElement('div'); w.className = 'wtop'
     w.innerHTML = '<div><div class="wtime" id="wtime">' + clock() + '</div><div class="wdate">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div></div>' +
-      '<div class="top-actions"><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div>'
+      '<div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div>'
     tb.replaceWith(w) }
   setInterval(() => { const t = $('wtime'); if (t) t.textContent = clock() }, 20000)
   window.renderHome = function () {
@@ -3635,7 +3659,7 @@ window.onload = () => {
       const x = ev.target.closest('[data-hx]'); if (!x) return
       const row = ev.target.closest('[data-sid]'), id = row && row.dataset.sid, a = x.dataset.hx
       if (a === 'close') closeHist(); else if (a === 'new') { newSession(); closeHist() } else if (a === 'open') { openSession(id); closeHist() }
-      else if (a === 'del') delSession(id).constructor === Promise || renderHist(); else if (a === 'exp') { const s = S.list.find(z => z.id === id); if (s) exportSess(s) }
+      else if (a === 'del') { delSession(id); renderHist() } else if (a === 'exp') { const s = S.list.find(z => z.id === id); if (s) exportSess(s) }
     })
     e.addEventListener('input', ev => { if (ev.target.id === 'hist-q') { hq = ev.target.value; renderHist(true) } }) } return e }
   function renderHist(keepFocus) {
@@ -3743,15 +3767,15 @@ window.onload = () => {
   function examplesCard(focus) {
     const g = (t, a) => '<div style="margin-top:10px"><b>' + t + '</b>' + chips(a.map(x => chip(x, 'ask', x))) + '</div>'
     return '💡 <b>דוגמאות להקלדה</b> (לחץ כדי לשלוח):' +
-      g('🎓 ללמד אותי', ['תלמד ש-מק״ט 123 זה מחבר 12 פינים', 'למד: שעות פעילות — ראשון עד חמישי 8:00 עד 17:00', 'תזכור שהסיסמה של הוואי-פיי היא 4821', 'מעכשיו כששואלים מי המנהל התשובה היא דנה כהן']) +
-      g('🔎 לשאול', ['מה זה מק״ט 123', 'מה הסיסמה של הוואי-פיי', 'מי המנהל', 'מה שעות פעילות']) +
+      g('🎓 ללמד אותי', ['תלמד ש-מק״ט 123 זה מחבר 12 פינים', 'למד: שעות פעילות — ראשון עד חמישי 8:00 עד 17:00', 'תזכור שהקוד של שער החניה הוא 4821', 'מעכשיו כששואלים מי המנהל התשובה היא דנה כהן']) +
+      g('🔎 לשאול', ['מה זה מק״ט 123', 'מה הקוד של שער החניה', 'מי המנהל', 'מה שעות פעילות']) +
       g('↪️ שאלות המשך (אחרי תשובה)', ['תפרט', 'תוסיף לזה שיש לו גם מגן', 'ומה עם שעות פעילות', 'לגבי זה — כמה פינים', 'מה זאת אומרת']) +
       g('✏️ לתקן', ['טעות, הנכון הוא מחבר 14 פינים', 'לא, התכוונתי לשעות פעילות'])
   }
   // answer card -------------------------------------------------
   function card(best, original, matches, kind) {
     const full = sentences(best.a), picked = sentences(pickSentences(best.a, original)), show = picked.slice(0, 2), more = full.length > show.length
-    const others = (matches || []).filter(x => x.id !== best.id && x.score >= 0.12).slice(0, 2)
+    const others = (matches || []).filter(x => x.id !== best.id && x.score >= 0.22 && (x.matched || []).length).slice(0, 2)
     let intro = ''
     if (kind === 'med') intro = pick(['נראה לי שהתכוונת ל«' + best.q + '». ', 'הכי קרוב למה שמצאתי («' + best.q + '»): ', 'לפי מה שלימדת אותי על «' + best.q + '»: '])
     else if (kind === 'low') intro = 'לא לגמרי בטוח שזה מה שחיפשת, אבל זה הכי קרוב ש' + 'יש לי («' + best.q + '»): '
@@ -3783,7 +3807,7 @@ window.onload = () => {
     const full = sentences(it.a), seen = ctx.elab[it.id] || 0; ctx.elab[it.id] = full.length; ctx.offer = null
     const body = fmtText(toSecondPerson(it.a))
     if (simpler) return 'בוא ננסה שוב, בצורה מלאה:<br>' + body + chips([chip('✍️ לתקן / להוסיף', 'edit', it.id)])
-    if (seen >= full.length && full.length <= 1) return 'זה כל מה שיש לי על «' + esc(it.q) + '»:<br>' + body + chips([chip('➕ להוסיף פרט', 'edit', it.id)])
+    if (full.length <= 1) return 'זה כל מה שיש לי על «' + esc(it.q) + '»:<br>' + body + chips([chip('➕ להוסיף פרט', 'edit', it.id)])
     return 'הנה הפירוט המלא על «' + esc(it.q) + '»:<br>' + body + chips([chip('➕ להוסיף פרט', 'edit', it.id)])
   }
   const ORD = { ראשון: 0, הראשון: 0, ראשונה: 0, הראשונה: 0, שני: 1, השני: 1, שנייה: 1, השנייה: 1, שניה: 1, השניה: 1, שלישי: 2, השלישי: 2, שלישית: 2, השלישית: 2, אחרון: -1, האחרון: -1, אחרונה: -1, האחרונה: -1 }
@@ -3822,6 +3846,7 @@ window.onload = () => {
     if (w.length <= 6 && w.some(x => DEIC.has(x)) && !/^(?:מה|מי)\s+(?:זה|זאת)\s+\S+/.test(nrm(t)) && !/^(?:תלמד|למד|תזכור)/.test(nrm(t))) return t + ' ' + ctx.topic
     return t
   }
+  const core = (...a) => window.generateCore(...a)
   // ---- the core: replaces generateCore
   window.generateCore = async function (msg, mayLearn, original) {
     original = original || msg
@@ -3845,7 +3870,7 @@ window.onload = () => {
     if (top && (sc >= 0.5 || (top.approved && sc >= 0.3))) return card(top, original, matches, 'strong')
     if (top && sc >= 0.3) { const amb = matches[1] && matches[1].score >= sc * 0.92 && matches[1].a !== top.a; return card(top, original, matches, amb ? 'amb' : 'med') }
     if (mayLearn) { const hit = sentenceSearch(original); if (hit) { const it = kb.find(i => i.id === hit.id); if (it) { ctx.lastId = it.id; ctx.topic = it.q; ctx.lastUserQ = original; ctx.offer = null; activeTopic = it.q; lastAnswer = { id: it.id, userQ: original }; return esc('מצאתי את זה בתוך מה שלימדת אותי: ') + fmtText(toSecondPerson(hit.s)) + chips([chip('📖 תפרט', 'elab')]) } } }
-    if (top && sc >= 0.15) return card(top, original, matches, 'low')
+    if (top && sc >= 0.22 && (top.matched || []).length) return card(top, original, matches, 'low')
     return none(original, matches)
   }
   window.generateResponse = async function (userMsg) {
@@ -3877,6 +3902,845 @@ window.onload = () => {
   // more small-talk words so they never trigger the teaching flow
   ;['אה', 'הממ', 'רגע', 'חכה', 'לא משנה', 'מעניין', 'אחלה', 'סבבה תודה'].forEach(x => { if (!ACTS.ack.includes(x)) ACTS.ack.push(x) })
   save()
+})()
+
+</script>
+<script id="kms-cal">
+const HebCal = (function(){
+  const PARSHA_NAMES = ['בראשית','נח','לך לך','וירא','חיי שרה','תולדות','ויצא','וישלח','וישב','מקץ','ויגש','ויחי','שמות','וארא','בא','בשלח','יתרו','משפטים','תרומה','תצוה','כי תשא','ויקהל','פקודי','ויקרא','צו','שמיני','תזריע','מצורע','אחרי מות','קדושים','אמור','בהר','בחוקותי','במדבר','נשא','בהעלותך','שלח','קרח','חקת','בלק','פינחס','מטות','מסעי','דברים','ואתחנן','עקב','ראה','שופטים','כי תצא','כי תבא','נצבים','וילך','האזינו','וזאת הברכה'];
+  const PARSHA_IL = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50+51", "4-354": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "1-355": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "6-383": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "1-385": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50", "6-353": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "2-384": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50", "6-355": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "4-383": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50", "2-354": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "1-383": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "1-353": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "4-355": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "6-385": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51"};
+const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50+51", "4-354": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "1-355": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,,34,35,36,37,38+39,40,41+42,43,44,45,46,47,48,49,50+51", "6-383": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "1-385": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "6-353": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "2-384": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,,28,29,30,31,32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "6-355": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "4-383": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50", "2-354": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,,34,35,36,37,38+39,40,41+42,43,44,45,46,47,48,49,50+51", "1-383": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,,34,35,36,37,38+39,40,41+42,43,44,45,46,47,48,49,50+51", "1-353": "51,52,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21+22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50+51", "4-355": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,,25,26+27,28+29,30,31+32,33,34,35,36,37,38,39,40,41+42,43,44,45,46,47,48,49,50", "6-385": ",52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,,28,29,30,31,32,33,,34,35,36,37,38+39,40,41+42,43,44,45,46,47,48,49,50+51"};
+
+  const EPOCH = -1373427;
+  const mod = (a, b) => ((a % b) + b) % b;
+  const isLeap = y => mod(1 + y * 7, 19) < 7;
+  const monthsInYear = y => isLeap(y) ? 13 : 12;
+  function elapsedDays(y){
+    const months = Math.floor((235 * y - 234) / 19), parts = 12084 + 13753 * months;
+    let day = months * 29 + Math.floor(parts / 25920);
+    if(mod(3 * (day + 1), 7) < 3) day++;
+    return day;
+  }
+  function newYearDelay(y){
+    const a = elapsedDays(y), b = elapsedDays(y + 1);
+    if(b - a === 356) return 2;
+    if(a - elapsedDays(y - 1) === 382) return 1;
+    return 0;
+  }
+  const daysInYear = y => elapsedDays(y + 1) + newYearDelay(y + 1) - elapsedDays(y) - newYearDelay(y);
+  function daysInMonth(m, y){
+    if(m === 2 || m === 4 || m === 6 || m === 10 || m === 13) return 29;
+    if(m === 12 && !isLeap(y)) return 29;
+    if(m === 8 && mod(daysInYear(y), 10) !== 5) return 29;
+    if(m === 9 && mod(daysInYear(y), 10) === 3) return 29;
+    return 30;
+  }
+  function hebToAbs(y, m, d){
+    let t = d;
+    if(m < 7){ for(let i = 7; i <= monthsInYear(y); i++) t += daysInMonth(i, y); for(let i = 1; i < m; i++) t += daysInMonth(i, y); }
+    else for(let i = 7; i < m; i++) t += daysInMonth(i, y);
+    return EPOCH + elapsedDays(y) + newYearDelay(y) + t - 1;
+  }
+  function absToHeb(abs){
+    let y = Math.floor((abs - EPOCH) / 365.24682220597794) + 1;
+    while(hebToAbs(y + 1, 7, 1) <= abs) y++;
+    while(hebToAbs(y, 7, 1) > abs) y--;
+    let m = abs < hebToAbs(y, 1, 1) ? 7 : 1;
+    while(abs > hebToAbs(y, m, daysInMonth(m, y))) m++;
+    return { y, m, d: abs - hebToAbs(y, m, 1) + 1 };
+  }
+  const gregToAbs = (y, m, d) => Math.floor(Date.UTC(y, m - 1, d) / 86400000) + 719163;   /* m = 1..12 */
+  const absToGreg = abs => { const t = new Date((abs - 719163) * 86400000); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }; };
+  const dowOfAbs = abs => mod(abs, 7);              /* 0 = Sunday */
+
+  /* ---- names / numerals ---- */
+  const MONTHS = { 1:'ניסן', 2:'אייר', 3:'סיוון', 4:'תמוז', 5:'אב', 6:'אלול', 7:'תשרי', 8:'חשוון', 9:'כסלו', 10:'טבת', 11:'שבט' };
+  function monthName(m, y){ if(m === 12) return isLeap(y) ? 'אדר א׳' : 'אדר'; if(m === 13) return 'אדר ב׳'; return MONTHS[m]; }
+  function gematria(n){
+    if(n <= 0) return '';
+    const H = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'], T = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'], O = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    let s = '';
+    while(n >= 1000){ s += O[Math.floor(n / 1000) % 10]; n %= 1000; }
+    while(n >= 900){ s += 'תתק'; n -= 900; }
+    let h = Math.floor(n / 100); n %= 100;
+    if(h > 0){ while(h > 4){ s += 'ת'; h -= 4; } s += ['', 'ק', 'ר', 'ש', 'ת'][h]; }
+    if(n === 15) s += 'טו'; else if(n === 16) s += 'טז'; else { s += T[Math.floor(n / 10)] + O[n % 10]; }
+    return s;
+  }
+  function numeral(n){ const g = gematria(n); if(g.length === 1) return g + '׳'; return g.slice(0, -1) + '״' + g.slice(-1); }
+  const yearStr = y => numeral(y % 1000);
+  function dayStr(d){ return numeral(d); }
+  const WD = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  /* ---- Torah portions ---- */
+  function parashaOnShabbat(abs, il){
+    const h = absToHeb(abs); let ty = h.y;
+    const rh = hebToAbs(ty, 7, 1), L = hebToAbs(ty + 1, 7, 1) - rh;
+    const tbl = (il ? PARSHA_IL : PARSHA_DIA)[dowOfAbs(rh) + '-' + L]; if(!tbl) return null;
+    let first = rh; while(dowOfAbs(first) !== 6) first++;
+    const idx = Math.round((abs - first) / 7), tok = tbl.split(',')[idx];
+    if(!tok) return null;
+    return tok.split('+').map(i => PARSHA_NAMES[+i]).join('־');
+  }
+  /* ---- sun times (NOAA) ---- */
+  const CITIES = {
+    kfarsaba: { name:'כפר סבא',        lat:32.1750, lon:34.9066, candle:18 },
+    telaviv:  { name:'תל אביב',        lat:32.0853, lon:34.7818, candle:18 },
+    jerusalem:{ name:'ירושלים',        lat:31.7683, lon:35.2137, candle:40 },
+    haifa:    { name:'חיפה',           lat:32.7940, lon:34.9896, candle:30 },
+    beersheva:{ name:'באר שבע',        lat:31.2530, lon:34.7915, candle:18 },
+    eilat:    { name:'אילת',           lat:29.5577, lon:34.9519, candle:18 },
+    netanya:  { name:'נתניה',          lat:32.3215, lon:34.8532, candle:18 },
+    ashdod:   { name:'אשדוד',          lat:31.8044, lon:34.6553, candle:18 },
+    petahtikva:{name:'פתח תקווה',      lat:32.0841, lon:34.8878, candle:18 },
+    rishon:   { name:'ראשון לציון',    lat:31.9730, lon:34.7925, candle:18 },
+    tiberias: { name:'טבריה',          lat:32.7959, lon:35.5310, candle:30 },
+    bneibrak: { name:'בני ברק',        lat:32.0840, lon:34.8338, candle:18 },
+    holon:    { name:'חולון',          lat:32.0158, lon:34.7874, candle:18 }
+  };
+  const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+  function sunMinutesUTC(y, m, d, lat, lon, zenith, rising){
+    const jd = Date.UTC(y, m - 1, d) / 86400000 + 2440587.5 + 0.5 - lon / 360, T = (jd - 2451545) / 36525;
+    const L0 = mod(280.46646 + T * (36000.76983 + T * 0.0003032), 360), M = 357.52911 + T * (35999.05029 - 0.0001537 * T);
+    const e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+    const C = Math.sin(rad(M)) * (1.914602 - T * (0.004817 + 0.000014 * T)) + Math.sin(rad(2 * M)) * (0.019993 - 0.000101 * T) + Math.sin(rad(3 * M)) * 0.000289;
+    const lam = L0 + C - 0.00569 - 0.00478 * Math.sin(rad(125.04 - 1934.136 * T));
+    const eps = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60 + 0.00256 * Math.cos(rad(125.04 - 1934.136 * T));
+    const decl = Math.asin(Math.sin(rad(eps)) * Math.sin(rad(lam)));
+    const yy = Math.tan(rad(eps / 2)) ** 2;
+    const eq = 4 * deg(yy * Math.sin(2 * rad(L0)) - 2 * e * Math.sin(rad(M)) + 4 * e * yy * Math.sin(rad(M)) * Math.cos(2 * rad(L0)) - 0.5 * yy * yy * Math.sin(4 * rad(L0)) - 1.25 * e * e * Math.sin(2 * rad(M)));
+    const cosH = Math.cos(rad(zenith)) / (Math.cos(rad(lat)) * Math.cos(decl)) - Math.tan(rad(lat)) * Math.tan(decl);
+    if(cosH > 1 || cosH < -1) return null;
+    const H = deg(Math.acos(cosH)), noon = 720 - 4 * lon - eq;
+    return rising ? noon - 4 * H : noon + 4 * H;
+  }
+  const fmtIL = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Jerusalem', hour:'2-digit', minute:'2-digit', hour12:false });
+  function clock(y, m, d, minUTC){ if(minUTC == null) return ''; return fmtIL.format(new Date(Date.UTC(y, m - 1, d) + Math.round(minUTC) * 60000)); }
+  function times(g, cityKey){
+    const c = CITIES[cityKey] || CITIES.telaviv;
+    const sunset = sunMinutesUTC(g.y, g.m, g.d, c.lat, c.lon, 90.833, false), tzeit = sunMinutesUTC(g.y, g.m, g.d, c.lat, c.lon, 98.5, false);
+    const sunrise = sunMinutesUTC(g.y, g.m, g.d, c.lat, c.lon, 90.833, true);
+    return { sunrise: clock(g.y, g.m, g.d, sunrise), sunset: clock(g.y, g.m, g.d, sunset), candle: clock(g.y, g.m, g.d, sunset == null ? null : sunset - c.candle), tzeit: clock(g.y, g.m, g.d, tzeit), candleMin: c.candle };
+  }
+
+  /* ---- holidays for one Hebrew year (cached) ---- */
+  const cache = {};
+  function holidaysOfYear(y, il){
+    const key = y + (il ? 'i' : 'd'); if(cache[key]) return cache[key];
+    const map = new Map();
+    const add = (abs, name, kind) => { if(!map.has(abs)) map.set(abs, []); map.get(abs).push({ name, kind }); };
+    const A = (m, d) => hebToAbs(y, m, d), leap = isLeap(y), adarM = leap ? 13 : 12;
+    const shift = (abs, ...rules) => { const w = dowOfAbs(abs); for(const [dw, delta] of rules) if(w === dw) return abs + delta; return abs; };
+    /* Tishrei */
+    add(A(7, 1), 'ראש השנה', 'yomtov'); add(A(7, 2), 'ראש השנה (יום ב׳)', 'yomtov');
+    add(shift(A(7, 3), [6, 1]), 'צום גדליה', 'fast');
+    add(A(7, 9), 'ערב יום כיפור', 'erev'); add(A(7, 10), 'יום כיפור', 'yomtov');
+    add(A(7, 14), 'ערב סוכות', 'erev'); add(A(7, 15), il ? 'סוכות' : 'סוכות (יום א׳)', 'yomtov');
+    if(!il) add(A(7, 16), 'סוכות (יום ב׳)', 'yomtov');
+    for(let d = il ? 16 : 17; d <= 20; d++) add(A(7, d), 'חול המועד סוכות', 'chm');
+    add(A(7, 21), 'הושענא רבה', 'chm');
+    add(A(7, 22), il ? 'שמיני עצרת • שמחת תורה' : 'שמיני עצרת', 'yomtov'); if(!il) add(A(7, 23), 'שמחת תורה', 'yomtov');
+    /* Cheshvan / Kislev / Tevet / Shevat */
+    add(A(8, 12), 'יום הזיכרון ליצחק רבין', 'modern'); add(A(8, 29), 'סיגד', 'modern');
+    add(A(9, 6), 'יום בן־גוריון', 'modern');
+    const ch = A(9, 25); for(let i = 0; i < 8; i++) add(ch + i, i === 7 ? 'חנוכה • זאת חנוכה (נר ' + (i + 1) + ')' : 'חנוכה • נר ' + (i + 1), 'minor');
+    add(A(10, 10), 'עשרה בטבת', 'fast');
+    add(A(11, 15), 'ט״ו בשבט', 'minor'); add(A(11, 30) > A(12, 1) - 1 ? A(11, 30) : A(11, 29), 'יום המשפחה', 'modern');
+    /* Adar */
+    if(leap){ add(A(12, 14), 'פורים קטן', 'minor'); add(A(12, 15), 'שושן פורים קטן', 'minor'); }
+    add(shift(A(adarM, 13), [6, -2]), 'תענית אסתר', 'fast');
+    add(A(adarM, 14), 'פורים', 'minor'); add(A(adarM, 15), 'שושן פורים', 'minor');
+    /* Nisan */
+    add(A(1, 10), 'יום העלייה', 'modern');
+    add(shift(A(1, 14), [6, -2]), 'תענית בכורות', 'fast');
+    add(A(1, 14), 'ערב פסח', 'erev'); add(A(1, 15), il ? 'פסח' : 'פסח (יום א׳)', 'yomtov');
+    if(!il) add(A(1, 16), 'פסח (יום ב׳)', 'yomtov');
+    for(let d = il ? 16 : 17; d <= 20; d++) add(A(1, d), 'חול המועד פסח', 'chm');
+    add(A(1, 21), il ? 'שביעי של פסח' : 'שביעי של פסח', 'yomtov'); if(!il) add(A(1, 22), 'אחרון של פסח', 'yomtov');
+    { const s = A(1, 27), w = dowOfAbs(s); add(w === 5 ? s - 1 : w === 0 ? s + 1 : s, 'יום הזיכרון לשואה ולגבורה', 'modern'); }
+    /* Iyar */
+    { const i5 = A(2, 5), w = dowOfAbs(i5); let ind = i5;
+      if(w === 6) ind = i5 - 2; else if(w === 5) ind = i5 - 1; else if(w === 1) ind = i5 + 1;
+      add(ind - 1, 'יום הזיכרון לחללי צה״ל', 'modern'); add(ind, 'יום העצמאות', 'modern'); }
+    add(A(2, 10), 'יום הרצל', 'modern'); add(A(2, 14), 'פסח שני', 'minor'); add(A(2, 18), 'ל״ג בעומר', 'minor'); add(A(2, 28), 'יום ירושלים', 'modern');
+    /* Sivan / Tammuz / Av / Elul */
+    add(A(3, 5), 'ערב שבועות', 'erev'); add(A(3, 6), il ? 'שבועות' : 'שבועות (יום א׳)', 'yomtov'); if(!il) add(A(3, 7), 'שבועות (יום ב׳)', 'yomtov');
+    add(A(4, 20), 'יום ז׳בוטינסקי', 'modern');
+    add(shift(A(4, 17), [6, 1]), 'שבעה עשר בתמוז', 'fast');
+    add(shift(A(5, 9), [6, 1]), 'תשעה באב', 'fast'); add(A(5, 15), 'ט״ו באב', 'minor');
+    add(A(6, 29), 'ערב ראש השנה', 'erev');
+    /* Rosh Chodesh */
+    for(let m = 1; m <= monthsInYear(y); m++){
+      if(m === 7) continue;
+      const nm = monthName(m, y);
+      const prevM = m === 1 ? monthsInYear(y) : m - 1, prevLen = daysInMonth(prevM, y);
+      if(prevLen === 30){ add(A(prevM, 30), 'ראש חודש ' + nm + ' (יום א׳)', 'rc'); add(A(m, 1), 'ראש חודש ' + nm + ' (יום ב׳)', 'rc'); }
+      else add(A(m, 1), 'ראש חודש ' + nm, 'rc');
+    }
+    /* Rosh Chodesh Tishrei is Rosh Hashana; Elul 30 is 'ראש חודש תשרי' day 1 of RH eve — skip */
+    cache[key] = map; return map;
+  }
+  /* ---- everything about one Gregorian day ---- */
+  function dayInfo(gy, gm, gd, opt){
+    opt = opt || {}; const il = opt.il !== false, abs = gregToAbs(gy, gm, gd), h = absToHeb(abs), dow = dowOfAbs(abs);
+    const evs = (holidaysOfYear(h.y, il).get(abs) || []).slice();
+    /* the map is by Hebrew year, but Elul-end / Tishrei boundaries can hold items of the next year: check neighbours */
+    if(h.m === 6 || h.m === 7){ const o = holidaysOfYear(h.m === 6 ? h.y + 1 : h.y - 1, il).get(abs); if(o) o.forEach(x => { if(!evs.some(e => e.name === x.name)) evs.push(x); }); }
+    const out = { y: gy, m: gm, d: gd, abs, dow, h, hStr: dayStr(h.d) + ' ' + (h.d === 1 ? 'ב' : 'ב') + monthName(h.m, h.y), events: evs, parasha: null, special: [], omer: 0, candle: '', havdalah: '', candleLate: '', erevShabbat: dow === 5, shabbat: dow === 6 };
+    out.hShort = h.d === 1 ? monthName(h.m, h.y) : dayStr(h.d);
+    out.hFull = dayStr(h.d) + ' ב' + monthName(h.m, h.y) + ' ' + yearStr(h.y);
+    if(dow === 6){
+      out.parasha = parashaOnShabbat(abs, il);
+      /* special Shabbatot */
+      const hy = h.y, adarM = isLeap(hy) ? 13 : 12, sp = [];
+      const lastShabbatOnOrBefore = a => a - mod(dowOfAbs(a) - 6, 7);
+      const lastShabbatBefore = a => lastShabbatOnOrBefore(a - 1);
+      if(abs === lastShabbatOnOrBefore(hebToAbs(hy, adarM, 1))) sp.push('שבת שקלים');
+      if(abs === lastShabbatBefore(hebToAbs(hy, adarM, 14))) sp.push('שבת זכור');
+      const hachodesh = lastShabbatOnOrBefore(hebToAbs(hy, 1, 1));
+      if(abs === hachodesh) sp.push('שבת החודש');
+      if(abs === lastShabbatBefore(hachodesh)) sp.push('שבת פרה');
+      if(abs === lastShabbatBefore(hebToAbs(hy, 1, 15))) sp.push('שבת הגדול');
+      if(h.m === 7 && h.d >= 3 && h.d <= 9) sp.push('שבת שובה');
+      const tb = hebToAbs(hy, 5, 9), tbObs = dowOfAbs(tb) === 6 ? tb + 1 : tb;
+      if(abs === lastShabbatBefore(tbObs)) sp.push('שבת חזון');
+      if(abs === tbObs + mod(6 - dowOfAbs(tbObs), 7)) sp.push('שבת נחמו');
+      if(evs.some(e => /^חנוכה/.test(e.name))) sp.push('שבת חנוכה');
+      if(evs.some(e => e.kind === 'rc')) sp.push('שבת ראש חודש');
+      out.special = sp;
+    }
+    /* Omer */
+    const o = abs - hebToAbs(h.y, 1, 16) + 1; if(o >= 1 && o <= 49) out.omer = o;
+    /* candle lighting / havdalah */
+    const t = times({ y: gy, m: gm, d: gd }, opt.city);
+    const ytOn = a2 => (holidaysOfYear(absToHeb(a2).y, il).get(a2) || []).some(e => e.kind === 'yomtov');
+    const todayYT = ytOn(abs), tomorrowYT = ytOn(abs + 1), todayShab = dow === 6, tomorrowShab = dow === 5;
+    if((tomorrowShab || tomorrowYT) && !todayShab){ if(todayYT) out.candleLate = t.tzeit; else out.candle = t.candle; }
+    if((todayShab || todayYT) && !(tomorrowShab || tomorrowYT)) out.havdalah = t.tzeit;
+    else if(todayShab && tomorrowYT) out.candleLate = t.tzeit;
+    out.times = t; return out;
+  }
+  function monthRangeLabel(gy, gm){
+    const a = absToHeb(gregToAbs(gy, gm, 1)), b = absToHeb(gregToAbs(gy, gm, new Date(Date.UTC(gy, gm, 0)).getUTCDate()));
+    const na = monthName(a.m, a.y), nb = monthName(b.m, b.y);
+    return (na === nb ? na : na + ' – ' + nb) + ' ' + (a.y === b.y ? yearStr(a.y) : yearStr(a.y) + '–' + yearStr(b.y));
+  }
+  return { absToHeb, hebToAbs, gregToAbs, absToGreg, dowOfAbs, isLeap, daysInMonth, daysInYear, monthName, yearStr, dayStr, numeral, gematria, dayInfo, holidaysOfYear, monthRangeLabel, times, CITIES, WD, parashaOnShabbat };
+})();
+/* =========================================================================
+   KMS-CRM • לוח שנה עברי: מועדים, זמני שבת, התראות פגישות, ימי הולדת, חופשה
+   ========================================================================= */
+;(function () {
+  'use strict'
+  const $ = id => document.getElementById(id)
+  const esc = s => (typeof escHtml === 'function' ? escHtml(String(s == null ? '' : s)) : String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])))
+  const LSK = { cfg: 'kms_cal_cfg', bd: 'kms_cal_bdays', vac: 'kms_cal_vac', tpl: 'kms_cal_tpl' }
+  const load = (k, d) => { try { const x = JSON.parse(localStorage.getItem(k)); return x == null ? d : x } catch (e) { return d } }
+  const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} }
+
+  const cfg = Object.assign({ il: true, city: 'kfarsaba', fri: false, buf: 30 }, load(LSK.cfg, {}))
+  let bdays = load(LSK.bd, []); if (!Array.isArray(bdays)) bdays = []
+  let vacs = load(LSK.vac, []); if (!Array.isArray(vacs)) vacs = []
+  const PRESETS = [
+    'מזל טוב {שם}! 🎉🎂 יום הולדת שמח! מאחל לך שנה של בריאות, אושר והצלחה בכל מה שתעשה. 🥳',
+    '{שם} שלום, מזל טוב ליום הולדתך! מאחל לך בריאות, הצלחה ושנה פוריה ומוצלחת. בברכה,',
+    'יום הולדת שמח {שם}! 🎈 שתהיה שנה מדהימה!'
+  ]
+  let tpl = load(LSK.tpl, PRESETS[0]); if (typeof tpl !== 'string' || !tpl.trim()) tpl = PRESETS[0]
+
+  const WDN = HebCal.WD
+  const WDS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']
+  const GM = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
+  const KC = { yomtov: '#ef4444', chm: '#f59e0b', erev: '#eab308', fast: '#94a3b8', minor: '#14b8a6', modern: '#3b82f6', rc: '#a78bfa' }
+  const PRI = ['yomtov', 'chm', 'erev', 'fast', 'minor', 'modern', 'rc']
+
+  /* ---------- date helpers ---------- */
+  const pad = n => String(n).padStart(2, '0')
+  const iso = (y, m, d) => y + '-' + pad(m) + '-' + pad(d)
+  const parseISO = s => { const a = String(s).split('-').map(Number); return { y: a[0], m: a[1], d: a[2] } }
+  const toMin = t => { const a = String(t).split(':').map(Number); return a[0] * 60 + (a[1] || 0) }
+  const fromMin = n => pad(Math.floor(n / 60) % 24) + ':' + pad(((n % 60) + 60) % 60)
+  const absOfISO = s => { const p = parseISO(s); return HebCal.gregToAbs(p.y, p.m, p.d) }
+  const isoOfAbs = a => { const g = HebCal.absToGreg(a); return iso(g.y, g.m, g.d) }
+  const todayISO = () => { const n = new Date(); return iso(n.getFullYear(), n.getMonth() + 1, n.getDate()) }
+  const isLeapG = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+  const bufTxt = () => (+cfg.buf === 30 ? 'חצי שעה' : (+cfg.buf) + ' דקות')
+
+  let cache = new Map(), ck = ''
+  function info(a) {
+    const k = cfg.il + '|' + cfg.city
+    if (k !== ck) { cache = new Map(); ck = k }
+    let r = cache.get(a)
+    if (!r) { const g = HebCal.absToGreg(a); r = HebCal.dayInfo(g.y, g.m, g.d, { il: cfg.il, city: cfg.city }); cache.set(a, r) }
+    return r
+  }
+  const dlabel = a => { const g = HebCal.absToGreg(a); return 'יום ' + WDN[info(a).dow] + ' ' + g.d + '/' + g.m }
+  const hlabel = a => { const h = info(a).h; return HebCal.dayStr(h.d) + ' ב' + HebCal.monthName(h.m, h.y) }
+
+  /* ---------- Shabbat / holiday blocks ---------- */
+  const sacred = a => { const i = info(a); return i.dow === 6 || i.events.some(e => e.kind === 'yomtov') }
+  function blockOf(a) {
+    let s = a, e = a
+    while (sacred(s - 1)) s--
+    while (sacred(e + 1)) e++
+    const tIn = HebCal.times(HebCal.absToGreg(s - 1), cfg.city), tOut = HebCal.times(HebCal.absToGreg(e), cfg.city)
+    const names = []
+    for (let d = s; d <= e; d++) {
+      const i = info(d)
+      i.events.filter(x => x.kind === 'yomtov').forEach(x => { const n = x.name.replace(/\s*\(.*?\)/g, '').trim(); if (!names.includes(n)) names.push(n) })
+    }
+    const hasShab = (() => { for (let d = s; d <= e; d++) if (info(d).dow === 6) return true; return false })()
+    const name = names.length ? names.join(' + ') + (hasShab ? ' ושבת' : '') : 'שבת'
+    return { s, e, entry: tIn.candle, exit: tOut.tzeit, entryAbs: (s - 1) * 1440 + toMin(tIn.candle), exitAbs: e * 1440 + toMin(tOut.tzeit), name, shabOnly: !names.length }
+  }
+  const afterExit = blk => { const m = Math.ceil((toMin(blk.exit) + (+cfg.buf || 30)) / 5) * 5; return { date: isoOfAbs(blk.e + (m >= 1440 ? 1 : 0)), time: fromMin(m % 1440), abs: blk.e + (m >= 1440 ? 1 : 0) } }
+
+  /* ---------- the meeting check ---------- */
+  function check(dateISO, timeStr, title) {
+    if (!dateISO || !/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return null
+    const a = absOfISO(dateISO), buf = +cfg.buf || 30, hasT = !!timeStr, m = hasT ? toMin(timeStr) : 0, t = a * 1440 + m
+    const who = title ? ' "' + title + '"' : ''
+    const when = dlabel(a) + (hasT ? ' בשעה ' + timeStr : '')
+    let blk = null, eve = null
+    if (sacred(a)) blk = blockOf(a)
+    else if (sacred(a + 1)) { const b = blockOf(a + 1); if (hasT && t >= b.entryAbs) blk = b; else eve = b }
+
+    if (blk) {
+      const af = afterExit(blk), shab = blk.shabOnly
+      const entryTxt = dlabel(blk.s - 1) + ' ' + blk.entry, exitTxt = dlabel(blk.e) + ' ' + blk.exit
+      if (!hasT || (t >= blk.entryAbs && t < blk.exitAbs)) {
+        let c = blk.s - 2; while (sacred(c)) c--
+        const alts = [{ label: '✅ אחרי היציאה: ' + dlabel(af.abs) + ' בשעה ' + af.time, date: af.date, time: af.time, primary: true },
+          { label: '◀ לפני ה' + (shab ? 'שבת' : 'מועד') + ': ' + dlabel(c) + (hasT ? ' בשעה ' + timeStr : ''), date: isoOfAbs(c), time: timeStr || '' }]
+        return { level: 'block', icon: '⚠️', title: 'הפגישה נופלת על ' + blk.name,
+          short: 'הפגישה נופלת על ' + blk.name,
+          html: 'הפגישה' + esc(who) + ' (' + esc(when) + ') נופלת על <b>' + esc(blk.name) + '</b>.<br>' +
+            (shab ? 'שבת נכנסת' : 'המועד נכנס') + ' ב<b>' + esc(entryTxt) + '</b> ו' + (shab ? 'יוצאת' : 'יוצא') + ' ב<b>' + esc(exitTxt) + '</b>.<br>' +
+            'לפי מועד היציאה אני מציע לקבוע את הפגישה אחרי השעה <b>' + af.time + '</b> (' + bufTxt() + ' אחרי יציאת ' + (shab ? 'השבת' : 'המועד') + '), ב<b>' + esc(dlabel(af.abs)) + '</b>.',
+          alts }
+      }
+      if (t >= blk.exitAbs && t < blk.exitAbs + buf) {
+        const alts = [{ label: '✅ אחרי ' + af.time + ' – ' + dlabel(af.abs), date: af.date, time: af.time, primary: true }]
+        return { level: 'warn', icon: '🕯️', title: 'מיד עם יציאת ' + (blk.shabOnly ? 'השבת' : 'המועד'), short: 'הפגישה צמודה ליציאת ' + (blk.shabOnly ? 'השבת' : 'המועד'),
+          html: 'הפגישה' + esc(who) + ' (' + esc(when) + ') חלה מיד עם יציאת ' + (blk.shabOnly ? 'השבת' : 'המועד') + ' (' + blk.exit + ').<br>מומלץ לקבוע אחרי השעה <b>' + af.time + '</b> (' + bufTxt() + ' אחרי היציאה).', alts }
+      }
+      return null
+    }
+    if (eve) {
+      const limit = toMin(eve.entry) - buf, af = afterExit(eve), shab = eve.shabOnly
+      if (hasT && m > limit) {
+        const lt = fromMin(Math.floor(limit / 5) * 5)
+        const alts = [{ label: '◀ לפני הכניסה: ' + dlabel(a) + ' בשעה ' + lt, date: dateISO, time: lt, primary: true },
+          { label: '✅ אחרי היציאה: ' + dlabel(af.abs) + ' בשעה ' + af.time, date: af.date, time: af.time }]
+        return { level: 'warn', icon: '🕯️', title: 'ערב ' + eve.name, short: 'ערב ' + eve.name + ' – מומלץ עד ' + lt,
+          html: 'הפגישה' + esc(who) + ' (' + esc(when) + ') חלה בערב <b>' + esc(eve.name) + '</b> – הכניסה ב-<b>' + eve.entry + '</b>.<br>מומלץ לקבוע <b>עד השעה ' + lt + '</b> (' + bufTxt() + ' לפני הכניסה), או לדחות אחרי היציאה (' + eve.exit + ') – אחרי <b>' + af.time + '</b>.', alts }
+      }
+      if (!hasT) return { level: 'info', icon: '🕯️', title: 'ערב ' + eve.name, short: 'ערב ' + eve.name + ' – כניסה ' + eve.entry + ', מומלץ לקבוע עד ' + fromMin(Math.floor(limit / 5) * 5) }
+      return null
+    }
+    const i = info(a)
+    if (i.events.some(e => e.kind === 'chm')) return { level: 'info', icon: '🍂', title: 'חול המועד', short: 'שים לב: ' + esc(i.events.find(e => e.kind === 'chm').name) + ' – ייתכן שהצד השני בחופשה' }
+    if (i.events.some(e => e.kind === 'fast')) return { level: 'info', icon: '⏳', title: 'יום צום', short: 'שים לב: ' + esc(i.events.find(e => e.kind === 'fast').name) }
+    return null
+  }
+
+  /* ---------- records bridge ---------- */
+  const B = () => window.__crm || null
+  const recs = () => { const b = B(); return b ? b.data().records : [] }
+  const isMeeting = r => !!r && !r.done && !!r.due && (/פגיש|ישיבה|מפגש|שיחה|ביקור|סיור|אירוע|זום|zoom|meeting/i.test(r.title || '') || r.domain === 'clients' || r.domain === 'dept' || !!r.time) && r.domain !== 'shopping'
+  const recsOn = d => recs().filter(r => !r.done && r.due === d && r.domain !== 'shopping')
+  function checkRecord(id) {
+    const r = recs().find(x => x.id === id)
+    if (!isMeeting(r)) return
+    const res = check(r.due, r.time, r.title)
+    if (!res) return
+    if (res.level === 'info') { if (window.toast) window.toast(res.icon + ' ' + res.short, '#f59e0b'); return }
+    openWarn(r, res)
+  }
+  function openWarn(r, res) {
+    let el = $('kms-warn')
+    if (!el) { el = document.createElement('div'); el.id = 'kms-warn'; el.className = 'modalx kc-over'; el.hidden = true; document.body.appendChild(el) }
+    el._rid = r.id
+    el.innerHTML = '<div class="dlg kc-dlg"><div class="grab"></div><div class="dh"><h2>' + res.icon + ' ' + esc(res.title) + '</h2><div></div></div>' +
+      '<div class="kc-wtxt">' + res.html + '</div><div class="kc-alts">' +
+      (res.alts || []).map(x => '<button type="button" class="' + (x.primary ? 'btn-primary' : 'btn-ghost') + '" data-kc="applyalt" data-d="' + x.date + '" data-t="' + x.time + '">' + esc(x.label) + '</button>').join('') +
+      '<button type="button" class="btn-ghost" data-kc="warnkeep">השאר כפי שקבעתי</button></div></div>'
+    el.hidden = false
+  }
+  const closeWarn = () => { const el = $('kms-warn'); if (el) el.hidden = true }
+
+  /* ---------- birthdays ---------- */
+  const saveBd = () => store(LSK.bd, bdays)
+  function nextBd(b) {
+    const n = new Date(), t0 = new Date(n.getFullYear(), n.getMonth(), n.getDate())
+    for (let y = t0.getFullYear(); y <= t0.getFullYear() + 1; y++) {
+      let d = b.d; if (b.m === 2 && d === 29 && !isLeapG(y)) d = 28
+      const dt = new Date(y, b.m - 1, d)
+      if (dt >= t0) return { date: dt, year: y, days: Math.round((dt - t0) / 864e5), age: b.y ? y - b.y : null }
+    }
+    return null
+  }
+  const bdOn = (y, m, d) => bdays.filter(b => (b.m === m && b.d === d) || (b.m === 2 && b.d === 29 && !isLeapG(y) && m === 2 && d === 28))
+  function bdMsg(b, age) {
+    let t = tpl.replace(/\{שם\}/g, b.name).replace(/\{גיל\}/g, age != null ? String(age) : '')
+    return t.replace(/[ \t]{2,}/g, ' ').trim()
+  }
+  function waUrl(phone, text) {
+    let p = String(phone || '').replace(/[^\d+]/g, '')
+    if (p) { p = p.replace(/^\+/, ''); if (p.indexOf('00') === 0) p = p.slice(2); if (p.charAt(0) === '0') p = '972' + p.slice(1) }
+    return 'https://wa.me/' + p + '?text=' + encodeURIComponent(text)
+  }
+  function sendBd(id) {
+    const b = bdays.find(x => x.id === id); if (!b) return
+    const nb = nextBd(b), n = new Date(), isToday = nb && nb.days === 0
+    const age = b.y ? (isToday || nb.days < 200 ? nb.year - b.y : n.getFullYear() - b.y) : null
+    const url = waUrl(b.phone, bdMsg(b, age))
+    if (!window.open(url, '_blank')) location.href = url
+    if (!b.phone && window.toast) window.toast('בחר איש קשר בווטסאפ – ההודעה מוכנה', '#10b981')
+  }
+
+  /* ---------- vacation finder ---------- */
+  const offDay = a => { const i = info(a); return i.dow === 6 || (!cfg.fri && i.dow === 5) || i.events.some(e => e.kind === 'yomtov') }
+  function fest(kind, hy) {
+    const il = cfg.il, A = (m, d) => HebCal.hebToAbs(hy, m, d)
+    if (kind === 'sukkot') return { kind, hy, name: 'סוכות', erev: A(7, 14), first: A(7, 15), last: il ? A(7, 22) : A(7, 23), chmFrom: il ? A(7, 16) : A(7, 17), chmTo: A(7, 21) }
+    return { kind, hy, name: 'פסח', erev: A(1, 14), first: A(1, 15), last: il ? A(1, 21) : A(1, 22), chmFrom: il ? A(1, 16) : A(1, 17), chmTo: A(1, 20) }
+  }
+  function festivals(fromAbs) {
+    const g = HebCal.absToGreg(fromAbs), hy0 = HebCal.absToHeb(fromAbs).y, out = []
+    for (let hy = hy0 - 1; hy <= hy0 + 3; hy++) { out.push(fest('sukkot', hy)); out.push(fest('pesach', hy)) }
+    return out.filter(f => f.last >= fromAbs).sort((x, y) => x.first - y.first).slice(0, 4)
+  }
+  function findVacations(f, opt) {
+    const minLen = opt.minLen, maxLen = opt.maxLen, seen = new Map()
+    const evalWin = (s, e) => { let work = 0, chm = 0; for (let a = s; a <= e; a++) { if (!offDay(a)) work++; if (a >= f.chmFrom && a <= f.chmTo) chm++ } return { s, e, len: e - s + 1, work, chm } }
+    const hi = f.last + 6
+    for (let s0 = f.erev - 6; s0 <= f.chmTo; s0++) {
+      for (let e0 = Math.max(s0 + minLen - 1, f.chmFrom); e0 <= Math.min(hi, s0 + maxLen - 1); e0++) {
+        let s = s0, e = e0
+        while (offDay(s - 1)) s--
+        while (offDay(e + 1)) e++
+        const key = s + '-' + e; if (seen.has(key)) continue
+        const w = evalWin(s, e)
+        if (w.chm < 1 || w.len < minLen || w.len > maxLen) continue
+        w.eff = w.len / Math.max(w.work, 0.5)
+        seen.set(key, w)
+      }
+    }
+    const all = [...seen.values()], picks = [], used = new Set()
+    const take = (w, label, why) => { if (!w) return; const k = w.s + '-' + w.e; if (used.has(k)) return; used.add(k); picks.push(Object.assign({ label, why, f }, w)) }
+    const full = all.filter(w => w.s <= f.chmFrom && w.e >= f.chmTo).sort((x, y) => x.work - y.work || x.len - y.len)[0]
+    take(full, '🌟 כל חול המועד', 'מכסה את כל חול המועד בפחות ימי חופשה')
+    const pool2 = all.filter(w => w.chm >= 2), pool = pool2.length ? pool2 : all
+    take(pool.slice().sort((x, y) => y.eff - x.eff || y.chm - x.chm || y.len - x.len)[0], '💡 הכי משתלם', 'הכי הרבה ימי חופשה ברצף על כל יום חופש שתיקח')
+    take(all.filter(w => w.work <= 3).sort((x, y) => y.eff - x.eff || y.chm - x.chm || y.len - x.len)[0], '⚡ קצרה וחסכונית', 'עד 3 ימי חופש בלבד')
+    take(all.slice().sort((x, y) => y.len - x.len || x.work - y.work)[0], '🏝️ הארוכה ביותר', 'החופשה הרציפה הארוכה ביותר בטווח שהגדרת')
+    return picks
+  }
+
+  /* ---------- UI state ---------- */
+  const now0 = new Date()
+  const S = { y: now0.getFullYear(), m: now0.getMonth(), sel: todayISO(), view: 'month', range: null, add: false, bdEdit: null, vacIdx: 0, minLen: 4, maxLen: 12, res: null, resF: null }
+  let ov = null
+
+  function css() {
+    if ($('kms-cal-css')) return
+    const st = document.createElement('style'); st.id = 'kms-cal-css'
+    st.textContent = '.kc-over{z-index:80!important}#kms-cal{z-index:70}.kc-dlg{padding-top:0}' +
+      '.kc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 4px}.kc-top h3{margin:0;font-size:1.1rem;font-weight:800}.kc-top small{display:block;color:var(--muted);font-size:.74rem;font-weight:400;margin-top:2px}' +
+      '.kc-nav{display:flex;gap:6px;align-items:center}.kc-nav button{min-width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:.85rem;padding:0 8px}' +
+      '.kc-seg{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:3px;margin:8px 0}.kc-seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:8px 2px;border-radius:11px;font-size:.78rem;white-space:nowrap}.kc-seg button.on{background:var(--accent);color:var(--on-accent);font-weight:700}' +
+      '.kc-wd,.kc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.kc-wd span{text-align:center;font-size:.72rem;color:var(--muted);padding:3px 0}.kc-wd span:nth-child(6),.kc-wd span:nth-child(7){color:var(--accent)}' +
+      '.kc-d{position:relative;min-height:60px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);padding:3px 1px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;overflow:hidden;font-size:.92rem;line-height:1.15;cursor:pointer}' +
+      '.kc-d b{font-weight:700}.kc-d small{font-size:.62rem;color:var(--muted)}.kc-d .kc-ev{font-size:.56rem;max-width:100%;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--c,var(--muted));font-weight:600}' +
+      '.kc-d.o{opacity:.38}.kc-d.sh{background:color-mix(in srgb,var(--accent) 9%,var(--card))}.kc-d.hl{border-color:color-mix(in srgb,var(--c) 70%,var(--line));background:color-mix(in srgb,var(--c) 14%,var(--card))}' +
+      '.kc-d.tdy b{background:var(--accent);color:var(--on-accent);border-radius:99px;min-width:24px;padding:0 5px}.kc-d.sel{outline:2px solid var(--accent);outline-offset:0}' +
+      '.kc-d.vc{box-shadow:inset 0 -4px 0 #22c55e}.kc-d .kc-ic{position:absolute;top:1px;left:2px;font-size:.62rem;line-height:1}.kc-d .kc-dot{position:absolute;bottom:2px;right:3px;width:6px;height:6px;border-radius:99px;background:#38bdf8}.kc-d .kc-dot.x{background:#ef4444}' +
+      '.kc-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:.68rem;color:var(--muted);margin:8px 2px}.kc-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-inline-end:4px;vertical-align:-1px;background:var(--c)}' +
+      '.kc-panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-top:10px}.kc-panel h4{margin:0 0 4px;font-size:.98rem}.kc-panel small.k{color:var(--muted);display:block}' +
+      '.kc-chips{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}.kc-chip{font-size:.72rem;border-radius:999px;padding:3px 9px;background:color-mix(in srgb,var(--c,#64748b) 20%,transparent);border:1px solid color-mix(in srgb,var(--c,#64748b) 55%,transparent);color:var(--txt)}' +
+      '.kc-line{font-size:.82rem;margin:5px 0;line-height:1.55}.kc-tip{font-size:.8rem;margin:7px 0;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,#f59e0b 14%,var(--card));border:1px solid color-mix(in srgb,#f59e0b 45%,var(--line))}.kc-tip.bad{background:color-mix(in srgb,#ef4444 14%,var(--card));border-color:color-mix(in srgb,#ef4444 50%,var(--line))}' +
+      '.kc-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem}.kc-row:last-child{border:0}.kc-row .g{flex:1;min-width:0}.kc-row small{color:var(--muted);display:block}.kc-row button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:10px;padding:5px 9px;font-size:.76rem}.kc-row button.wa{background:#16a34a;border-color:#16a34a;color:#fff}' +
+      '.kc-form{display:grid;gap:6px;margin-top:8px}.kc-form .r2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.kc-form input,.kc-form select,.kc-form textarea{width:100%;font-size:.86rem;padding:9px 10px}' +
+      '.kc-alts{display:grid;gap:8px;margin:12px 0 6px}.kc-alts button{text-align:right;padding:11px 14px}.kc-wtxt{font-size:.9rem;line-height:1.7;margin-top:6px}' +
+      '.kc-card{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:12px;margin-top:10px}.kc-card h4{margin:0;font-size:.95rem}.kc-card .st{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.kc-card .st span{font-size:.72rem;border-radius:999px;padding:3px 9px;background:var(--chip,#ffffff14)}.kc-card .ac{display:flex;gap:8px}.kc-card .ac button{flex:1}' +
+      '.kc-strip{margin:12px 0 0;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:11px 14px;cursor:pointer}.kc-strip .a{font-weight:700;font-size:.9rem}.kc-strip .b{font-size:.78rem;color:var(--muted);margin-top:3px;line-height:1.55}.kc-strip .c{font-size:.82rem;margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.kc-strip .c button{background:#16a34a;color:#fff;border:0;border-radius:99px;padding:4px 11px;font-size:.74rem}' +
+      '.kc-ban{display:flex;align-items:center;gap:8px;justify-content:space-between;font-size:.8rem;background:color-mix(in srgb,#22c55e 14%,var(--card));border:1px solid color-mix(in srgb,#22c55e 45%,var(--line));border-radius:12px;padding:7px 10px;margin:8px 0}.kc-ban button{border:0;background:transparent;color:var(--txt);font-size:1rem}'
+    document.head.appendChild(st)
+  }
+
+  /* ---------- rendering ---------- */
+  function monthGrid() {
+    const y = S.y, m = S.m, first = HebCal.gregToAbs(y, m + 1, 1), dim = new Date(y, m + 1, 0).getDate()
+    const lead = info(first).dow, startAbs = first - lead, total = Math.ceil((lead + dim) / 7) * 7
+    const tdy = todayISO(), cells = []
+    const meet = {}
+    recs().forEach(r => { if (isMeeting(r)) { const c = check(r.due, r.time); (meet[r.due] = meet[r.due] || { n: 0, bad: false }); meet[r.due].n++; if (c && c.level !== 'info') meet[r.due].bad = true } else if (r.due && !r.done && r.domain !== 'shopping') (meet[r.due] = meet[r.due] || { n: 0, bad: false }).n++ })
+    const rng = [S.range].concat(vacs).filter(Boolean)
+    for (let i = 0; i < total; i++) {
+      const a = startAbs + i, g = HebCal.absToGreg(a), inf = info(a), id = iso(g.y, g.m, g.d), other = g.m !== m + 1
+      let cls = 'kc-d' + (other ? ' o' : '') + (inf.dow >= 5 ? ' sh' : '') + (id === tdy ? ' tdy' : '') + (id === S.sel ? ' sel' : '')
+      let ev = '', col = ''
+      for (const k of PRI) { const e = inf.events.find(x => x.kind === k); if (e) { ev = e.name; col = KC[k]; if (k === 'yomtov' || k === 'chm' || k === 'erev') cls += ' hl'; break } }
+      if (!ev && inf.dow === 6 && inf.parasha) { ev = inf.parasha }
+      if (rng.some(r => r.from <= id && id <= r.to)) cls += ' vc'
+      const bds = bdOn(g.y, g.m, g.d), mt = meet[id]
+      cells.push('<button type="button" class="' + cls + '" style="' + (col ? '--c:' + col : '') + '" data-kc="pick" data-d="' + id + '"><b>' + g.d + '</b><small>' + esc(inf.hShort) + '</small>' + (ev ? '<span class="kc-ev" ' + (col ? '' : 'style="color:var(--muted)"') + '>' + esc(ev) + '</span>' : '') +
+        (bds.length ? '<span class="kc-ic">🎂</span>' : '') + (mt ? '<span class="kc-dot' + (mt.bad ? ' x' : '') + '"></span>' : '') + '</button>')
+    }
+    return '<div class="kc-wd">' + WDS.map(x => '<span>' + x + '</span>').join('') + '</div><div class="kc-grid">' + cells.join('') + '</div>'
+  }
+
+  function dayPanel() {
+    const a = absOfISO(S.sel), i = info(a), g = HebCal.absToGreg(a), buf = +cfg.buf || 30
+    const chips = i.events.map(e => '<span class="kc-chip" style="--c:' + KC[e.kind] + '">' + esc(e.name) + '</span>')
+    if (i.shabbat) { if (i.parasha) chips.push('<span class="kc-chip" style="--c:#38bdf8">פרשת ' + esc(i.parasha) + '</span>'); i.special.forEach(s => chips.push('<span class="kc-chip" style="--c:#38bdf8">' + esc(s) + '</span>')) }
+    if (i.omer) chips.push('<span class="kc-chip" style="--c:#a3e635">' + esc(i.omer + ' בעומר') + '</span>')
+    const t = i.times, lines = []
+    lines.push('🌅 זריחה <b>' + t.sunrise + '</b> · 🌇 שקיעה <b>' + t.sunset + '</b> · ✨ צאת הכוכבים <b>' + t.tzeit + '</b>')
+    if (i.candle) lines.push('🕯️ הדלקת נרות: <b>' + i.candle + '</b>')
+    if (i.candleLate) lines.push('🕯️ הדלקת נרות (אחרי צאת הכוכבים): <b>' + i.candleLate + '</b>')
+    if (i.havdalah) lines.push('✡️ צאת ' + (i.dow === 6 ? 'השבת' : 'החג') + ': <b>' + i.havdalah + '</b>')
+    let tips = ''
+    if (sacred(a)) { const b = blockOf(a), af = afterExit(b); tips = '<div class="kc-tip bad">⛔ ' + esc(b.name) + ' – לא מומלץ לקבוע פגישות. הזמן הראשון הנוח: <b>' + esc(dlabel(af.abs)) + ' אחרי ' + af.time + '</b> (' + bufTxt() + ' אחרי היציאה).</div>' }
+    else if (sacred(a + 1)) { const b = blockOf(a + 1), lim = fromMin(Math.floor((toMin(b.entry) - buf) / 5) * 5); tips = '<div class="kc-tip">🕯️ ערב ' + esc(b.name) + ' – הכניסה ב-' + b.entry + '. מומלץ לקבוע פגישות <b>עד ' + lim + '</b> (' + bufTxt() + ' לפני הכניסה).</div>' }
+    const bds = bdOn(g.y, g.m, g.d)
+    const rs = recsOn(S.sel).sort((x, y) => (x.time || '99') < (y.time || '99') ? -1 : 1)
+    const vc = vacs.filter(v => v.from <= S.sel && S.sel <= v.to)
+    return '<div class="kc-panel"><h4>יום ' + WDN[i.dow] + ' • ' + g.d + ' ב' + GM[g.m - 1] + ' ' + g.y + '</h4><small class="k">' + esc(i.hFull) + '</small>' +
+      (chips.length ? '<div class="kc-chips">' + chips.join('') + '</div>' : '') + lines.map(l => '<div class="kc-line">' + l + '</div>').join('') + tips +
+      vc.map(v => '<div class="kc-ban"><span>🏖️ ' + esc(v.title) + '</span><button type="button" data-kc="vacdel" data-id="' + v.id + '" title="הסר">✕</button></div>').join('') +
+      (bds.length ? '<div class="hg" style="margin-top:10px">🎂 ימי הולדת</div>' + bds.map(b => '<div class="kc-row"><div class="g"><b>' + esc(b.name) + '</b>' + (b.y ? '<small>בן/בת ' + (g.y - b.y) + '</small>' : '') + '</div><button type="button" class="wa" data-kc="bdsend" data-id="' + b.id + '">💬 שלח ברכה</button></div>').join('') : '') +
+      '<div class="hg" style="margin-top:10px">📋 פגישות ומשימות</div>' +
+      (rs.length ? rs.map(r => { const c = isMeeting(r) ? check(r.due, r.time) : null; return '<div class="kc-row"><div class="g">' + esc(r.title) + (c && c.level !== 'info' ? '<small style="color:#ef4444">⚠️ ' + esc(c.short) + '</small>' : '') + '</div><span class="dchip">' + esc(r.time || 'כל היום') + '</span></div>' }).join('') : '<div class="hint" style="text-align:right">אין פגישות או משימות ליום זה.</div>') +
+      (S.add ? '<div class="kc-form"><input id="kc-t" placeholder="כותרת הפגישה (למשל: פגישה עם דנה)" autocomplete="off"><input id="kc-tm" type="time"><button type="button" class="btn-primary" data-kc="addmeet">שמור פגישה</button></div>' : '<button type="button" class="btn-ghost" style="width:100%;margin-top:8px" data-kc="addopen">＋ פגישה ביום זה</button>') + '</div>'
+  }
+
+  function monthList() {
+    const y = S.y, m = S.m, dim = new Date(y, m + 1, 0).getDate(), rows = []
+    for (let d = 1; d <= dim; d++) {
+      const a = HebCal.gregToAbs(y, m + 1, d), i = info(a), ev = i.events.filter(e => e.kind !== 'rc')
+      if (!ev.length) continue
+      rows.push('<div class="kc-row" data-kc="pick" data-d="' + iso(y, m + 1, d) + '" style="cursor:pointer"><span class="dchip">' + d + '/' + (m + 1) + ' • ' + WDS[i.dow] + '</span><div class="g">' + ev.map(e => '<span style="color:' + KC[e.kind] + '">●</span> ' + esc(e.name)).join(' · ') + '</div></div>')
+    }
+    return rows.length ? '<div class="hg">מועדים בחודש</div>' + rows.join('') : ''
+  }
+
+  function viewMonth() {
+    const lab = HebCal.monthRangeLabel(S.y, S.m + 1)
+    const rbar = S.range ? '<div class="kc-ban"><span>🏖️ ' + esc(S.range.title) + '</span><button type="button" data-kc="rangeclear">✕</button></div>' : ''
+    return '<div class="kc-top"><div><h3>' + GM[S.m] + ' ' + S.y + '</h3><small>' + esc(lab) + '</small></div><div class="kc-nav"><button type="button" data-kc="today">היום</button><button type="button" data-kc="prev" aria-label="חודש קודם">▶</button><button type="button" data-kc="next" aria-label="חודש הבא">◀</button></div></div>' + rbar +
+      monthGrid() + '<div class="kc-legend"><span style="--c:#ef4444"><i></i>חג</span><span style="--c:#f59e0b"><i></i>חול המועד</span><span style="--c:#eab308"><i></i>ערב חג</span><span style="--c:#94a3b8"><i></i>צום</span><span style="--c:#14b8a6"><i></i>מועד קל</span><span style="--c:#3b82f6"><i></i>יום מיוחד</span><span style="--c:#a78bfa"><i></i>ר״ח</span><span>🎂 יום הולדת</span><span style="--c:#38bdf8"><i></i>פגישה</span><span style="--c:#ef4444"><i></i>פגישה בשבת/חג</span><span style="--c:#22c55e"><i></i>חופשה</span></div>' +
+      dayPanel() + monthList()
+  }
+
+  function viewBday() {
+    const list = bdays.map(b => ({ b, n: nextBd(b) })).filter(x => x.n).sort((x, y) => x.n.days - y.n.days)
+    const e = S.bdEdit, eb = e && e !== 'new' ? bdays.find(x => x.id === e) : null
+    const form = e ? '<div class="kc-panel"><h4>' + (eb ? '✎ עריכת יום הולדת' : '＋ יום הולדת חדש') + '</h4><div class="kc-form"><input id="kc-bn" placeholder="שם החוגג/ת" value="' + esc(eb ? eb.name : '') + '" autocomplete="off"><div class="r2"><input id="kc-bd" type="number" min="1" max="31" placeholder="יום" value="' + (eb ? eb.d : '') + '"><select id="kc-bm">' + GM.map((g, i) => '<option value="' + (i + 1) + '"' + (eb && eb.m === i + 1 ? ' selected' : '') + '>' + g + '</option>').join('') + '</select><input id="kc-by" type="number" min="1900" max="2100" placeholder="שנה (רשות)" value="' + (eb && eb.y ? eb.y : '') + '"></div><input id="kc-bp" type="tel" placeholder="טלפון לווטסאפ (רשות), למשל 050-1234567" value="' + esc(eb ? eb.phone || '' : '') + '"><div style="display:flex;gap:8px"><button type="button" class="btn-primary" style="flex:1" data-kc="bdsave">שמור</button><button type="button" class="btn-ghost" data-kc="bdcancel">ביטול</button></div></div></div>' : '<button type="button" class="btn-primary" style="width:100%;margin-top:8px" data-kc="bdnew">＋ הוסף יום הולדת</button>'
+    return '<div class="kc-top"><div><h3>🎂 ימי הולדת</h3><small>ברכה בווטסאפ בלחיצה אחת</small></div></div>' + form +
+      '<div class="kc-panel">' + (list.length ? list.map(x => { const b = x.b, n = x.n, when = n.days === 0 ? '<b style="color:#22c55e">היום! 🎉</b>' : n.days === 1 ? 'מחר' : 'בעוד ' + n.days + ' ימים'; return '<div class="kc-row"><div class="g"><b>' + esc(b.name) + '</b><small>' + b.d + ' ב' + GM[b.m - 1] + (n.age != null ? ' • יהיה/תהיה ' + n.age : '') + ' • ' + when + (b.phone ? ' • 📞 ' + esc(b.phone) : '') + '</small></div><button type="button" class="wa" data-kc="bdsend" data-id="' + b.id + '">💬 ברכה</button><button type="button" data-kc="bdedit" data-id="' + b.id + '">✎</button><button type="button" data-kc="bddel" data-id="' + b.id + '">🗑️</button></div>' }).join('') : '<div class="emptyx" style="margin:0">עדיין לא הוספת ימי הולדת.</div>') + '</div>' +
+      '<div class="hg">✉️ נוסח הברכה</div><div class="kc-form"><textarea id="kc-tpl" rows="3">' + esc(tpl) + '</textarea><div class="hint" style="text-align:right">{שם} יוחלף בשם החוגג/ת, ו-{גיל} בגיל (אם הוזנה שנת לידה).</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + ['חם', 'רשמי', 'קצר'].map((n, i) => '<button type="button" class="btn-ghost" style="padding:6px 12px;font-size:.78rem" data-kc="tplpre" data-i="' + i + '">' + n + '</button>').join('') + '<button type="button" class="btn-primary" style="padding:6px 14px;font-size:.78rem" data-kc="tplsave">שמור נוסח</button></div></div>'
+  }
+
+  const fdate = a => { const g = HebCal.absToGreg(a); return WDN[info(a).dow] + ' ' + g.d + '/' + g.m + ' (' + hlabel(a) + ')' }
+  function viewVac() {
+    const fs = festivals(HebCal.gregToAbs(now0.getFullYear(), now0.getMonth() + 1, now0.getDate()))
+    if (S.vacIdx >= fs.length) S.vacIdx = 0
+    const f = fs[S.vacIdx]
+    S.resF = f
+    const res = findVacations(f, { minLen: S.minLen, maxLen: S.maxLen }); S.res = res
+    const fg = a => { const g = HebCal.absToGreg(a); return g.d + '/' + g.m }
+    return '<div class="kc-top"><div><h3>🏖️ מתי נוח לצאת לחופשה?</h3><small>חופשה שכוללת חול המועד, עם שישי-שבת</small></div></div>' +
+      '<div class="kc-seg">' + fs.map((x, i) => '<button type="button" class="' + (i === S.vacIdx ? 'on' : '') + '" data-kc="vacfest" data-i="' + i + '">' + x.name + ' ' + HebCal.yearStr(x.hy) + '</button>').join('') + '</div>' +
+      '<div class="hint" style="text-align:right">' + esc(f.name) + ': ' + fg(f.first) + ' – ' + fg(f.last) + ' • חול המועד ' + fg(f.chmFrom) + ' – ' + fg(f.chmTo) + (cfg.fri ? ' • שישי = יום עבודה' : ' • שישי נחשב יום חופשי') + '</div>' +
+      '<div class="kc-form"><div class="r2" style="grid-template-columns:1fr 1fr"><select id="kc-min" data-kc="vacopt">' + [3, 4, 5, 6, 7, 9].map(n => '<option value="' + n + '"' + (S.minLen === n ? ' selected' : '') + '>מינימום ' + n + ' ימים</option>').join('') + '</select><select id="kc-max" data-kc="vacopt">' + [5, 7, 9, 12, 16].map(n => '<option value="' + n + '"' + (S.maxLen === n ? ' selected' : '') + '>מקסימום ' + n + ' ימים</option>').join('') + '</select></div></div>' +
+      (res.length ? res.map((w, i) => '<div class="kc-card"><h4>' + w.label + '</h4><div class="kc-line">מ<b>' + esc(fdate(w.s)) + '</b><br>עד <b>' + esc(fdate(w.e)) + '</b></div><div class="st"><span>📆 ' + w.len + ' ימים רצופים</span><span>🧳 ' + w.work + ' ימי חופש לנצל</span><span>🍂 ' + w.chm + ' ימי חול המועד</span></div><div class="hint" style="text-align:right;margin-bottom:8px">' + esc(w.why) + '</div><div class="ac"><button type="button" class="btn-primary" data-kc="vacshow" data-i="' + i + '">📆 הצג בלוח</button><button type="button" class="btn-ghost" data-kc="vacsave" data-i="' + i + '">💾 שמור</button></div></div>').join('') : '<div class="emptyx">לא נמצאו חלונות מתאימים. נסה להקטין את המינימום או להגדיל את המקסימום.</div>') +
+      (vacs.length ? '<div class="hg">🏖️ חופשות שמורות</div><div class="kc-panel">' + vacs.map(v => '<div class="kc-row"><div class="g"><b>' + esc(v.title) + '</b><small>' + esc(v.from) + ' → ' + esc(v.to) + '</small></div><button type="button" data-kc="vacgo" data-d="' + v.from + '">📆</button><button type="button" data-kc="vacdel" data-id="' + v.id + '">🗑️</button></div>').join('') + '</div>' : '') +
+      '<div class="hint" style="margin-top:10px;text-align:right">ערב חג נספר כיום עבודה. חופשה נחשבת "רצופה" כולל שבת, חגים וימים חופשיים שצמודים אליה.</div>'
+  }
+
+  function viewSet() {
+    const cities = Object.keys(HebCal.CITIES).map(k => '<option value="' + k + '"' + (cfg.city === k ? ' selected' : '') + '>' + HebCal.CITIES[k].name + '</option>').join('')
+    const tg = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-kc="cfgtog" data-v="' + k + '" aria-pressed="' + on + '"></button></div>'
+    return '<div class="kc-top"><div><h3>⚙️ הגדרות לוח שנה</h3></div></div><div class="kc-panel"><label class="fl" style="margin-top:0">עיר (לזמני הדלקת נרות ויציאת שבת)</label><select id="kc-city" data-kc="cfgsel">' + cities + '</select>' +
+      tg('il', 'לוח ישראל (יום חג אחד) – כבוי = חו״ל', cfg.il) + tg('fri', 'שישי הוא יום עבודה (לחישוב חופשות)', cfg.fri) +
+      '<label class="fl">מרווח בטיחות (דקות) לפני כניסה / אחרי יציאה</label><input id="kc-buf" type="number" min="0" max="120" value="' + (+cfg.buf || 30) + '" data-kc="cfgbuf"><div class="hint" style="text-align:right;margin-top:8px">זמני שקיעה והדלקת נרות מחושבים אופליין לפי העיר שנבחרה (הדלקה 18 דק׳ לפני השקיעה; ירושלים 40, חיפה וטבריה 30). צאת השבת – צאת הכוכבים.</div></div>'
+  }
+
+  function render() {
+    if (!ov) return
+    const d = ov.firstChild, st = d ? d.scrollTop : 0
+    const seg = [['month', '📅 חודש'], ['bday', '🎂 ימי הולדת'], ['vac', '🏖️ חופשה'], ['set', '⚙️']]
+    const body = S.view === 'bday' ? viewBday() : S.view === 'vac' ? viewVac() : S.view === 'set' ? viewSet() : viewMonth()
+    ov.innerHTML = '<div class="dlg kc-dlg"><div class="grab"></div><div class="dh"><h2>📆 לוח שנה</h2><div><button class="done" data-kc="close">סגור</button></div></div><div class="kc-seg">' +
+      seg.map(x => '<button type="button" class="' + (S.view === x[0] ? 'on' : '') + '" data-kc="view" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' + body + '</div>'
+    ov.hidden = false
+    if (ov.firstChild) ov.firstChild.scrollTop = st
+  }
+  function open(view, o) {
+    css()
+    if (!ov) { ov = document.createElement('div'); ov.id = 'kms-cal'; ov.className = 'modalx'; ov.hidden = true; document.body.appendChild(ov) }
+    if (view) S.view = view
+    if (o && o.iso) { const p = parseISO(o.iso); S.y = p.y; S.m = p.m - 1; S.sel = o.iso }
+    if (view === 'vac' && o && o.kind != null) { const fs = festivals(HebCal.gregToAbs(now0.getFullYear(), now0.getMonth() + 1, now0.getDate())); const i = fs.findIndex(f => f.kind === o.kind); S.vacIdx = i >= 0 ? i : 0 }
+    render()
+  }
+  const close = () => { if (ov) ov.hidden = true }
+
+  /* ---------- actions ---------- */
+  function rangeTitle(w) { return w.f.name + ' ' + HebCal.yearStr(w.f.hy) + ': ' + isoOfAbs(w.s).split('-').reverse().slice(0, 2).join('/') + ' – ' + isoOfAbs(w.e).split('-').reverse().slice(0, 2).join('/') }
+  function onClick(e) {
+    const t = e.target
+    if (t.id === 'kms-cal') return close()
+    if (t.id === 'kms-warn') return closeWarn()
+    if (t.id === 'kms-info') return closeInfo()
+    const el = t.closest && t.closest('[data-kc]')
+    if (!el) { const c = t.closest && t.closest('[data-act="cal"]'); if (c) { closeInfo(); const b = B(); if (b && b.closeSheet) b.closeSheet(); open('month', { iso: todayISO() }) } return }
+    const a = el.dataset.kc, v = el.dataset.v, id = el.dataset.id
+    if (a === 'close') close()
+    else if (a === 'view') { S.view = v; S.bdEdit = null; render() }
+    else if (a === 'prev') { S.m--; if (S.m < 0) { S.m = 11; S.y-- } render() }
+    else if (a === 'next') { S.m++; if (S.m > 11) { S.m = 0; S.y++ } render() }
+    else if (a === 'today') { const n = new Date(); S.y = n.getFullYear(); S.m = n.getMonth(); S.sel = todayISO(); render() }
+    else if (a === 'pick') { const p = parseISO(el.dataset.d); S.sel = el.dataset.d; S.add = false; if (p.m - 1 !== S.m || p.y !== S.y) { S.y = p.y; S.m = p.m - 1 } render(); const pn = ov.querySelector('.kc-panel'); if (pn) pn.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }
+    else if (a === 'addopen') { S.add = true; render(); const i = $('kc-t'); if (i) i.focus() }
+    else if (a === 'addmeet') {
+      const ti = $('kc-t').value.trim(), tm = $('kc-tm').value, b = B(); if (!ti) { if (window.toast) window.toast('כתוב כותרת לפגישה', '#f59e0b'); return }
+      if (!b) return
+      const d = b.dom('clients') ? 'clients' : (b.dom('tasks') ? 'tasks' : b.data().domains[0].id)
+      const rid = b.addRecord({ domain: d, title: ti, due: S.sel, time: tm }); S.add = false; render(); checkRecord(rid)
+    }
+    else if (a === 'applyalt') {
+      const w = $('kms-warn'), rid = w && w._rid, b = B()
+      if (rid && b) { b.update(rid, { due: el.dataset.d, time: el.dataset.t }); if (window.toast) window.toast('✅ הפגישה עודכנה ל-' + el.dataset.d.split('-').reverse().join('/') + (el.dataset.t ? ' ' + el.dataset.t : '')) }
+      closeWarn(); if (ov && !ov.hidden) render()
+    }
+    else if (a === 'warnkeep') closeWarn()
+    else if (a === 'bdnew') { S.bdEdit = 'new'; render() }
+    else if (a === 'bdedit') { S.bdEdit = id; render() }
+    else if (a === 'bdcancel') { S.bdEdit = null; render() }
+    else if (a === 'bddel') { if (confirm('למחוק את יום ההולדת?')) { bdays = bdays.filter(x => x.id !== id); saveBd(); render(); if (window.renderHome) window.renderHome() } }
+    else if (a === 'bdsave') {
+      const name = $('kc-bn').value.trim(), d = +$('kc-bd').value, m = +$('kc-bm').value, y = +$('kc-by').value || 0, phone = $('kc-bp').value.trim()
+      if (!name || !(d >= 1 && d <= 31)) { if (window.toast) window.toast('חסר שם או יום בחודש', '#f59e0b'); return }
+      if (d > new Date(2024, m, 0).getDate()) { if (window.toast) window.toast('התאריך אינו קיים בחודש שנבחר', '#f59e0b'); return }
+      const cur = S.bdEdit && S.bdEdit !== 'new' ? bdays.find(x => x.id === S.bdEdit) : null
+      if (cur) Object.assign(cur, { name, d, m, y, phone }); else bdays.push({ id: 'b' + Math.random().toString(36).slice(2, 9), name, d, m, y, phone })
+      saveBd(); S.bdEdit = null; render(); if (window.renderHome) window.renderHome()
+    }
+    else if (a === 'bdsend') { closeInfo(); sendBd(id) }
+    else if (a === 'infoclose') closeInfo()
+    else if (a === 'bdvoice') { closeInfo(); const b = bdays.find(x => x.id === id); if (b) sendBdVoice(b) }
+    else if (a === 'gohol') { closeInfo(); open('month', { iso: el.dataset.d }) }
+    else if (a === 'tplpre') { const ta = $('kc-tpl'); if (ta) ta.value = PRESETS[+el.dataset.i] }
+    else if (a === 'tplsave') { const ta = $('kc-tpl'); if (ta && ta.value.trim()) { tpl = ta.value.trim(); store(LSK.tpl, tpl); if (window.toast) window.toast('נוסח הברכה נשמר') } }
+    else if (a === 'vacfest') { S.vacIdx = +el.dataset.i; render() }
+    else if (a === 'vacshow') { const w = S.res[+el.dataset.i]; if (w) { S.range = { from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }; S.view = 'month'; const p = parseISO(S.range.from); S.y = p.y; S.m = p.m - 1; S.sel = S.range.from; render() } }
+    else if (a === 'vacsave') { const w = S.res[+el.dataset.i]; if (w) { vacs.push({ id: 'v' + Math.random().toString(36).slice(2, 9), from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }); store(LSK.vac, vacs); if (window.toast) window.toast('החופשה נשמרה בלוח'); render() } }
+    else if (a === 'vacdel') { vacs = vacs.filter(x => x.id !== id); store(LSK.vac, vacs); render() }
+    else if (a === 'vacgo') { open('month', { iso: el.dataset.d }) }
+    else if (a === 'rangeclear') { S.range = null; render() }
+    else if (a === 'cfgtog') { cfg[v] = !cfg[v]; store(LSK.cfg, cfg); render() }
+  }
+  function onChange(e) {
+    const el = e.target, a = el.dataset && el.dataset.kc
+    if (a === 'cfgsel') { cfg.city = el.value; store(LSK.cfg, cfg); render() }
+    else if (a === 'cfgbuf') { cfg.buf = Math.max(0, Math.min(120, +el.value || 30)); store(LSK.cfg, cfg); render() }
+    else if (a === 'vacopt') { S.minLen = +$('kc-min').value; S.maxLen = +$('kc-max').value; if (S.maxLen < S.minLen) S.maxLen = S.minLen; render() }
+  }
+  document.addEventListener('click', onClick)
+  document.addEventListener('change', onChange)
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { const w = $('kms-warn'), inf = $('kms-info'); if (inf && !inf.hidden) closeInfo(); else if (w && !w.hidden) closeWarn(); else if (ov && !ov.hidden) close() } })
+
+  /* ---------- home strip ---------- */
+  function strip() {
+    const h = $('home-body'); if (!h) return
+    const hero = h.querySelector('.wr') || h.querySelector('.hero'); if (!hero || h.querySelector('.kc-strip')) return
+    css()
+    const n = new Date(), tA = HebCal.gregToAbs(n.getFullYear(), n.getMonth() + 1, n.getDate()), i = info(tA)
+    const evs = i.events.map(e => e.name)
+    let sh = tA; while (info(sh).dow !== 6) sh++
+    const fi = info(sh - 1), si = info(sh)
+    const sTxt = (info(tA).dow === 6 ? 'שבת היום' : 'שבת') + (si.parasha ? ' פרשת ' + si.parasha : '') + ' · ' + (info(tA).dow === 6 ? '' : 'כניסה ' + (fi.candle || fi.times.candle) + ' · ') + 'יציאה ' + (si.havdalah || si.times.tzeit)
+    let nextH = ''
+    for (let a = tA + 1; a <= tA + 21; a++) { const e = info(a).events.find(x => x.kind === 'yomtov' || x.kind === 'erev'); if (e && e.kind === 'yomtov') { nextH = 'בעוד ' + (a - tA) + ' ימים: ' + e.name; break } }
+    const bs = bdays.map(b => ({ b, n: nextBd(b) })).filter(x => x.n && x.n.days <= 1).sort((x, y) => x.n.days - y.n.days)
+    const html = '<div class="kc-strip" data-act="cal"><div class="a">📆 ' + esc('יום ' + WDN[i.dow] + ' • ' + i.hFull) + '</div><div class="b">' + (evs.length ? '✨ ' + esc(evs.join(' · ')) + '<br>' : '') + '🕯️ ' + esc(sTxt) + (nextH ? '<br>🗓️ ' + esc(nextH) : '') + '</div>' +
+      bs.map(x => '<div class="c">🎂 <span>' + (x.n.days === 0 ? 'היום' : 'מחר') + ' יום הולדת ל<b>' + esc(x.b.name) + '</b></span><button type="button" data-kc="bdsend" data-id="' + x.b.id + '">💬 שלח ברכה</button></div>').join('') + '</div>'
+    hero.insertAdjacentHTML('afterend', html)
+  }
+  if (typeof window.renderHome === 'function') {
+    const _rh = window.renderHome
+    window.renderHome = function () { _rh.apply(this, arguments); try { strip() } catch (e) {} }
+    try { window.renderHome() } catch (e) {}
+  }
+
+  /* ---------- info popup ---------- */
+  function openInfo(title, html, actions) {
+    css()
+    let el = $('kms-info')
+    if (!el) { el = document.createElement('div'); el.id = 'kms-info'; el.className = 'modalx kc-over'; el.hidden = true; document.body.appendChild(el) }
+    el.innerHTML = '<div class="dlg kc-dlg"><div class="grab"></div><div class="dh"><h2>' + title + '</h2><div><button class="done" data-kc="infoclose">סגור</button></div></div><div class="kc-wtxt">' + html + '</div>' +
+      (actions && actions.length ? '<div class="kc-alts">' + actions.join('') + '</div>' : '') + '</div>'
+    el.hidden = false
+  }
+  const closeInfo = () => { const el = $('kms-info'); if (el) el.hidden = true }
+
+  /* ---------- voice helpers ---------- */
+  const nrm = s => String(s || '').replace(/[״"׳'’־\-]/g, '').replace(/\s+/g, ' ').trim()
+  const todayAbs = () => { const n = new Date(); return HebCal.gregToAbs(n.getFullYear(), n.getMonth() + 1, n.getDate()) }
+  const nowMin = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() }
+  function findBd(q) {
+    q = nrm(q); if (!q) return []
+    const tries = [q]; if (/^ל./.test(q)) tries.push(q.slice(1)); if (/^אל./.test(q)) tries.push(q.slice(2))
+    for (const x of tries) {
+      const full = bdays.filter(b => nrm(b.name) === x); if (full.length) return full
+      const part = bdays.filter(b => nrm(b.name).split(' ').some(w => w === x) || nrm(b.name).indexOf(x) === 0 || (x.length >= 3 && nrm(b.name).indexOf(x) >= 0))
+      if (part.length) return part
+    }
+    return []
+  }
+  function sendBdVoice(b) {
+    const nb = nextBd(b), age = b.y && nb ? nb.year - b.y : null, url = waUrl(b.phone, bdMsg(b, age))
+    let w = null; try { w = window.open(url, '_blank') } catch (e) {}
+    if (w) return '💬 פותח וואטסאפ עם ברכה ל<b>' + esc(b.name) + '</b>' + (b.phone ? '' : ' – בחר איש קשר')
+    openInfo('💬 ברכה ל' + esc(b.name), '<div class="kc-tip">' + esc(bdMsg(b, age)) + '</div>' + (b.phone ? '' : '<div class="hint" style="text-align:right">לא הוזן טלפון – תבחר איש קשר בווטסאפ.</div>'), ['<button type="button" class="btn-primary" data-kc="bdsend" data-id="' + b.id + '">💬 פתח וואטסאפ ושלח</button>'])
+    return '💬 הברכה ל<b>' + esc(b.name) + '</b> מוכנה – לחץ על הכפתור לשליחה'
+  }
+  function pickBd(list, title) {
+    openInfo(title, 'יש כמה התאמות – מי מהם?', list.map(b => '<button type="button" class="btn-ghost" data-kc="bdvoice" data-id="' + b.id + '">🎂 ' + esc(b.name) + ' (' + b.d + '/' + b.m + ')</button>'))
+    return '🤔 יש כמה התאמות – בחר מהרשימה'
+  }
+  function upcomingBd(days) {
+    return bdays.map(b => ({ b, n: nextBd(b) })).filter(x => x.n && x.n.days <= days).sort((x, y) => x.n.days - y.n.days)
+  }
+  function bdPopup(list, title) {
+    openInfo(title, list.map(x => '<div class="kc-row"><div class="g"><b>' + esc(x.b.name) + '</b><small>' + x.b.d + ' ב' + GM[x.b.m - 1] + ' • ' + (x.n.days === 0 ? 'היום 🎉' : x.n.days === 1 ? 'מחר' : 'בעוד ' + x.n.days + ' ימים') + (x.n.age != null ? ' • יהיה/תהיה ' + x.n.age : '') + '</small></div><button type="button" class="wa" data-kc="bdsend" data-id="' + x.b.id + '">💬 ברכה</button></div>').join(''))
+  }
+  const MONTH_RE = '(ינואר|פברואר|מרץ|מרס|אפריל|מאי|יוני|יולי|אוגוסט|ספטמבר|אוקטובר|נובמבר|דצמבר)'
+  const monthNum = n => { const i = GM.indexOf(n === 'מרס' ? 'מרץ' : n); return i + 1 }
+
+  function shabbatPopup(ask, chag) {
+    const tA = todayAbs(), nm = tA * 1440 + nowMin(); let blk = null
+    for (let a = tA; a < tA + 400; a++) { if (sacred(a)) { const b = blockOf(a); if (b.exitAbs > nm && (!chag || !b.shabOnly)) { blk = b; break } a = b.e } }
+    if (!blk) return '😕 לא מצאתי מועד קרוב'
+    const buf = +cfg.buf || 30, af = afterExit(blk), lim = fromMin(Math.floor((toMin(blk.entry) - buf) / 5) * 5)
+    const inside = blk.entryAbs <= nm, shab = blk.shabOnly, nmx = shab ? 'שבת' : 'החג'
+    let par = ''; for (let d = blk.s; d <= blk.e; d++) if (info(d).dow === 6 && info(d).parasha) par = info(d).parasha
+    const entryL = dlabel(blk.s - 1) + ' ב-' + blk.entry, exitL = dlabel(blk.e) + ' ב-' + blk.exit
+    const hi = (k, txt) => '<div class="kc-line"' + (ask === k ? ' style="font-weight:800;font-size:1rem"' : '') + '>' + txt + '</div>'
+    openInfo((ask === 'exit' ? '✡️ יציאת ' : '🕯️ כניסת ') + nmx,
+      '<div class="kc-chips"><span class="kc-chip" style="--c:#38bdf8">' + esc(blk.name) + '</span>' + (par ? '<span class="kc-chip" style="--c:#38bdf8">פרשת ' + esc(par) + '</span>' : '') + '</div>' +
+      (inside ? '<div class="kc-tip">כעת ' + nmx + ' – היציאה ' + esc(exitL) + '</div>' : '') +
+      hi('entry', '🕯️ הדלקת נרות / כניסה: <b>' + esc(entryL) + '</b>') + hi('exit', '✡️ יציאה (צאת הכוכבים): <b>' + esc(exitL) + '</b>') +
+      '<div class="kc-tip">💡 לפגישות: עד <b>' + lim + '</b> (' + bufTxt() + ' לפני הכניסה), או אחרי <b>' + af.time + '</b> ב' + esc(dlabel(af.abs)) + ' (' + bufTxt() + ' אחרי היציאה).</div>' +
+      '<div class="hint" style="text-align:right">העיר: ' + esc(HebCal.CITIES[cfg.city].name) + '</div>',
+      ['<button type="button" class="btn-ghost" data-act="cal">📆 פתח לוח שנה</button>'])
+    return (ask === 'exit' ? '✡️ יציאת ' + nmx + ': <b>' + esc(exitL) + '</b>' : '🕯️ כניסת ' + nmx + ': <b>' + esc(entryL) + '</b>')
+  }
+  function sunPopup(offset) {
+    const a = todayAbs() + (offset || 0), i = info(a), t = i.times
+    openInfo('🌇 זמני היום', '<div class="kc-line"><b>' + esc(dlabel(a)) + '</b> • ' + esc(i.hFull) + '</div><div class="kc-line">🌅 זריחה <b>' + t.sunrise + '</b></div><div class="kc-line">🌇 שקיעה <b>' + t.sunset + '</b></div><div class="kc-line">✨ צאת הכוכבים <b>' + t.tzeit + '</b></div>' + (i.candle ? '<div class="kc-line">🕯️ הדלקת נרות <b>' + i.candle + '</b></div>' : '') + '<div class="hint" style="text-align:right">העיר: ' + esc(HebCal.CITIES[cfg.city].name) + '</div>')
+    return '🌇 שקיעה <b>' + t.sunset + '</b> · זריחה <b>' + t.sunrise + '</b> · צאת הכוכבים <b>' + t.tzeit + '</b>'
+  }
+  function hebDatePopup() {
+    const a = todayAbs(), i = info(a)
+    openInfo('📆 התאריך העברי', '<div class="kc-line" style="font-size:1.05rem"><b>' + esc('יום ' + WDN[i.dow] + ' • ' + i.hFull) + '</b></div>' + (i.events.length ? '<div class="kc-chips">' + i.events.map(e => '<span class="kc-chip" style="--c:' + KC[e.kind] + '">' + esc(e.name) + '</span>').join('') + '</div>' : '') + (i.omer ? '<div class="kc-line">' + esc(i.omer + ' בעומר') + '</div>' : ''), ['<button type="button" class="btn-ghost" data-act="cal">📆 פתח לוח שנה</button>'])
+    return '📆 ' + esc(i.hFull)
+  }
+  function holidayWhen(q) {
+    q = nrm(q).replace(/^ה/, ''); if (q.length < 2) return null
+    const tA = todayAbs(), seen = new Map()
+    for (let a = tA; a < tA + 420; a++) info(a).events.forEach(e => { const n = e.name.replace(/\s*\(.*?\)/g, ''); if (nrm(n).replace(/^ה/, '').indexOf(q) >= 0 && !seen.has(n)) seen.set(n, a) })
+    if (!seen.size) return null
+    const rows = [...seen.entries()].sort((x, y) => x[1] - y[1]).slice(0, 6)
+    openInfo('🗓️ מתי ' + esc(q) + '?', rows.map(r => '<div class="kc-row"><div class="g"><b>' + esc(r[0]) + '</b><small>' + esc(hlabel(r[1])) + '</small></div><span class="dchip">' + esc(dlabel(r[1])) + (r[1] - tA <= 1 ? '' : ' • בעוד ' + (r[1] - tA) + ' ימים') + '</span></div>').join(''), ['<button type="button" class="btn-ghost" data-kc="gohol" data-d="' + isoOfAbs(rows[0][1]) + '">📆 הצג בלוח</button>'])
+    return '🗓️ <b>' + esc(rows[0][0]) + '</b>: ' + esc(dlabel(rows[0][1])) + ' (' + esc(hlabel(rows[0][1])) + ')'
+  }
+  function vacVoice(kind, mode) {
+    const fs = festivals(todayAbs()); let i = kind ? fs.findIndex(f => f.kind === kind) : 0; if (i < 0) i = 0
+    S.vacIdx = i; const f = fs[i], res = findVacations(f, { minLen: S.minLen, maxLen: S.maxLen }); S.res = res; S.resF = f
+    open('vac')
+    const fd = a => { const g = HebCal.absToGreg(a); return g.d + '/' + g.m }
+    return '🏖️ <b>' + esc(f.name) + ' ' + HebCal.yearStr(f.hy) + '</b><br>' + res.slice(0, 3).map(w => w.label + ': ' + fd(w.s) + '–' + fd(w.e) + ' (' + w.len + ' ימים, ' + w.work + ' ימי חופש)').join('<br>')
+  }
+  function addBdVoice(t) {
+    let phone = ''; t = t.replace(/(0\d[\d-]{7,10})/, m => { phone = m; return ' ' }).replace(/\s+/g, ' ').trim()
+    let m = t.match(new RegExp('^(?:הוסף|תוסיף|הוספת|תרשום|רשום|שמור)\\s+(?:לי\\s+)?(?:ברכת\\s+)?(?:יום הולדת|יומולדת)\\s+(?:ל|של)?\\s*(.+?)\\s+(?:ב|ל)?-?\\s*(\\d{1,2})\\s*(?:[./]\\s*(\\d{1,2})|\\s+(?:ב|ל)?-?' + MONTH_RE + ')(?:\\s+(?:ב|ל)?-?(\\d{4}))?$'))
+    if (!m) return null
+    const name = m[1].replace(/^(?:ל|של)(?=\S)/, '').trim(), d = +m[2], mo = m[3] ? +m[3] : monthNum(m[4]), y = m[5] ? +m[5] : 0
+    if (!name || !(mo >= 1 && mo <= 12) || d < 1 || d > new Date(2024, mo, 0).getDate()) return '😕 לא הבנתי את התאריך – למשל: ״הוסף יום הולדת לדנה ב-26 בנובמבר״'
+    const ex = bdays.find(b => nrm(b.name) === nrm(name))
+    if (ex) Object.assign(ex, { d, m: mo, y: y || ex.y || 0, phone: phone || ex.phone || '' }); else bdays.push({ id: 'b' + Math.random().toString(36).slice(2, 9), name, d, m: mo, y, phone })
+    saveBd(); if (window.renderHome) window.renderHome(); if (ov && !ov.hidden) render()
+    return '🎂 ' + (ex ? 'עודכן' : 'נוסף') + ' יום הולדת ל<b>' + esc(name) + '</b> – ' + d + ' ב' + GM[mo - 1] + (phone ? ' · 📞 ' + esc(phone) : '')
+  }
+  function checkVoice(t) {
+    const b = B(); if (!b || !b.parse) return null
+    const p = b.parse(t); if (!p.due) return null
+    const r = check(p.due, p.time, '')
+    if (!r || r.level === 'info') return (r ? r.icon + ' ' + r.short + '<br>' : '') + '✅ ' + dlabel(absOfISO(p.due)) + (p.time ? ' בשעה ' + p.time : '') + ' – אין התנגשות עם שבת או חג'
+    openInfo(r.icon + ' ' + esc(r.title), '<div class="kc-wtxt">' + r.html + '</div>', [])
+    return r.icon + ' ' + esc(r.short)
+  }
+
+  /* ---------- voice / text commands ---------- */
+  function route(t) {
+    t = String(t || '').trim().replace(/[?!.,]+$/, '')
+    if (!t) return null
+    let m
+    // --- calendar
+    if (/^(?:פתח\s+|הצג\s+|תציג\s+|תראה\s+|הראה\s+)?(?:לי\s+)?(?:את\s+)?(?:לוח שנה|לוח השנה|היומן|יומן)$/.test(t)) { open('month', { iso: todayISO() }); return '📆 פתחתי את לוח השנה' }
+    if (/^(?:פתח\s+|הצג\s+|תציג\s+)?(?:את\s+)?(?:ימי הולדת|יום הולדת|ימי ההולדת)$/.test(t)) { open('bday'); return '🎂 פתחתי את ימי ההולדת' }
+    // --- birthdays: add
+    if (/(?:יום הולדת|יומולדת)/.test(t) && /^(?:הוסף|תוסיף|הוספת|תרשום|רשום|שמור)/.test(t)) { const r = addBdVoice(t); if (r) return r }
+    // --- birthdays: who / when
+    if ((m = t.match(/^(?:מי|למי)\s+(?:חוגג|חוגגת|יש לו|יש לה|יש)\s*(?:יום הולדת)?\s*(היום|מחר|השבוע|החודש|בקרוב)?$/)) || /^(?:ימי הולדת)\s+(?:היום|מחר|השבוע|החודש|בקרוב)$/.test(t)) {
+      const w = (m && m[1]) || t.split(/\s+/).pop(), days = w === 'היום' ? 0 : w === 'מחר' ? 1 : w === 'החודש' ? 31 : 7
+      const l = upcomingBd(days)
+      if (!l.length) return '🎂 אין ימי הולדת ' + (w === 'בקרוב' || !w ? 'בשבוע הקרוב' : w)
+      bdPopup(l, '🎂 ימי הולדת ' + (w || 'השבוע')); return '🎂 ' + l.map(x => esc(x.b.name) + ' (' + (x.n.days === 0 ? 'היום' : x.n.days === 1 ? 'מחר' : 'בעוד ' + x.n.days) + ')').join(' · ')
+    }
+    if ((m = t.match(/^מתי\s+(?:יש\s+)?(?:את\s+)?(?:יום ההולדת|יום הולדת|יומולדת)\s+(?:של|ל)?\s*(.+)$/))) {
+      const l = findBd(m[1]); if (!l.length) return '🎂 לא מצאתי יום הולדת בשם ״' + esc(m[1]) + '״'
+      return '🎂 ' + l.map(b => { const n = nextBd(b); return '<b>' + esc(b.name) + '</b>: ' + b.d + ' ב' + GM[b.m - 1] + (n ? ' (' + (n.days === 0 ? 'היום' : n.days === 1 ? 'מחר' : 'בעוד ' + n.days + ' ימים') + ')' : '') }).join('<br>')
+    }
+    // --- birthdays: send greeting
+    if ((m = t.match(/^(?:תשלח|שלח|תשלחי|שלחי|תכתוב|כתוב)\s+(?:לי\s+)?(?:ברכת\s+יום\s+הולדת|ברכה|הודעה|וואטסאפ|ווטסאפ|וואצאפ|מזל טוב)?\s*(?:ל|אל|ללא)?\s*-?\s*(.+)$/)) ||
+        (m = t.match(/^(?:ברכה|ברכת יום הולדת|מזל טוב)\s+(?:ל|אל)?\s*-?\s*(.+)$/))) {
+      const l = findBd(m[1])
+      if (l.length === 1) return sendBdVoice(l[0])
+      if (l.length > 1) return pickBd(l, '💬 למי לשלוח?')
+      if (/ברכ|מזל טוב|יום הולדת|וואטסאפ|ווטסאפ/.test(t)) return '🎂 לא מצאתי יום הולדת בשם ״' + esc(m[1]) + '״. אפשר להוסיף: ״הוסף יום הולדת ל' + esc(m[1]) + ' ב-26 בנובמבר״'
+    }
+    // --- Shabbat / holiday times
+    if (/^(?:מתי|מה|באיזו|איזו|זמני|הצג|תציג|תראה|תגיד|כמה)\b/.test(t)) {
+      if (/(?:כניסת|נכנסת|נכנס|הכניסה|הדלקת נרות|הדלקה)/.test(t) && /(?:שבת|חג|נרות|הדלקה|המועד)/.test(t)) return shabbatPopup('entry', /חג|המועד/.test(t) && !/שבת/.test(t))
+      if (/(?:יציאת|יוצאת|יוצא|היציאה|צאת|מוצאי|הבדלה)/.test(t) && /(?:שבת|חג|המועד|הכוכבים)/.test(t) && !/הכוכבים/.test(t)) return shabbatPopup('exit', /חג|המועד/.test(t) && !/שבת/.test(t))
+      if (/^(?:זמני|הצג|תציג|תראה)\s+(?:את\s+)?(?:זמני\s+)?(?:שבת|חג)/.test(t) || /זמני שבת/.test(t)) return shabbatPopup('both', /חג/.test(t) && !/שבת/.test(t))
+      if (/(?:שקיעה|שוקעת|זריחה|זורחת|צאת הכוכבים)/.test(t)) return sunPopup(/מחר/.test(t) ? 1 : 0)
+      if (/(?:התאריך העברי|תאריך עברי|איזה יום בעברי)/.test(t)) return hebDatePopup()
+    }
+    if (/^(?:מה|איזה)\s+(?:ה)?(?:תאריך העברי|תאריך עברי)/.test(t) || /^(?:התאריך העברי|תאריך עברי)(?:\s+היום)?$/.test(t)) return hebDatePopup()
+    // --- vacation
+    if (/חופש/.test(t) && /(?:חול המועד|פסח|סוכות|לצאת|מתי נוח|מתי כדאי|המלצ|הצע|תציע)/.test(t)) return vacVoice(/סוכות/.test(t) ? 'sukkot' : /פסח/.test(t) ? 'pesach' : null)
+    if (/^(?:הצג|תציג|תראה)\s+(?:את\s+)?(?:ה)?חופשה\s+(?:ה\S+\s+)?בלוח(?:\s+אפשרות\s+(\d))?$/.test(t) && S.res && S.res.length) {
+      const k = (t.match(/אפשרות\s+(\d)/) || [0, 1])[1] - 1, w = S.res[Math.max(0, Math.min(S.res.length - 1, k))]
+      S.range = { from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }; S.view = 'month'; open('month', { iso: S.range.from }); return '📆 מציג בלוח: ' + esc(S.range.title)
+    }
+    if (/^(?:שמור|תשמור)\s+(?:את\s+)?(?:ה)?חופשה(?:\s+אפשרות\s+(\d))?$/.test(t) && S.res && S.res.length) {
+      const k = (t.match(/אפשרות\s+(\d)/) || [0, 1])[1] - 1, w = S.res[Math.max(0, Math.min(S.res.length - 1, k))]
+      vacs.push({ id: 'v' + Math.random().toString(36).slice(2, 9), from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }); store(LSK.vac, vacs); if (ov && !ov.hidden) render(); return '💾 החופשה נשמרה בלוח: ' + esc(rangeTitle(w))
+    }
+    // --- is a meeting time OK?
+    if (/^(?:האם\s+)?(?:אפשר|מתאים|נוח|כדאי|בסדר)\s+(?:לקבוע\s+)?(?:פגישה|ישיבה|שיחה|להיפגש|לקבוע)/.test(t) || /^(?:בדוק|תבדוק)\s+(?:פגישה|תאריך|מועד)/.test(t)) { const r = checkVoice(t); if (r) return r }
+    // --- when is a holiday
+    if ((m = t.match(/^(?:מתי|באיזה תאריך)\s+(?:יחול|חל|חלה|יהיה|יהיו|זה|הוא|היא|הולך להיות)?\s*(.+)$/)) && m[1].split(' ').length <= 3) { const r = holidayWhen(m[1]); if (r) return r }
+    return null
+  }
+
+  window.KMSCal = { open, check, checkRecord, route, strip, _t: { info, blockOf, findVacations, festivals, nextBd, waUrl, bdMsg, cfg, offDay, absOfISO, isoOfAbs } }
 })()
 
 </script>
