@@ -1216,9 +1216,10 @@ async function sendMessage() {
 
     removeTyping(tid)
     chat.push({ role:'ai', content: reply, ts: Date.now() })
+    if (window.__chatVoice || SPK.typed) speakReply(reply, 'chat')
+    window.__chatVoice = false
     save()
     renderMessages()
-    speakHe(reply, 'chat')          // read the answer aloud if voice feedback is on for this area (🔊 in הגדרות)
 }
 
 function showTyping() {
@@ -1457,7 +1458,7 @@ function addSynonymPair() {
 // =====================================================================
 //  VOICE INPUT
 // =====================================================================
-function toggleVoice() { voiceToggle('chat', t => { document.getElementById('user-input').value = t; sendMessage() }) }
+function toggleVoice() { voiceToggle('chat', t => { window.__chatVoice = true; document.getElementById('user-input').value = t; sendMessage() }) }
 
 // =====================================================================
 //  LEARNING REPORT
@@ -2276,25 +2277,53 @@ function handleShopPhrase(ph) {
     if (/^(מה|איך|למה|האם|מי|מתי|איפה)\s/.test(ph)) return 'לא הבנתי את הבקשה. אפשר לומר "קניתי חלב" או לומר פריטים להוספה.'
     return shopStage(segmentStream(ph))
 }
-let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? '0' : '1')) !== '0'
+let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? '1') !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-// ---- per-area voice-feedback (TTS) preferences: each area (chat / home-crm / shop) can be toggled independently
-let ttsAreas = (() => { try { const x = JSON.parse(localStorage.getItem('gl_tts_areas')); if (x && typeof x === 'object') return x } catch (e) {} return {} })()
-const TTS_AREA_LABEL = { chat: '💬 שיחה (ידע)', home: '🗂️ פקודות קוליות (ניהול/תחומים)', shop: '🛒 רשימת קניות' }
-function ttsOnFor(area) {                      // 'shop' keeps using the old shared toggle for backward-compat; other areas default to ON
-    if (!area || area === 'shop') return ttsOn
-    return ttsAreas[area] !== false
+// ---------- חיווי קולי לפי נושא ----------
+const SPK = (() => { let x = null; try { x = JSON.parse(localStorage.getItem('gl_speak')) } catch (e) {} x = x && typeof x === 'object' ? x : {}; x.off = x.off && typeof x.off === 'object' ? x.off : {}; x.rate = x.rate || 1; x.typed = !!x.typed; return x })()
+const spkOn = k => ttsOn && !SPK.off[k]
+function spkSync() { const b = document.getElementById('shop-tts'); if (b) b.textContent = spkOn('shopping') ? '🔊' : '🔇' }
+function saveSpk() { try { localStorage.setItem('gl_speak', JSON.stringify(SPK)); localStorage.setItem('gl_tts', ttsOn ? '1' : '0') } catch (e) {} spkSync() }
+const SPK_MONTHS = ['בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני', 'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר']
+function spokenText(t) {
+    let x = plain(t).replace(/אמור ״.*$/, '').replace(/(\d{1,2}\/\d{1,2})\s*[–-]\s*(\d{1,2}\/\d{1,2})/g, '$1 עד $2').replace(/(\d{1,2})\/(\d{1,2})(?!\d)/g, (m, d, mo) => +mo >= 1 && +mo <= 12 ? d + ' ' + SPK_MONTHS[mo - 1] : m)
+    x = x.replace(/[•·|]/g, '. ').replace(/[^\u0590-\u05FF0-9a-zA-Z .,:%!?-]/g, ' ').replace(/\s+/g, ' ').trim()
+    if (x.length > 320) { const c = x.slice(0, 320), k = Math.max(c.lastIndexOf('. '), c.lastIndexOf('? ')); x = k > 80 ? c.slice(0, k + 1) : c }
+    return x
 }
-function saveTtsAreas() { try { localStorage.setItem('gl_tts_areas', JSON.stringify(ttsAreas)) } catch (e) {} }
-function toggleTtsArea(area) {
-    if (area === 'shop') return shopTtsToggle()
-    ttsAreas[area] = ttsOnFor(area) ? false : true; saveTtsAreas()
+// מקריא מיד. בזמן שהמיקרופון פתוח – ההאזנה מושתקת עד סוף ההקראה, כדי שלא ישמע את עצמו
+function speakReply(t, topic, force) {
+    if (!window.speechSynthesis || (!force && !spkOn(topic || 'other'))) return
+    const txt = spokenText(t); if (!txt) return
+    const live = typeof Voice !== 'undefined' && Voice.state !== 'idle'
+    let freed = false; const free = () => { if (freed) return; freed = true; if (live) setTimeout(() => { Voice.muted = false }, 700) }
+    try {
+        speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'he-IL'; u.rate = SPK.rate || 1
+        if (live) { Voice.muted = true; setTimeout(free, 20000) }
+        u.onend = free; u.onerror = free; speechSynthesis.speak(u)
+    } catch (e) { free() }
 }
-function speakHe(t, area) {
-    if (!t || !ttsOnFor(area) || !window.speechSynthesis || (typeof Voice !== 'undefined' && Voice.state !== 'idle')) return     // never talk over the microphone
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(t).replace(/[^\u0590-\u05FF0-9a-zA-Z .,:%-]/g, ' ').slice(0, 140)); u.lang = 'he-IL'; speechSynthesis.speak(u) } catch (e) {}
+const speakHe = t => speakReply(t, 'shopping')
+function spkTopicOf(h, r) {
+    const H = String(h || ''), R = String(r || '')
+    if (/^🔊|^🔇/.test(R)) return 'sys'
+    if (/^🏖️/.test(R) || /חופש/.test(H)) return 'vac'
+    if (/^🎂|^💬/.test(R) || /יום הולדת|יומולדת|ברכה|חוגג/.test(H)) return 'bday'
+    if (/^(🕒|📅|🤔 לאיזו)/.test(R) || /^(?:קבע|תקבע|לקבוע|דחה|העבר)/.test(H)) return 'meet'
+    if (/^(🕯️|✡️|🌇|🗓️|📆)/.test(R) || /שבת|חג|נרות|שקיעה|זריחה|הכוכבים|תאריך העברי|פרשת|מתי חל/.test(H)) return 'cal'
+    if (/^🛒/.test(R)) return 'shopping'
+    try { const d = window.__crm.data().domains.find(d => d.link !== 'shop' && R.includes(d.name)); if (d) return d.id; const sh = window.__crm.data().domains.find(d => d.link === 'shop' && R.includes(d.name)); if (sh) return sh.id } catch (e) {}
+    return 'other'
 }
-function shopTtsToggle() { ttsOn = !ttsOn; localStorage.setItem('gl_tts', ttsOn ? '1' : '0'); const b = document.getElementById('shop-tts'); if (b) b.textContent = ttsOn ? '🔊' : '🔇' }
+function spkSay(heard, reply) {                         // נקרא מ-say(): כל תשובה שמוצגת במסך הבית
+    if (reply == null) return
+    const live = typeof Voice !== 'undefined' && Voice.state !== 'idle' && (Voice.kind === 'home' || Voice.kind === 'shop')
+    if (!live && !SPK.typed) return
+    const tp = spkTopicOf(heard, reply)
+    if (tp === 'sys') { if (ttsOn) speakReply(reply, 'sys', true); return }
+    speakReply(reply, tp)
+}
+function shopTtsToggle() { SPK.off.shopping = !SPK.off.shopping; saveSpk() }
 function setMic(on, label) { const b = document.getElementById('shop-mic'); if (!b) return; b.classList.toggle('recording', on); b.textContent = on ? (label || '⏹️ מקשיב… (לחץ לעצירה)') : '🎤 לחץ ודבר' }
 function shopVoiceStatus(heard, reply) { const el = document.getElementById('shop-voice-status'); if (el) el.innerHTML = '🗣️ ' + escHtml(heard) + '<br><span style="opacity:.8">' + escHtml(plain(reply)) + '</span>' }
 const Voice = { rec: null, state: 'idle', kind: '', t0: 0, wd: null, wdMs: 12000, stuckMs: 15000, speak: null, log: [], fails: 0, hiddenAt: 0 }
@@ -2336,6 +2365,7 @@ function voiceUI(on, kind, label) {
     else setMic(on, label)
 }
 function voiceReset() {                         // reset the session (the recognizer instance itself is kept and reused)
+    Voice.muted = false
     clearTimeout(Voice.wd)
     const r = Voice.rec; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
     if (r && Voice.active) { try { r.stop() } catch (e) {} }
@@ -2373,7 +2403,7 @@ function voiceStart(kind, onText) {
     on('speechend', () => vlog('speechend')); on('soundend', () => vlog('soundend')); on('audioend', () => vlog('audioend')); on('nomatch', () => vlog('nomatch – לא זוהה'))
     on('result', e => {
         const t = ((e.results[e.results.length - 1] || [])[0] || {}).transcript; if (!t || !t.trim()) return
-        got = true; heard = true; Voice.fails = 0; voiceDiag('שמעתי: ' + t.trim()); const rep = onText(t.trim()); if (rep) Voice.speak = rep
+        got = true; heard = true; Voice.fails = 0; voiceDiag('שמעתי: ' + t.trim()); onText(t.trim())
     })
     on('error', e => {
         vlog('error: ' + e.error + (e.message ? ' – ' + e.message : ''))
@@ -2385,7 +2415,7 @@ function voiceStart(kind, onText) {
         clearTimeout(Voice.wd); const sp = Voice.speak; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
         voiceUI(false, kind); voiceDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
         if (!heard && !got) voiceFailed('הסתיים בלי שהמיקרופון נפתח')
-        if (sp) speakHe(sp, kind)                  // speak only AFTER listening has fully ended; area = which mic was used
+        if (sp) speakHe(sp)                        // speak only AFTER listening has fully ended
     })
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה אם מופיע)'); voiceDiag('מפעיל את הזיהוי… (ייתכן חלון הרשאה)')
     Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך ' + Math.round(Voice.wdMs / 1000) + ' שניות') } }, Voice.wdMs)
@@ -2398,7 +2428,7 @@ function voiceToggle(kind, onText) {
     }
     voiceStart(kind, onText)                       // idle / starting / stuck / other mic → always a fresh start
 }
-function shopVoiceToggle() { voiceToggle('shop', t => { const r = handleShopPhrase(t); shopVoiceStatus(t, r); return r }) }
+function shopVoiceToggle() { voiceToggle('shop', t => { const r = handleShopPhrase(t); shopVoiceStatus(t, r); if (typeof r === 'string' && !/לא הבנתי/.test(r)) speakReply(r, 'shopping'); return r }) }
 // Going to the background must NOT kill a session that is waiting for the iOS permission sheet;
 // it is cleaned up when the user comes back (and never survives a page reload / bfcache restore).
 document.addEventListener('visibilitychange', () => {
@@ -2647,7 +2677,7 @@ function pendCommit() {
     if (!pend) return
     clearInterval(pend.timer); const items = pend.items; pend = null; pendRender()
     const r = shopAdd(items), st = document.getElementById('shop-voice-status'); if (st) st.innerHTML = r
-    speakHe('נוספו ' + items.length + ' פריטים', 'shop')
+    speakHe('נוספו ' + items.length + ' פריטים')
 }
 function shopSetCat(id, v) { const i = shop.items.find(x => x.id === id); if (!i) return; const c = pickCat(v); if (c) { i.cat = c; learnCat(i.name, c); saveShop() } renderShop() }
 function shopMove(phrase, catText) {            // "תעביר את הסטייק לבשרי"
@@ -2727,7 +2757,7 @@ window.onload = () => {
     document.getElementById("addr-gender").value = addressGender
     document.getElementById("view-mode").value = localStorage.getItem("gl_view") || "auto"
     document.getElementById("confirm-ms").value = localStorage.getItem("gl_confirm_ms") || "5000"
-    { const tb = document.getElementById("shop-tts"); if (tb) tb.textContent = ttsOn ? "🔊" : "🔇" }
+    spkSync()
     applyTheme(localStorage.getItem('gl_theme') || ((window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark'))
     kb.forEach(i => { if (!i.id) i.id = newId() })
     renderMessages()
@@ -2797,19 +2827,19 @@ window.onload = () => {
     const cont = kind === 'home' || kind === 'shop'; Voice.want = cont
     Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
     r.lang = 'he-IL'; r.continuous = cont; r.interimResults = true; r.maxAlternatives = 1
-    const on = (n, f) => { r['on' + n] = e => { if (Voice.rec === r) f(e) } }
+    const on = (n, f) => { r['on' + n] = e => { if (Voice.rec === r && !(Voice.muted && n === 'result')) f(e) } }
     const deliver = t => {
       if (delivered) return
       delivered = true; got = true; Voice.fails = 0
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
-      const rep = onText(t); if (rep) Voice.speak = rep
+      onText(t)
     }
     on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start') });
     ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n) }))
     const deliverMulti = t => {                                   // כל משפט סופי = פקודה נפרדת
       got = true; heard = true; Voice.fails = 0; last = ''; lastAct = Date.now()
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
-      const rep = onText(t); if (rep) Voice.speak = rep
+      onText(t)
       if (window.voiceInterim) window.voiceInterim(kind, '')
     }
     on('result', e => {
@@ -2841,7 +2871,7 @@ window.onload = () => {
       voiceUI(false, kind)
       setDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
       if (!got && !heard && quick) voiceFailed('נסגר מיד, המיקרופון לא נפתח')
-      if (sp) speakHe(sp, kind)
+      if (sp) speakHe(sp)
     })
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); setDiag('מפעיל את המיקרופון…')
     // לא הורגים את הסשן בזמן שחלון ההרשאה פתוח: רק הודעה אחרי 6 שנ׳, ואיפוס אחרי 45 שנ׳
@@ -3206,6 +3236,59 @@ window.onload = () => {
     return '📁 נוסף תחום חדש: <b>' + esc(name) + '</b> – אמור "' + esc(name) + ' ..." כדי להוסיף אליו.'
   }
 
+  // ---------- חיווי קולי: הגדרות ופקודות ----------
+  const spkTopics = () => [['cal', '📆 לוח שנה, שבת וחגים'], ['bday', '🎂 ימי הולדת'], ['vac', '🏖️ חופשות'], ['meet', '🗓️ קביעת פגישות / מועדים']].concat(crm.domains.map(d => [d.id, d.icon + ' ' + d.name])).concat([['chat', '💬 שיחה (שאלות לבוט)'], ['other', '🤔 שאר ההודעות']])
+  function spkHtml() {
+    const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="spkt" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
+    const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [], noHe = window.speechSynthesis && vs.length && !vs.some(v => /^he/i.test(v.lang))
+    return '<div class="hint" style="text-align:right">כשמדברים אל האפליקציה – התשובה מוקראת בקול, רק בנושאים שמסומנים. אפשר גם בקול: ״כבה חיווי קולי לקניות״ · ״חיווי קולי לשבת״ · ״תפסיק לדבר״.</div>' +
+      row('master', '🔊 חיווי קולי (מתג ראשי)', ttsOn) + '<div class="fl">מה להקריא</div>' + spkTopics().map(x => row(x[0], esc(x[1]), !SPK.off[x[0]])).join('') +
+      '<div class="fl">כללי</div>' + row('typed', '⌨️ להקריא גם כשמקלידים פקודה', SPK.typed) +
+      '<div class="fl">מהירות דיבור</div><div style="display:flex;gap:8px">' + [['0.85', '🐢 איטי'], ['1', 'רגיל'], ['1.2', '🐇 מהיר']].map(x => '<button type="button" class="ex" style="flex:1;text-align:center;' + (SPK.rate === +x[0] ? 'font-weight:800;border-color:#10b981' : '') + '" data-act="spkt" data-v="rate:' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+      '<button type="button" class="btn-primary" style="width:100%;margin-top:12px" data-act="spkt" data-v="test">▶ בדיקת קול</button>' +
+      (noHe ? '<div class="hint" style="text-align:right;color:#f59e0b">⚠️ לא נמצא במכשיר קול בעברית – הוסף קול עברי בהגדרות המערכת (למשל Google Text-to-Speech) כדי לשמוע.</div>' : '')
+  }
+  function toggleSpk(v) {
+    if (v === 'master') { ttsOn = !ttsOn; if (!ttsOn) try { speechSynthesis.cancel() } catch (e) {} }
+    else if (v === 'typed') SPK.typed = !SPK.typed
+    else if (v.startsWith('rate:')) SPK.rate = +v.slice(5)
+    else if (v === 'test') { speakReply('בדיקת חיווי קולי. כניסת שבת ביום שישי בשעה 16 ו-18 דקות', 'sys', true); return }
+    else SPK.off[v] = !SPK.off[v]
+    saveSpk(); if (sheet && sheet.type === 'spk') renderSheet(); renderVis()
+  }
+  function spkResolve(w) {
+    w = String(w || '').replace(/[״"׳'’־-]/g, '').replace(/\s+/g, ' ').replace(/^(?:ל|ב|של|עבור)\s*/, '').trim()
+    if (/^(?:הכל|הכול|כולם|כל הנושאים)$/.test(w)) return 'all'
+    if (/ימי הולדת|יום הולדת|יומולדת|ברכות|ברכה/.test(w)) return 'bday'
+    if (/חופש/.test(w)) return 'vac'
+    if (/פגישות|פגישה|מועדים|קביעת/.test(w)) return 'meet'
+    if (/שבת|חגים|חג|לוח|זמנים|זמני|יומן|שקיעה|פרשה/.test(w)) return 'cal'
+    if (/קניות|סופר/.test(w)) return 'shopping'
+    if (/שיחה|צאט|בוט|שאלות/.test(w)) return 'chat'
+    if (/הקלדה|מקלדת/.test(w)) return 'typed'
+    const d = w.length >= 3 ? domOf(w) : null; return d ? d.id : null
+  }
+  function spkCmd(t) {
+    if (/^(?:תפסיק לדבר|הפסק לדבר|שתוק|השתק|עצור הקראה|תפסיק להקריא|די לדבר)$/.test(t)) { try { speechSynthesis.cancel() } catch (e) {} if (typeof Voice !== 'undefined') Voice.muted = false; return '🔇 הפסקתי להקריא' }
+    if (/^(?:חיווי קולי|הגדרות חיווי קולי|הגדרות קול|מה מוגדר בחיווי קולי|הצג חיווי קולי|הגדרות הקראה)$/.test(t)) { sheet = { type: 'spk' }; renderSheet(); return '🔊 פתחתי את הגדרות החיווי הקולי' }
+    const m = t.match(/^(?:(הפעל|תפעיל|הדלק|תדליק|כבה|תכבה|בטל|תבטל|עצור|בלי)\s+(?:את\s+)?)?(?:ה)?(?:חיווי קולי|חיווי|הקראה|משוב קולי)(?:\s+(.+))?$/)
+    if (!m) return null
+    if (!m[1] && !m[2]) return null
+    const on = !m[1] || /^(?:הפעל|תפעיל|הדלק|תדליק)$/.test(m[1])
+    const words = (m[2] || '').split(/\s*,\s*|\s+ו(?=\S)/).map(x => x.trim()).filter(Boolean)
+    if (!words.length) { ttsOn = on; if (!on) try { speechSynthesis.cancel() } catch (e) {} saveSpk(); return on ? '🔊 חיווי קולי הופעל' : '🔇 חיווי קולי כובה' }
+    const keys = []; for (const w of words) { const k = spkResolve(w); if (!k) return '🤔 לא הכרתי את הנושא ״' + esc(w) + '״. נסה: שבת, ימי הולדת, חופשות, פגישות, קניות, או שם תחום.'; keys.push(k) }
+    const all = spkTopics().map(x => x[0])
+    if (keys.includes('all')) { all.forEach(k => { SPK.off[k] = !on }); ttsOn = on }
+    else {
+      if (on && !ttsOn) { ttsOn = true; all.forEach(k => { SPK.off[k] = true }) }       // מופעל רק לנושאים שציינת
+      keys.forEach(k => { if (k === 'typed') SPK.typed = on; else SPK.off[k] = !on })
+    }
+    saveSpk(); if (sheet && sheet.type === 'spk') renderSheet(); renderVis()
+    const names = keys.map(k => k === 'all' ? 'הכול' : k === 'typed' ? 'הקלדה' : ((spkTopics().find(x => x[0] === k) || [0, k])[1]).replace(/^\S+\s/, ''))
+    return (on ? '🔊 חיווי קולי הופעל ל: ' : '🔇 חיווי קולי כובה ל: ') + esc(names.join(', '))
+  }
+
   // ---------- "קבע פגישה לתאריך 28 לנובמבר בשעה 14:00" → מעדכן משימה שמורה (או יוצר חדשה) ----------
   let meetWait = null, meetPick = null
   const MEET_RE = new RegExp('^(?:אפשר\\s+|תוכל\\s+|בבקשה\\s+)?(קבע|תקבע|קבעי|לקבוע|נקבע|עדכן|תעדכן|שנה|תשנה|הזז|תזיז|דחה|תדחה|העבר|תעביר|הקדם|תקדים)\\s+(?:לי\\s+)?(?:את\\s+)?(?:ה)?(פגישה|פגישות|ישיבה|שיחה|משימה|תזכורת|מועד|תאריך|שעה|זמן|ביקור|סיור)?\\s*(.*)$')
@@ -3260,10 +3343,11 @@ window.onload = () => {
 
   // ---------- THE VOICE ROUTER ----------
   function route(raw, defScope) {
-    const t = String(raw).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/[\u00a0\u2009\u202f]/g, ' ').trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
+    const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
     { const kr = window.KMSCal && KMSCal.route(t); if (kr) return kr }
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
+    { const r = spkCmd(t); if (r) return r }
     if (meetWait) { const mw = meetWait; meetWait = null; if (Date.now() - mw.ts < 60000 && whenOnly(t)) return meetCmd(mw.base + ' ' + t) }
     { const r = meetCmd(t); if (r) return r }
     if (/^(?:בטל|תבטל|ביטול|תחזיר|מחק)$/.test(t)) return crmUndo()
@@ -3286,14 +3370,13 @@ window.onload = () => {
     const r = answerFromShop(t); if (r !== null) return r
     const cx = Date.now() - lastDomTs < 90000 ? dom(lastDom) : null          // המשך לאותו תחום של הפקודה הקודמת
     if (cx) return addRec(cx, t)
-    if (/^(?:מתי|איפה|מה|מי|כמה|האם|איך|למה)(?:\s|$)/.test(t) || /[?？]\s*$/.test(String(raw))) return '🤷 לא הבנתי את השאלה. נסה: ״מתי כניסת שבת״, ״מתי יציאת שבת״ או ״מה התאריך העברי״.'
     askText = t; renderAsk(); return '🤔 לאיזה תחום לשמור? בחר למטה.'
   }
   window.crmRoute = route
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="spk" title="חיווי קולי">🔊</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="backup" title="גיבוי לקובץ">⇧</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div></div><div id="home-body"></div>'
   function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
   function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
@@ -3356,18 +3439,20 @@ window.onload = () => {
         '<button class="btn-ghost" style="width:100%;margin-top:12px" data-act="open" data-v="tasks">כל המשימות</button>')
     } else if (sheet.type === 'ask') {
       showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.filter(visDom).map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
+    } else if (sheet.type === 'spk') {
+      showSheet(head('🔊 חיווי קולי') + spkHtml())
     } else if (sheet.type === 'meet') {
       const mp = meetPick || {}, rs = crm.records.filter(r => !r.done && dom(r.domain) && dom(r.domain).link !== 'shop').sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 8)
       showSheet(head('🗓️ ' + esc(mp.due ? fullDate(mp.due) : '') + (mp.time ? ' · ' + mp.time : '')) + '<div class="hint" style="text-align:right">בחר משימה לעדכון המועד, או צור פגישה חדשה בתחום:</div>' + rs.map(r => '<button type="button" class="ex" data-act="meetpick" data-v="' + r.id + '">' + esc((dom(r.domain) || {}).icon || '') + ' ' + esc(r.title) + (r.due ? ' · ' + esc(dueLabel(r.due)) : '') + '</button>').join('') + '<div class="mgrid" style="margin-top:10px">' + crm.domains.filter(visDom).filter(d => d.link !== 'shop').map(d => '<button type="button" class="tile" style="min-height:64px" data-act="meetnew" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>פגישה חדשה</small></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
-      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
+      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['spk', '', '🔊', 'חיווי קולי', 'מה להקריא בקול'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
       const e = voiceEnv(), sr = voiceSupported(), offl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
       const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
-        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
-      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ על 🎙️ ואמור את הפקודה – לחיצה נוספת עוצרת מיד ומבצעת (ואם שותקים דקה היא נעצרת לבד). לחיצה שלישית מתחילה הכתבה חדשה. המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
+        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🔊 חיווי קולי', ['הפעל חיווי קולי', 'כבה חיווי קולי', 'חיווי קולי לשבת', 'הפעל חיווי קולי לימי הולדת ולמשימות', 'כבה חיווי קולי לקניות', 'תפסיק לדבר', 'חיווי קולי (פותח הגדרות)']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>חיווי קולי:</b> התשובות מוקראות בקול – אפשר לבחור באילו נושאים (🔊 בסרגל העליון, או בפקודה ״כבה חיווי קולי לקניות״). <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
         '<div class="hint" style="text-align:right;margin-top:10px">📴 אופליין: האפליקציה עצמה עובדת בלי רשת אחרי שנטענה פעם אחת מאתר (דורש את הקבצים sw.js, manifest.json ו-icon.png לצד הקובץ). זיהוי הדיבור של הדפדפן עשוי להזדקק לרשת – במצב טיסה השתמש ב-🎤 שבמקלדת, שפועל במכשיר.</div><button class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
@@ -3386,6 +3471,7 @@ window.onload = () => {
       route('מחר פגישה עם הסמנכ"ל'); route('בשעה 14:00'); const sp = crm.records[0]; ok(sp && sp.time === '14:00' && sp.due === fmt(new Date(Date.now() + 864e5)) && crm.records.length === crm.records.filter(x => x).length, 'שעה במשפט נפרד', '״מחר פגישה עם הסמנכ״ל״ ואחריו ״בשעה 14:00״ → אותה משימה')
       route('משימה לבדוק ספק'); route('קבע פגישה לתאריך 28 לנובמבר בשעה 14:00'); const mt = crm.records[0]; ok(mt && mt.time === '14:00' && /-11-28$/.test(mt.due) && mt.title === 'לבדוק ספק', 'קבע פגישה', '״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ → המשימה האחרונה עודכנה')
       route('קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00'); const mn = crm.records[0]; ok(mn && mn.time === '10:00' && /-12-03$/.test(mn.due) && mn.title === 'פגישה עם גדעון', 'פגישה עם שם', '״קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00״ → פגישה חדשה')
+      { const o0 = JSON.stringify(SPK.off), t0 = ttsOn; route('כבה חיווי קולי לקניות'); const a = !!SPK.off.shopping; route('הפעל חיווי קולי לקניות ולשבת'); const b = !SPK.off.shopping && !SPK.off.cal; SPK.off = JSON.parse(o0); ttsOn = t0; saveSpk(); ok(a && b, 'חיווי קולי לפי נושא', '״כבה/הפעל חיווי קולי לקניות״ משנה את ההגדרה') }
       route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
       lastDomTs = 0; route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
       route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
@@ -3407,14 +3493,10 @@ window.onload = () => {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="vis" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     b.innerHTML = '<div class="fl" style="margin-top:0">מסכים באפליקציה</div>' + SECTIONS.map(x => row('tab:' + x[0], x[1], !ui.hideTab.includes(x[0]))).join('') +
       '<div class="fl">תחומים במסך הבית</div>' + crm.domains.map(d => row('dom:' + d.id, d.icon + ' ' + esc(d.name), visDom(d))).join('') +
-      '<div class="fl">🔊 חיווי קולי (הקראת תשובות)</div>' + Object.keys(TTS_AREA_LABEL).map(a => row('tts:' + a, TTS_AREA_LABEL[a], ttsOnFor(a))).join('') +
-      '<div class="hint" style="margin-top:4px">כשדולק – אחרי שאתה שואל/מדבר, התשובה גם תוקרא בקול, לא רק תוצג בכתב. אפשר לכבות בנפרד לכל תחום.</div>' +
-      '<button class="btn-primary" style="width:100%;margin-top:14px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
+      '<button class="btn-primary" style="width:100%;margin-top:14px" data-act="spk">🔊 הגדרות חיווי קולי (מה להקריא)</button>' + '<button class="btn-primary" style="width:100%;margin-top:10px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
   }
   function toggleVis(v) {
-    const k = v.split(':')[0], id = v.split(':')[1]
-    if (k === 'tts') { toggleTtsArea(id); renderVis(); return }
-    const arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
+    const k = v.split(':')[0], id = v.split(':')[1], arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
     if (i >= 0) arr.splice(i, 1); else arr.push(id)
     saveUi()
     if (k === 'tab') { try { localStorage.setItem('gl_station', '0') } catch (e) {} toast('מעדכן את התצוגה…', '#10b981'); setTimeout(() => location.reload(), 450) }
@@ -3485,6 +3567,8 @@ window.onload = () => {
     else if (a === 'close') closeSheet()
     else if (a === 'scopeoff') { scope = null; renderSticky() }
     else if (a === 'askx') { askText = null; renderAsk() }
+    else if (a === 'spk') { sheet = { type: 'spk' }; renderSheet() }
+    else if (a === 'spkt') toggleSpk(v)
     else if (a === 'meetpick') { const r = crm.records.find(x => x.id === v), mp = meetPick; meetPick = null; closeSheet(); if (r && mp) setStatus('', meetApply(r, null, mp.due, mp.time, '', mp.kind)) }
     else if (a === 'meetnew') { const d = dom(v), mp = meetPick; meetPick = null; closeSheet(); if (d && mp) setStatus('', meetApply(null, d, mp.due, mp.time, '', mp.kind)) }
     else if (a === 'askpick') { const t = askText, d = dom(v); askText = null; renderAsk(); if (d && t) setStatus(t, addRec(d, t)) }
@@ -3513,7 +3597,7 @@ window.onload = () => {
     if (e.key !== 'Enter') return
     if (e.target.id === 'home-cmd-in') send(); else if (e.target.id === 'dom-in') { const t = e.target.value.trim(); if (t) addRec(dom(sheet.id), t) }
   })
-  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3800) })
+  document.addEventListener('input', e => { if (e.target.id !== 'home-cmd-in' || !fb) return; clearTimeout(fbTimer); fbTimer = setTimeout(() => { if (e.target.value.trim().length >= 3) send() }, 3500) })
   window.homeFallback = why => { fb = true; goStation('home'); setTimeout(() => { const i = $('home-cmd-in'); if (i) i.focus() }, 350); window.say('', '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר – אשלח אוטומטית אחרי רגע של שקט.') }
 
   // voice button state (kind "home")
@@ -3579,7 +3663,7 @@ window.onload = () => {
     $('toasts').appendChild(el); ut = setTimeout(() => el.remove(), 7000)
   }
   let sayT = null
-  window.say = function (heard, reply) {
+  window.say = function (heard, reply) { try { spkSay(arguments[0], arguments[1]) } catch (e) {}
     const old = $('say-toast'); if (old) old.remove(); clearTimeout(sayT)
     const el = document.createElement('div'); el.id = 'say-toast'; el.className = 'nt'
     el.innerHTML = '<i style="background:var(--accent)"></i><div>' + (heard ? '<small></small>' : '') + '<div>' + (reply == null ? 'לא הבנתי – נסה שוב או לחץ ❓' : reply) + '</div></div>'
@@ -3653,7 +3737,7 @@ window.onload = () => {
     clearTimeout(el._dt)
     if (e.inputType === 'insertFromDictation' || el.dataset.dict === '1' && e.inputType === 'insertReplacementText') {
       el.dataset.dict = '1'
-      el._dt = setTimeout(() => submit(el), 3800)                         // שקט אחרי הכתבה = סיימת → מבצע
+      el._dt = setTimeout(() => submit(el), 2200)                         // שקט אחרי הכתבה = סיימת → מבצע
     } else el.dataset.dict = ''
   })
   document.addEventListener('focusout', e => {                          // סגירת המקלדת / יציאה מהשדה אחרי הכתבה
@@ -3684,7 +3768,7 @@ window.onload = () => {
   const tb = document.querySelector('#home-panel .topbar')
   if (tb) { const w = document.createElement('div'); w.className = 'wtop'
     w.innerHTML = '<div><div class="wtime" id="wtime">' + clock() + '</div><div class="wdate">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div></div>' +
-      '<div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div>'
+      '<div class="top-actions"><button class="ib" data-act="cal" title="לוח שנה">📆</button><button class="ib" data-act="brief" title="סיכום היום">📅</button><button class="ib" data-act="spk" title="חיווי קולי">🔊</button><button class="ib" data-act="help" title="עזרה ופקודות">❓</button><button class="ib" data-act="settings" title="הגדרות">⚙</button></div>'
     tb.replaceWith(w) }
   setInterval(() => { const t = $('wtime'); if (t) t.textContent = clock() }, 20000)
   window.renderHome = function () {
@@ -4803,7 +4887,7 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
     return pickBd(l.map(x => x.b), '💬 למי לשלוח ברכה?')
   }
   function route(t) {
-    t = String(t || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/[\u00a0\u2009\u202f]/g, ' ').trim().replace(/[?!.,]+$/, '')
+    t = String(t || '').trim().replace(/[?!.,]+$/, '')
     if (!t) return null
     let m
     // --- calendar
@@ -4867,144 +4951,6 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
   window.KMSCal = { open, check, checkRecord, route, strip, _t: { info, blockOf, findVacations, festivals, nextBd, waUrl, bdMsg, cfg, offDay, absOfISO, isoOfAbs } }
 })()
 
-</script>
-<script id="voice-v3">
-;(function () {                                                   // voice-v3-marker: לחיצה = התחלה · לחיצה = עצירה מיידית · לחיצה = התחלה מחדש (אייפון / אנדרואיד / מחשב)
-  const $ = id => document.getElementById(id)
-  const IDLE_MS = 60000, STOP_WAIT_MS = 700
-  const diag = m => { const el = $('voice-diag'); if (el) el.textContent = m }
-  // joins what the recognizer returned in ONE sentence (never delivers a half sentence)
-  const join = arr => {
-    const out = []
-    arr.forEach(x => {
-      const s = String(x || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/\s+/g, ' ').trim(); if (!s) return
-      const p = out[out.length - 1]
-      if (p && s.startsWith(p)) out[out.length - 1] = s            // some Android / iOS builds resend the text so far
-      else if (!(p && p.startsWith(s))) out.push(s)
-    })
-    return out.join(' ')
-  }
-  const text = s => join([...s.base, join(s.run)])
-  let S = null, prev = { ended: true }                             // S = the live session · prev = the previous recognizer (must end before a new one starts)
-
-  function fallback(kind, why) {                                   // no speech recognition here → keyboard dictation
-    vlog('מעבר להכתבה במקלדת: ' + why)
-    if (kind === 'home' && window.homeFallback) return window.homeFallback(why)
-    if (kind === 'chat') { const i = $('user-input'); if (i) i.focus(); toast('לחץ על 🎤 שבמקלדת, דבר, ואז Enter', '#f59e0b'); return }
-    if (!shopDictate) shopDictateToggle()
-    const st = $('shop-voice-status'); if (st) st.textContent = '⌨️ ' + why + '. לחץ על 🎤 שבמקלדת ודבר.'
-  }
-
-  function finish(s, o) {                                          // end of the session: release the mic, deliver the WHOLE text once
-    o = o || {}
-    if (s.done) return; s.done = true
-    ;[s.wd1, s.wd2, s.wd3].forEach(clearTimeout); clearInterval(s.idle)
-    const t = o.discard ? '' : text(s)
-    if (S === s) { S = null; Voice.rec = null; Voice.state = 'idle'; Voice.speak = null; Voice.want = false }
-    voiceUI(false, s.kind); isRecording = false; shopVoiceOn = false
-    if (window.voiceInterim) window.voiceInterim(s.kind, '')
-    try { s.rec && s.rec.abort() } catch (e) {}
-    if (!t) {
-      if (o.fallback) fallback(s.kind, 'זיהוי הדיבור לא התחיל במכשיר הזה (בדוק הרשאת מיקרופון והכתבה בהגדרות)')
-      else if (!o.discard) diag(s.fatal ? 'לא הצלחתי להקשיב – לחץ שוב' : 'לא נקלט דיבור – לחץ שוב')
-      return
-    }
-    Voice.fails = 0; vlog('שמעתי: ' + t); diag('שמעתי: ' + t)
-    let rep = null
-    try { rep = s.onText(t) } catch (e) { vlog('שגיאה בעיבוד: ' + e.message); toast('משהו השתבש בעיבוד הפקודה', '#f59e0b') }
-    if (rep) setTimeout(() => speakHe(rep, s.kind), 350)           // talk only after the mic is fully closed
-  }
-
-  function stop(s) {                                               // 2nd click: stop listening NOW (button flips at once), wait a moment for the last words
-    if (s.done || s.stopping) return
-    s.stopping = true; vlog('עצירה ידנית')
-    Voice.state = 'stopping'; voiceUI(false, s.kind); diag('מעבד…')
-    if (!s.started) return finish(s, { discard: true })            // cancelled before the mic opened
-    try { s.rec.stop() } catch (e) { return finish(s) }
-    s.wd3 = setTimeout(() => finish(s), STOP_WAIT_MS)              // never wait for the browser longer than this
-  }
-
-  function onEnd(s) {                                              // the recognizer closed by itself
-    if (s.stopping || s.fatal) return finish(s)
-    if (Date.now() - s.runAt < 800 && !s.runGot) s.quick++; else s.quick = 0
-    if (s.quick >= 3) { voiceFailed('נסגר מיד, המיקרופון לא נפתח'); return finish(s, { fallback: !text(s) }) }
-    if (Date.now() - s.lastAct > IDLE_MS) return finish(s)
-    // iOS ends the session on every short pause. That is NOT the end of the sentence → keep what was heard and keep listening until the user clicks stop.
-    s.base.push(join(s.run)); s.run = []
-    s.tok.ended = false; s.runAt = Date.now(); s.runGot = false
-    try { s.rec.start(); vlog('restart') } catch (e) { s.tok.ended = true; vlog('restart נכשל: ' + e.message); launch(s, 0) }
-  }
-
-  function launch(s, tries) {
-    if (S !== s || s.done) return
-    if (!prev.ended && tries < 30) return setTimeout(() => launch(s, tries + 1), 50)   // let the previous recognizer close first
-    let r
-    try { r = new (voiceSupported())() } catch (e) { vlog('new SpeechRecognition נכשל: ' + e.message); return finish(s, { fallback: true }) }
-    const tok = prev = { ended: false }
-    s.rec = r; s.tok = tok; s.run = []; s.runAt = Date.now(); s.runGot = false; Voice.rec = r
-    r.lang = 'he-IL'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1
-    const live = f => e => { if (S === s && s.rec === r && !s.done) f(e) }        // an old session can never act on a new one
-    r.onstart = live(() => {
-      s.started = true; clearTimeout(s.wd1); clearTimeout(s.wd2)
-      if (!s.stopping) { Voice.state = 'listening'; voiceUI(true, s.kind); diag('מקשיב… דבר, ולחץ שוב כדי לעצור') }
-      vlog('start')
-    })
-    ;['audiostart', 'soundstart', 'speechstart'].forEach(n => { r['on' + n] = live(() => { s.lastAct = Date.now(); s.runGot = true; vlog(n) }) })
-    r.onresult = live(e => {
-      s.lastAct = Date.now(); s.runGot = true
-      const arr = []; for (let i = 0; i < e.results.length; i++) { const a = e.results[i]; if (a && a[0]) arr[i] = a[0].transcript }
-      s.run = arr
-      const t = text(s); if (t) { diag('…' + t); if (!s.stopping && window.voiceInterim) window.voiceInterim(s.kind, t) }
-    })
-    r.onerror = live(e => {
-      vlog('error: ' + e.error)
-      if (e.error === 'no-speech' || e.error === 'aborted') return               // normal – onend decides
-      const denied = e.error === 'not-allowed' || e.error === 'service-not-allowed'
-      if (VOICE_ERR[e.error]) toast(VOICE_ERR[e.error], '#f59e0b')
-      s.fatal = e.error; voiceFailed(e.error)
-      finish(s, { fallback: denied })
-    })
-    r.onend = () => { tok.ended = true; if (S === s && s.rec === r && !s.done) onEnd(s) }
-    try { r.start(); vlog('start() נקרא') } catch (e) {
-      tok.ended = true; vlog('start נכשל: ' + e.name + ' ' + e.message)
-      if (++s.startFails < 3) return setTimeout(() => launch(s, 0), 250)
-      voiceFailed('start() זרק ' + e.name); finish(s, { fallback: true })
-    }
-  }
-
-  function begin(kind, onText) {
-    if (!voiceSupported()) return fallback(kind, 'הדפדפן הזה לא תומך בזיהוי דיבור')
-    if (kind === 'shop' && shopDictate) shopDictateToggle()
-    try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
-    const s = S = { kind, onText, base: [], run: [], rec: null, tok: null, t0: Date.now(), lastAct: Date.now(), runAt: 0, runGot: false,
-      started: false, stopping: false, done: false, fatal: null, quick: 0, startFails: 0 }
-    Voice.rec = null; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = s.t0; Voice.speak = null
-    voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); diag('מפעיל את המיקרופון…')
-    s.wd1 = setTimeout(() => { if (S === s && !s.started) diag('ממתין להרשאה… אשר בחלון שנפתח') }, 6000)
-    s.wd2 = setTimeout(() => { if (S === s && !s.started) { finish(s, { discard: true }); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך 45 שניות') } }, 45000)
-    s.idle = setInterval(() => { if (S === s && s.started && !s.stopping && Date.now() - s.lastAct > IDLE_MS) { vlog('שקט ארוך – מסיים'); stop(s) } }, 2000)
-    launch(s, 0)
-  }
-
-  window.voiceToggle = function (kind, onText) {
-    if (S && !S.done && !S.stopping) return stop(S)                // listening / starting → stop now
-    if (S && !S.done) finish(S)                                    // previous one is still wrapping up → settle it, then start fresh
-    begin(kind, onText)
-  }
-  window.voiceStart = function (kind, onText) { if (S && !S.done) finish(S, { discard: true }); begin(kind, onText) }
-  window.voiceReset = function () {                                // leaving the screen / app → drop the session
-    if (S && !S.done) finish(S, { discard: true })
-    voiceUI(false, 'home'); voiceUI(false, 'chat'); voiceUI(false, 'shop'); isRecording = false; shopVoiceOn = false
-  }
-
-  // keyboard-dictation mode (iPhone home-screen app has no speech recognition): the mic button now also means "I'm done – run it"
-  const _fab = window.fabVoice
-  if (_fab) window.fabVoice = function () {
-    if (!voiceSupported()) { const i = $('home-cmd-in'); if (i && i.value.trim()) { const b = document.querySelector('#cmdpill [data-act=send]'); if (b) return b.click() } }
-    return _fab.apply(this, arguments)
-  }
-  window.__voiceV3 = { state: () => (S ? { kind: S.kind, stopping: S.stopping, text: text(S) } : null) }
-})()
 </script>
 </body>
 </html>
