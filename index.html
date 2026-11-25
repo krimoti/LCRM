@@ -3109,12 +3109,35 @@ window.onload = () => {
     return null
   }
   const NB = '(?<![\\u0590-\\u05FF])', NA = '(?![\\u0590-\\u05FF])'
+  const MON_NAMES = 'ינואר|פברואר|מרץ|מרס|אפריל|מאי|יוני|יולי|אוגוסט|ספטמבר|אוקטובר|נובמבר|דצמבר'
+  const monIdx = n => ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'].indexOf(n === 'מרס' ? 'מרץ' : n) + 1
+  // "28 לנובמבר" · "ב-28 בנובמבר" · "לתאריך 28 לנובמבר" · "28/11" · "28.11.2026"
+  const ABS_SRC = '(?:[בל]?תאריך\\s+)?(?<![\\u0590-\\u05FF\\d./:])[הבל]?[-־]?(\\d{1,2})(?:\\s*[./]\\s*(\\d{1,2})(?:\\s*[./]\\s*(\\d{2,4}))?|\\s+[בל]?[-־]?(' + MON_NAMES + ')(?:\\s+(\\d{4}))?)(?![\\d:])(?!\\s*(?:ק["״]?ג|קילו|גרם|ליטר|מ["״]?ל|מטר|ס["״]?מ|ש["״]?ח|שקל|₪|%|אחוז))'
   function parseDue(t) {
     const d = new Date(); let off = null, m
     const cut = re => { t = t.replace(re, ' ').replace(/\s+/g, ' ').trim() }
     const R = w => new RegExp(NB + w + NA)
+    { const mm = new RegExp(ABS_SRC).exec(t)
+      if (mm) {
+        const dd = +mm[1], mo = mm[2] ? +mm[2] : monIdx(mm[4]); let yy = mm[3] ? +mm[3] : mm[5] ? +mm[5] : 0
+        if (yy && yy < 100) yy += 2000
+        if (dd >= 1 && dd <= 31 && mo >= 1 && mo <= 12) {
+          const t0 = new Date(); t0.setHours(0, 0, 0, 0)
+          let dt = new Date(yy || t0.getFullYear(), mo - 1, dd)
+          if (!yy && dt < t0) dt = new Date(t0.getFullYear() + 1, mo - 1, dd)
+          if (dt.getMonth() === mo - 1 && dt.getDate() === dd) { cut(mm[0]); return { title: t, due: fmt(dt) } }
+        }
+      } }
+    { const mm = t.match(/(?<![\u0590-\u05FF\d])[הבל]?[-־]?(\d{1,2})\s+לחודש(?![\u0590-\u05FF])/)
+      if (mm && +mm[1] >= 1 && +mm[1] <= 31) {
+        const t0 = new Date(); t0.setHours(0, 0, 0, 0); let dt = new Date(t0.getFullYear(), t0.getMonth(), +mm[1])
+        if (dt < t0) dt = new Date(t0.getFullYear(), t0.getMonth() + 1, +mm[1])
+        cut(mm[0]); return { title: t, due: fmt(dt) }
+      } }
     if (R('מחרתיים').test(t)) { off = 2; cut(R('מחרתיים')) } else if (R('מחר').test(t)) { off = 1; cut(R('מחר')) } else if (R('היום').test(t)) { off = 0; cut(R('היום')) }
     else if ((m = t.match(/בעוד\s+(\d+)\s+ימים?/))) { off = +m[1]; cut(m[0]) }
+    else if ((m = t.match(/בעוד\s+שבועיים/))) { off = 14; cut(m[0]) }
+    else if ((m = t.match(/בעוד\s+שבוע(?![\u0590-\u05FF])/))) { off = 7; cut(m[0]) }
     else if ((m = t.match(/(?:ב)?יום\s+(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)/))) { off = (['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].indexOf(m[1]) - d.getDay() + 7) % 7 || 7; cut(m[0]) }
     if (off === null) return { title: t, due: '' }
     d.setDate(d.getDate() + off); return { title: t, due: fmt(d) }
@@ -3122,14 +3145,14 @@ window.onload = () => {
 
   // ---------- time of day ("בשעה 14:00", "ב-8 בערב", "בצהריים") ----------
   const PARTS = [['אחר הצהריים', 16, 'pm'], ['אחרי הצהריים', 16, 'pm'], ['אחה"צ', 16, 'pm'], ['אחה״צ', 16, 'pm'], ['בצהריים', 12, 'noon'], ['בצהרים', 12, 'noon'], ['בבוקר', 9, 'am'], ['בערב', 19, 'pm'], ['בלילה', 21, 'pm']]
-  const WHEN = new RegExp('\\d{1,2}:\\d{2}|' + NB + '(?:מחר|מחרתיים|היום|בצהריים|בצהרים|בבוקר|בערב|בעוד \\d+ ימים?|ביום (?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)|בשעה)' + NA)
+  const WHEN = new RegExp('\\d{1,2}:\\d{2}|(?<![\\d./])\\d{1,2}\\s*/\\s*\\d{1,2}(?![\\d/])|(?<![\\d./])\\d{1,2}\\s+[בל]?[-־]?(?:' + MON_NAMES + ')' + NA + '|' + NB + '(?:מחר|מחרתיים|היום|בצהריים|בצהרים|בבוקר|בערב|בעוד \\d+ ימים?|ביום (?:ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)|בשעה)' + NA)
   function parseTime(t) {
     let part = null; for (const p of PARTS) if (t.includes(p[0])) { part = p; t = t.replace(p[0], ' '); break }
     let h = null, mi = 0, m
     const cut = re => { t = t.replace(re, ' ').replace(/\s+/g, ' ').trim() }
     if ((m = t.match(/(?:בשעה\s*|ב[-־]?)?(?<!\d)(\d{1,2}):(\d{2})(?!\d)/))) { h = +m[1]; mi = +m[2]; cut(m[0]) }
     else if ((m = t.match(/בשעה\s+(\d{1,2})(?![\d:])/))) { h = +m[1]; cut(m[0]) }
-    else if ((m = t.match(new RegExp(NB + 'ב[-־](\\d{1,2})(?![\\d:])')))) { h = +m[1]; cut(m[0]) }
+    else if ((m = t.match(new RegExp(NB + 'ב[-־](\\d{1,2})(?![\\d:])(?!\\s*(?:[./]\\s*\\d|\\s+לחודש|[בל]?[-־]?(?:' + MON_NAMES + ')))')))) { h = +m[1]; cut(m[0]) }
     if (h !== null && (h > 23 || mi > 59)) h = null
     if (h === null) { if (!part) return { title: t, time: '' }; h = part[1] }
     else if (part && h > 0 && h < 12 && (part[2] === 'pm' || (part[2] === 'noon' && h <= 5))) h += 12
@@ -3170,12 +3193,66 @@ window.onload = () => {
     return '📁 נוסף תחום חדש: <b>' + esc(name) + '</b> – אמור "' + esc(name) + ' ..." כדי להוסיף אליו.'
   }
 
+  // ---------- "קבע פגישה לתאריך 28 לנובמבר בשעה 14:00" → מעדכן משימה שמורה (או יוצר חדשה) ----------
+  let meetWait = null, meetPick = null
+  const MEET_RE = new RegExp('^(?:אפשר\\s+|תוכל\\s+|בבקשה\\s+)?(קבע|תקבע|קבעי|לקבוע|נקבע|עדכן|תעדכן|שנה|תשנה|הזז|תזיז|דחה|תדחה|העבר|תעביר|הקדם|תקדים)\\s+(?:לי\\s+)?(?:את\\s+)?(?:ה)?(פגישה|פגישות|ישיבה|שיחה|משימה|תזכורת|מועד|תאריך|שעה|זמן|ביקור|סיור)?\\s*(.*)$')
+  const fullDate = s => new Date(s + 'T00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
+  function meetApply(rec, d, due, time, who, kind) {
+    const before = snap(); let created = false
+    if (!rec) {
+      d = d || dom('tasks') || crm.domains[0]
+      const lead = /^(?:פגישה|פגישות|ישיבה|שיחה|ביקור|סיור)$/.test(kind || '') ? kind.replace('פגישות', 'פגישה') : (kind === 'משימה' || kind === 'תזכורת') ? '' : 'פגישה'
+      const w = String(who || '').trim()
+      const title = lead ? lead + (w ? (/^עם\s/.test(w) ? ' ' : ' עם ') + w : '') : (w || kind || 'משימה')
+      rec = { id: newId(), domain: d.id, title, note: '', due: '', time: '', pri: '', done: false, ts: Date.now() }
+      crm.records.unshift(rec); created = true
+    }
+    if (due) rec.due = due
+    if (time) rec.time = time
+    if (!rec.due) rec.due = today()
+    last = before; lastRecId = rec.id; lastRecTs = Date.now(); lastDom = rec.domain; lastDomTs = Date.now()
+    saveCrm(); if (window.KMSCal) { const _rid = rec.id; setTimeout(() => KMSCal.checkRecord(_rid), 80) }
+    toastUndo(created ? 'נקבעה פגישה' : 'עודכן המועד', () => { crm = JSON.parse(before); saveCrm() })
+    const dd = dom(rec.domain)
+    return (created ? '📅 נקבע: ' : '🕒 עודכן: ') + '<b>' + esc(rec.title) + '</b> · ' + esc(fullDate(rec.due)) + (rec.time ? ' · ' + rec.time : '') + (dd ? ' · ' + dd.icon + ' ' + esc(dd.name) : '')
+  }
+  function meetCmd(t) {
+    const m = t.match(MEET_RE); if (!m) return null
+    const setVerb = ['קבע', 'תקבע', 'קבעי', 'לקבוע', 'נקבע'].includes(m[1]), kind = m[2] || ''
+    if (!setVerb && !kind) return null                              // "העבר 50 שקל מחר" אינה פקודת מועד
+    const tm = parseTime((m[3] || '').trim()), dd = parseDue(tm.title), due = dd.due, time = tm.time
+    if (!(due || time)) {
+      if (!setVerb || !kind) return null
+      meetWait = { ts: Date.now(), base: t }; return '🕒 לאיזה תאריך ושעה? למשל: ״28 לנובמבר בשעה 14:00״'
+    }
+    let left = dd.title.replace(new RegExp(NB + '(?:לתאריך|בתאריך|תאריך|לשעה|בשעה|שעה|ל|ב|את|גם|אז|לי|תחום|בתחום|לתחום|ה?פגישה|ה?פגישות|ה?ישיבה|ה?שיחה|ה?משימה|ה?תזכורת|ה?מועד|ה?זמן)' + NA, 'g'), ' ').replace(/(^|\s)[-–־:](?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim()
+    let ds = null; const ws = left ? left.split(' ') : []
+    for (let i = 0; i < ws.length; i++) { if (ws[i].length < 3) continue; const x = domOf(ws[i]); if (x && x.link !== 'shop') { ds = x; ws.splice(i, 1); break } }
+    const who = ws.join(' ').trim()
+    const open = crm.records.filter(r => !r.done && dom(r.domain) && dom(r.domain).link !== 'shop')
+    const P = who ? stemsOf(who) : []
+    if (P.length) {                                                 // שם/נושא → מחפש משימה קיימת עם אותו שם
+      const c = open.map(r => ({ r, sh: stemsOf(r.title).filter(a => P.some(b => stemEq(a, b))).length })).filter(x => x.sh > 0).sort((a, b) => b.sh - a.sh || (b.r.ts || 0) - (a.r.ts || 0))
+      if (c.length) return meetApply(c[0].r, null, due, time, who, kind)
+    }
+    const sd = scope && dom(scope) && dom(scope).link !== 'shop' ? dom(scope) : null
+    if (who) return meetApply(null, ds || sd, due, time, who, kind)  // שם חדש → פגישה חדשה
+    const lr = lastRecId && Date.now() - lastRecTs < 30 * 60000 ? open.find(r => r.id === lastRecId) : null
+    const dsel = ds || sd
+    if (dsel) { const rr = lr && lr.domain === dsel.id ? lr : open.filter(r => r.domain === dsel.id).sort((a, b) => (b.ts || 0) - (a.ts || 0))[0]; return meetApply(rr || null, dsel, due, time, '', kind) }
+    if (lr) return meetApply(lr, null, due, time, '', kind)       // ברירת מחדל: המשימה שנשמרה לאחרונה
+    if (open.length) { meetPick = { due, time, kind }; sheet = { type: 'meet' }; renderSheet(); return '🤔 לאיזו משימה לעדכן את המועד? בחר למטה (או פגישה חדשה).' }
+    return meetApply(null, null, due, time, '', kind)
+  }
+
   // ---------- THE VOICE ROUTER ----------
   function route(raw, defScope) {
     const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
     if (!t) return null
     { const kr = window.KMSCal && KMSCal.route(t); if (kr) return kr }
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
+    if (meetWait) { const mw = meetWait; meetWait = null; if (Date.now() - mw.ts < 60000 && whenOnly(t)) return meetCmd(mw.base + ' ' + t) }
+    { const r = meetCmd(t); if (r) return r }
     if (/^(?:בטל|תבטל|ביטול|תחזיר|מחק)$/.test(t)) return crmUndo()
     if (/^(?:יציאה|סיום|צא|תצא|די|סגור מצב)$/.test(t)) { const h = scope; scope = null; renderSticky(); return h ? 'יצאתי ממצב תחום.' : 'לא הייתי במצב תחום.' }
     if ((m = t.match(/^(?:תוסיף|הוסף|צור|תיצור|פתח)\s+תחום(?:\s+חדש)?\s+(.+)$/))) return newDomain(m[1])
@@ -3265,6 +3342,9 @@ window.onload = () => {
         '<button class="btn-ghost" style="width:100%;margin-top:12px" data-act="open" data-v="tasks">כל המשימות</button>')
     } else if (sheet.type === 'ask') {
       showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.filter(visDom).map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
+    } else if (sheet.type === 'meet') {
+      const mp = meetPick || {}, rs = crm.records.filter(r => !r.done && dom(r.domain) && dom(r.domain).link !== 'shop').sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 8)
+      showSheet(head('🗓️ ' + esc(mp.due ? fullDate(mp.due) : '') + (mp.time ? ' · ' + mp.time : '')) + '<div class="hint" style="text-align:right">בחר משימה לעדכון המועד, או צור פגישה חדשה בתחום:</div>' + rs.map(r => '<button type="button" class="ex" data-act="meetpick" data-v="' + r.id + '">' + esc((dom(r.domain) || {}).icon || '') + ' ' + esc(r.title) + (r.due ? ' · ' + esc(dueLabel(r.due)) : '') + '</button>').join('') + '<div class="mgrid" style="margin-top:10px">' + crm.domains.filter(visDom).filter(d => d.link !== 'shop').map(d => '<button type="button" class="tile" style="min-height:64px" data-act="meetnew" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>פגישה חדשה</small></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
       showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
@@ -3272,8 +3352,8 @@ window.onload = () => {
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
       const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
-        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי נכנסת שבת', 'מתי יוצאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['הוסף יום הולדת לדנה ב-26 בנובמבר', 'שלח ברכה לדנה', 'שלח לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'ימי הולדת']], ['🏖️ חופשה', ['מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג את החופשה בלוח', 'שמור את החופשה']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
-      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
+        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
         '<div class="hint" style="text-align:right;margin-top:10px">📴 אופליין: האפליקציה עצמה עובדת בלי רשת אחרי שנטענה פעם אחת מאתר (דורש את הקבצים sw.js, manifest.json ו-icon.png לצד הקובץ). זיהוי הדיבור של הדפדפן עשוי להזדקק לרשת – במצב טיסה השתמש ב-🎤 שבמקלדת, שפועל במכשיר.</div><button class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
@@ -3290,6 +3370,8 @@ window.onload = () => {
       route('סיימתי לבדוק ציוד'); ok(crm.records.some(r => r.domain === 'tasks' && r.done), 'סימון כבוצע', '״סיימתי …״ → המשימה סומנה')
       route('תתקשר מחר למוטי בצהריים בשעה 14:00'); const tk = crm.records[0]; ok(tk && tk.domain === 'tasks' && tk.time === '14:00' && tk.due === fmt(new Date(Date.now() + 864e5)) && tk.title === 'תתקשר למוטי', 'תאריך ושעה', '״תתקשר מחר למוטי בצהריים בשעה 14:00״ → משימה למחר 14:00')
       route('מחר פגישה עם הסמנכ"ל'); route('בשעה 14:00'); const sp = crm.records[0]; ok(sp && sp.time === '14:00' && sp.due === fmt(new Date(Date.now() + 864e5)) && crm.records.length === crm.records.filter(x => x).length, 'שעה במשפט נפרד', '״מחר פגישה עם הסמנכ״ל״ ואחריו ״בשעה 14:00״ → אותה משימה')
+      route('משימה לבדוק ספק'); route('קבע פגישה לתאריך 28 לנובמבר בשעה 14:00'); const mt = crm.records[0]; ok(mt && mt.time === '14:00' && /-11-28$/.test(mt.due) && mt.title === 'לבדוק ספק', 'קבע פגישה', '״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ → המשימה האחרונה עודכנה')
+      route('קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00'); const mn = crm.records[0]; ok(mn && mn.time === '10:00' && /-12-03$/.test(mn.due) && mn.title === 'פגישה עם גדעון', 'פגישה עם שם', '״קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00״ → פגישה חדשה')
       route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
       lastDomTs = 0; route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
       route('פתח תחום ספקים'); route('ספקים אלקטרה'); ok(crm.records.some(r => /ספק/.test((dom(r.domain) || {}).name || '') ), 'תחום חדש', '״פתח תחום ספקים״ ואז ״ספקים …״')
@@ -3385,6 +3467,8 @@ window.onload = () => {
     else if (a === 'close') closeSheet()
     else if (a === 'scopeoff') { scope = null; renderSticky() }
     else if (a === 'askx') { askText = null; renderAsk() }
+    else if (a === 'meetpick') { const r = crm.records.find(x => x.id === v), mp = meetPick; meetPick = null; closeSheet(); if (r && mp) setStatus('', meetApply(r, null, mp.due, mp.time, '', mp.kind)) }
+    else if (a === 'meetnew') { const d = dom(v), mp = meetPick; meetPick = null; closeSheet(); if (d && mp) setStatus('', meetApply(null, d, mp.due, mp.time, '', mp.kind)) }
     else if (a === 'askpick') { const t = askText, d = dom(v); askText = null; renderAsk(); if (d && t) setStatus(t, addRec(d, t)) }
     else if (a === 'tog') { const r = crm.records.find(x => x.id === v); if (r) { last = snap(); r.done = !r.done; saveCrm() } }
     else if (a === 'del') { const before = snap(); crm.records = crm.records.filter(x => x.id !== v); last = before; if (sheet && sheet.type === 'edit') sheet = { type: 'dom', id: sheet.back || 'tasks' }; saveCrm(); toastUndo('נמחק', () => { crm = JSON.parse(before); saveCrm() }) }
@@ -4604,7 +4688,9 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
   function sendBdVoice(b) {
     const nb = nextBd(b), age = b.y && nb ? nb.year - b.y : null, url = waUrl(b.phone, bdMsg(b, age))
     let w = null; try { w = window.open(url, '_blank') } catch (e) {}
-    if (w) return '💬 פותח וואטסאפ עם ברכה ל<b>' + esc(b.name) + '</b>' + (b.phone ? '' : ' – בחר איש קשר')
+    const okMsg = '💬 פותח וואטסאפ עם ברכה ל<b>' + esc(b.name) + '</b>' + (b.phone ? '' : ' – בחר איש קשר')
+    if (w) return okMsg
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { try { location.href = url; return okMsg } catch (e) {} }
     openInfo('💬 ברכה ל' + esc(b.name), '<div class="kc-tip">' + esc(bdMsg(b, age)) + '</div>' + (b.phone ? '' : '<div class="hint" style="text-align:right">לא הוזן טלפון – תבחר איש קשר בווטסאפ.</div>'), ['<button type="button" class="btn-primary" data-kc="bdsend" data-id="' + b.id + '">💬 פתח וואטסאפ ושלח</button>'])
     return '💬 הברכה ל<b>' + esc(b.name) + '</b> מוכנה – לחץ על הכפתור לשליחה'
   }
@@ -4663,7 +4749,7 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
     S.vacIdx = i; const f = fs[i], res = findVacations(f, { minLen: S.minLen, maxLen: S.maxLen }); S.res = res; S.resF = f
     open('vac')
     const fd = a => { const g = HebCal.absToGreg(a); return g.d + '/' + g.m }
-    return '🏖️ <b>' + esc(f.name) + ' ' + HebCal.yearStr(f.hy) + '</b><br>' + res.slice(0, 3).map(w => w.label + ': ' + fd(w.s) + '–' + fd(w.e) + ' (' + w.len + ' ימים, ' + w.work + ' ימי חופש)').join('<br>')
+    return '🏖️ <b>' + esc(f.name) + ' ' + HebCal.yearStr(f.hy) + '</b><br>' + res.slice(0, 3).map((w, i) => (i + 1) + '. ' + w.label + ': ' + fd(w.s) + '–' + fd(w.e) + ' (' + w.len + ' ימים, ' + w.work + ' ימי חופש)').join('<br>') + (res.length ? '<br><small>אמור ״שמור אפשרות 2״ או ״הצג אפשרות 2 בלוח״</small>' : '')
   }
   function addBdVoice(t) {
     let phone = ''; t = t.replace(/(0\d[\d-]{7,10})/, m => { phone = m; return ' ' }).replace(/\s+/g, ' ').trim()
@@ -4686,6 +4772,18 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
   }
 
   /* ---------- voice / text commands ---------- */
+  // (JS \b does not work with Hebrew letters – so the question openers are matched explicitly)
+  const Q_TIMES = /^(?:מתי|מה|מהי|מהו|באיזו|באיזה|איזו|איזה|זמני|זמן|הצג|תציג|תראה|תראי|תגיד|תגידי|אמור|תאמר|ספר|תספר|כמה|עד מתי|בשעה כמה|שבת|השבת|החג|כניסת|כניסה|יציאת|יציאה|הדלקת|הדלקה|צאת|מוצאי|הבדלה|שקיעה|זריחה|פרשת)|(?:מתי|באיזו שעה|באיזה שעה|כמה)$/
+  function celebrateCmd(t) {                       // "שלח ברכה" · "שלח למי שחוגג היום" · "שלח לחוגג"
+    const rest = nrm(t.replace(/^\S+\s*/, '')).replace(/^לי\s+/, '')
+    const day = /(?:^|\s)מחר$/.test(rest) ? 1 : 0, core = rest.replace(/\s*(?:היום|מחר)$/, '').trim()
+    const GR = '(?:ברכת יום הולדת|ברכה|הודעה|וו?אטסאפ|וואצאפ|מזל טוב)'
+    if (!(core === '' || new RegExp('^' + GR + '$').test(core) || new RegExp('^(?:' + GR + '\\s+)?(?:ל|אל)?\\s*(?:מי ש|ה)?(?:חוגג|חוגגת|חוגגים|חוגגות|יום ההולדת|יום הולדת|יומולדת|בעל יום ההולדת|בעלת יום ההולדת)$').test(core))) return null
+    const l = upcomingBd(day).filter(x => x.n.days === day)
+    if (!l.length) { const nx = upcomingBd(60)[0]; return '🎂 אין ימי הולדת ' + (day ? 'מחר' : 'היום') + (nx ? ' · הקרוב: <b>' + esc(nx.b.name) + '</b> (' + (nx.n.days === 0 ? 'היום' : nx.n.days === 1 ? 'מחר' : 'בעוד ' + nx.n.days + ' ימים') + ')' : '') }
+    if (l.length === 1) return sendBdVoice(l[0].b)
+    return pickBd(l.map(x => x.b), '💬 למי לשלוח ברכה?')
+  }
   function route(t) {
     t = String(t || '').trim().replace(/[?!.,]+$/, '')
     if (!t) return null
@@ -4706,6 +4804,7 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
       const l = findBd(m[1]); if (!l.length) return '🎂 לא מצאתי יום הולדת בשם ״' + esc(m[1]) + '״'
       return '🎂 ' + l.map(b => { const n = nextBd(b); return '<b>' + esc(b.name) + '</b>: ' + b.d + ' ב' + GM[b.m - 1] + (n ? ' (' + (n.days === 0 ? 'היום' : n.days === 1 ? 'מחר' : 'בעוד ' + n.days + ' ימים') + ')' : '') }).join('<br>')
     }
+    if (/^(?:תשלח|שלח|תשלחי|שלחי|תברך|ברך)(?:\s|$)/.test(t)) { const r = celebrateCmd(t); if (r) return r }
     // --- birthdays: send greeting
     if ((m = t.match(/^(?:תשלח|שלח|תשלחי|שלחי|תכתוב|כתוב)\s+(?:לי\s+)?(?:ברכת\s+יום\s+הולדת|ברכה|הודעה|וואטסאפ|ווטסאפ|וואצאפ|מזל טוב)?\s*(?:ל|אל|ללא)?\s*-?\s*(.+)$/)) ||
         (m = t.match(/^(?:ברכה|ברכת יום הולדת|מזל טוב)\s+(?:ל|אל)?\s*-?\s*(.+)$/))) {
@@ -4715,16 +4814,18 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
       if (/ברכ|מזל טוב|יום הולדת|וואטסאפ|ווטסאפ/.test(t)) return '🎂 לא מצאתי יום הולדת בשם ״' + esc(m[1]) + '״. אפשר להוסיף: ״הוסף יום הולדת ל' + esc(m[1]) + ' ב-26 בנובמבר״'
     }
     // --- Shabbat / holiday times
-    if (/^(?:מתי|מה|באיזו|איזו|זמני|הצג|תציג|תראה|תגיד|כמה)\b/.test(t)) {
-      if (/(?:כניסת|נכנסת|נכנס|הכניסה|הדלקת נרות|הדלקה)/.test(t) && /(?:שבת|חג|נרות|הדלקה|המועד)/.test(t)) return shabbatPopup('entry', /חג|המועד/.test(t) && !/שבת/.test(t))
-      if (/(?:יציאת|יוצאת|יוצא|היציאה|צאת|מוצאי|הבדלה)/.test(t) && /(?:שבת|חג|המועד|הכוכבים)/.test(t) && !/הכוכבים/.test(t)) return shabbatPopup('exit', /חג|המועד/.test(t) && !/שבת/.test(t))
-      if (/^(?:זמני|הצג|תציג|תראה)\s+(?:את\s+)?(?:זמני\s+)?(?:שבת|חג)/.test(t) || /זמני שבת/.test(t)) return shabbatPopup('both', /חג/.test(t) && !/שבת/.test(t))
+    if (Q_TIMES.test(t)) {
+      const holiOnly = /חג|המועד/.test(t) && !/שבת/.test(t)
+      if (/(?:כניסת|נכנסת|נכנס|הכניסה|כניסה|הדלקת נרות|הדלקה|מדליקים|להדליק|נרות)/.test(t) && /(?:שבת|חג|נרות|הדלקה|המועד|מדליקים|להדליק)/.test(t)) return shabbatPopup('entry', holiOnly)
+      if (/(?:יציאת|יוצאת|יוצא|היציאה|יציאה|צאת|מוצאי|הבדלה|מסתיימת|מסתיים)/.test(t) && /(?:שבת|חג|המועד|הכוכבים)/.test(t) && !/הכוכבים/.test(t)) return shabbatPopup('exit', holiOnly)
+      if (/(?:זמני|זמן)\s+(?:ה)?(?:שבת|חג)/.test(t) || /פרשת השבוע|איזו פרשה|איזה פרשה|מה הפרשה/.test(t) || (/(?:שבת|החג|חג)/.test(t) && /(?:מתי|שעה|שעות|זמני|זמן)/.test(t) && t.split(' ').length <= 4)) return shabbatPopup('both', /חג/.test(t) && !/שבת/.test(t))
+      if (/^(?:ה)?שבת(?:\s+(?:הקרובה|הזו|הזאת|הבאה))?$/.test(t)) return shabbatPopup('both', false)
       if (/(?:שקיעה|שוקעת|זריחה|זורחת|צאת הכוכבים)/.test(t)) return sunPopup(/מחר/.test(t) ? 1 : 0)
       if (/(?:התאריך העברי|תאריך עברי|איזה יום בעברי)/.test(t)) return hebDatePopup()
     }
     if (/^(?:מה|איזה)\s+(?:ה)?(?:תאריך העברי|תאריך עברי)/.test(t) || /^(?:התאריך העברי|תאריך עברי)(?:\s+היום)?$/.test(t)) return hebDatePopup()
     // --- vacation
-    if (/חופש/.test(t) && /(?:חול המועד|פסח|סוכות|לצאת|מתי נוח|מתי כדאי|המלצ|הצע|תציע)/.test(t)) return vacVoice(/סוכות/.test(t) ? 'sukkot' : /פסח/.test(t) ? 'pesach' : null)
+    if (/חופש/.test(t) && !/בלוח/.test(t) && !/^(?:שמור|תשמור|תוסיף|הוסף|משימה|תזכורת|הערה|רעיון|קבע|תקבע|רשום|תרשום|צור)/.test(t) && (/(?:חול המועד|פסח|סוכות|לצאת|מתי|כדאי|נוח|מומלצ|המלצ|הצע|תציע|ימי חופש|בחגים)/.test(t) || /^(?:(?:פתח|הצג|תציג|תראה|תגיד)\s+)?(?:לי\s+)?(?:את\s+)?(?:ה)?(?:ימי\s+)?(?:חופש|חופשה|חופשות)(?:\s+מומלצ\S*)?$/.test(t))) return vacVoice(/סוכות/.test(t) ? 'sukkot' : /פסח/.test(t) ? 'pesach' : null)
     if (/^(?:הצג|תציג|תראה)\s+(?:את\s+)?(?:ה)?חופשה\s+(?:ה\S+\s+)?בלוח(?:\s+אפשרות\s+(\d))?$/.test(t) && S.res && S.res.length) {
       const k = (t.match(/אפשרות\s+(\d)/) || [0, 1])[1] - 1, w = S.res[Math.max(0, Math.min(S.res.length - 1, k))]
       S.range = { from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }; S.view = 'month'; open('month', { iso: S.range.from }); return '📆 מציג בלוח: ' + esc(S.range.title)
@@ -4732,6 +4833,11 @@ const PARSHA_DIA = {"4-385": "52,,,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,1
     if (/^(?:שמור|תשמור)\s+(?:את\s+)?(?:ה)?חופשה(?:\s+אפשרות\s+(\d))?$/.test(t) && S.res && S.res.length) {
       const k = (t.match(/אפשרות\s+(\d)/) || [0, 1])[1] - 1, w = S.res[Math.max(0, Math.min(S.res.length - 1, k))]
       vacs.push({ id: 'v' + Math.random().toString(36).slice(2, 9), from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }); store(LSK.vac, vacs); if (ov && !ov.hidden) render(); return '💾 החופשה נשמרה בלוח: ' + esc(rangeTitle(w))
+    }
+    if (S.res && S.res.length && (m = t.match(/^(שמור|תשמור|הצג|תציג|תראה)\s+(?:את\s+)?(?:ה)?(?:חופשה\s+)?(?:אפשרות|הצעה)\s*(\d|ראשונה|שנייה|שניה|שלישית|רביעית)?(?:\s+בלוח)?$/))) {
+      const OR = { 'ראשונה': 1, 'שנייה': 2, 'שניה': 2, 'שלישית': 3, 'רביעית': 4 }, n = /^\d$/.test(m[2] || '') ? +m[2] : (OR[m[2]] || 1), w = S.res[Math.max(0, Math.min(S.res.length - 1, n - 1))]
+      if (/^(?:שמור|תשמור)$/.test(m[1])) { vacs.push({ id: 'v' + Math.random().toString(36).slice(2, 9), from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }); store(LSK.vac, vacs); if (ov && !ov.hidden) render(); return '💾 החופשה נשמרה בלוח: ' + esc(rangeTitle(w)) }
+      S.range = { from: isoOfAbs(w.s), to: isoOfAbs(w.e), title: rangeTitle(w) }; S.view = 'month'; open('month', { iso: S.range.from }); return '📆 מציג בלוח: ' + esc(S.range.title)
     }
     // --- is a meeting time OK?
     if (/^(?:האם\s+)?(?:אפשר|מתאים|נוח|כדאי|בסדר)\s+(?:לקבוע\s+)?(?:פגישה|ישיבה|שיחה|להיפגש|לקבוע)/.test(t) || /^(?:בדוק|תבדוק)\s+(?:פגישה|תאריך|מועד)/.test(t)) { const r = checkVoice(t); if (r) return r }
