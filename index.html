@@ -2835,15 +2835,13 @@ window.onload = () => {
   }
 
   // ---------- 2. זיהוי דיבור ----------
-  window.voiceStart = function (kind, onText) {
-    if (noWebSpeech()) return keyboardFallback(kind)
-    if (kind === 'shop' && shopDictate) shopDictateToggle()
-    const hadRec = !!Voice.rec
-    voiceReset()
-    // iOS: התחלה מיידית אחרי abort() נכשלת לפעמים – נותנים לה רגע
-    if (hadRec) setTimeout(() => begin(kind, onText), 400); else begin(kind, onText)
-  }
-
+ window.voiceStart = function (kind, onText) {
+  if (noWebSpeech()) return keyboardFallback(kind)
+  if (kind === 'shop' && shopDictate) shopDictateToggle()
+  const hadRec = !!Voice.sr           // ← השינוי
+  voiceReset()
+  if (hadRec) setTimeout(() => begin(kind, onText), 400); else begin(kind, onText)
+}
   function begin(kind, onText, retry) {
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
     let r = Voice.sr; const reused = !!r
