@@ -2838,9 +2838,9 @@ window.onload = () => {
  window.voiceStart = function (kind, onText) {
   if (noWebSpeech()) return keyboardFallback(kind)
   if (kind === 'shop' && shopDictate) shopDictateToggle()
-  const hadRec = !!Voice.sr           // ← השינוי
+  const hadRec = !!Voice.rec          // ← כאן הבעיה
   voiceReset()
-  if (hadRec) setTimeout(() => begin(kind, onText), 400); else begin(kind, onText)
+  if (hadRec) setTimeout(() => begin(kind, onText), 350); else begin(kind, onText)
 }
   function begin(kind, onText, retry) {
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
