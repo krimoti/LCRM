@@ -1,5 +1,5 @@
 /* KMS-CRM service worker: offline-first (cache, refresh in background) */
-const V = 'kms-crm-v5.3', CORE = ['./', './index.html', './manifest.json', './icon.png']
+const V = 'kms-crm-v5.4', CORE = ['./', './index.html', './manifest.json', './icon.png']
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()))
 })
