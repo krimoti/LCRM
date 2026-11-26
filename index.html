@@ -2293,7 +2293,8 @@ function handleShopPhrase(ph) {
     if (/^(מה|איך|למה|האם|מי|מתי|איפה)\s/.test(ph)) return 'לא הבנתי את הבקשה. אפשר לומר "קניתי חלב" או לומר פריטים להוספה.'
     return shopStage(segmentStream(ph))
 }
-let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? '1') !== '0'
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? (IS_IOS ? '0' : '1')) !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
 const APP_BUILD = '2026-11-26.3'
 // Cleans what the iPhone keyboard / dictation / Android IME produce: invisible direction marks, niqqud, NBSP,
@@ -2319,18 +2320,28 @@ function spokenText(t) {
     if (x.length > 320) { const c = x.slice(0, 320), k = Math.max(c.lastIndexOf('. '), c.lastIndexOf('? ')); x = k > 80 ? c.slice(0, k + 1) : c }
     return x
 }
-// מקריא מיד. בזמן שהמיקרופון פתוח – ההאזנה מושתקת עד סוף ההקראה, כדי שלא ישמע את עצמו
+// מקריא. באייפון אסור לדבר בזמן שהמיקרופון פתוח (זה "תוקע" את ההקשבה הבאה) – שם ההקראה ממתינה לסגירת המיקרופון.
+// בשאר המכשירים מקריאים מיד, וההאזנה מושתקת עד סוף ההקראה כדי שלא תשמע את עצמה.
 function speakReply(t, topic, force) {
     if (!window.speechSynthesis || (!force && !spkOn(topic || 'other'))) return
     const txt = spokenText(t); if (!txt) return
     const live = typeof Voice !== 'undefined' && Voice.state !== 'idle'
-    let freed = false; const free = () => { if (freed) return; freed = true; if (live) setTimeout(() => { Voice.muted = false }, 700) }
+    if (live && IS_IOS) { Voice.pendingSpeak = txt; vlog('הקראה ממתינה לסגירת המיקרופון (אייפון)'); voiceStop(); return }
+    speakNow(txt, live)
+}
+function speakNow(txt, live) {
+    let freed = false; const free = () => { if (freed) return; freed = true; Voice.ttsEnd = Date.now(); if (live) setTimeout(() => { Voice.muted = false }, 700) }
     try {
         speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.lang = 'he-IL'; u.rate = SPK.rate || 1
         if (live) { Voice.muted = true; setTimeout(free, 20000) }
-        u.onend = free; u.onerror = free; speechSynthesis.speak(u)
+        u.onend = free; u.onerror = free; vlog('מקריא'); speechSynthesis.speak(u)
     } catch (e) { free() }
 }
+function speakPending() {
+    const p = Voice.pendingSpeak; Voice.pendingSpeak = null
+    if (p) setTimeout(() => { if (Voice.state === 'idle') speakNow(p, false) }, 600)
+}
+const ttsBusy = () => !!(window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending || Date.now() - (Voice.ttsEnd || 0) < 1200))
 const speakHe = t => speakReply(t, 'shopping')
 function spkTopicOf(h, r) {
     const H = String(h || ''), R = String(r || '')
@@ -2424,7 +2435,7 @@ function voiceStart(kind, onText) {
     Voice.rec = r; Voice.kind = kind; Voice.state = 'starting'; Voice.t0 = Date.now()
     r.lang = 'he-IL'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 1
     const on = (name, f) => { r['on' + name] = e => { if (Voice.rec !== r) return; f(e) } }   // an old session can never act on the new one
-    on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); voiceDiag('מקשיב… דבר עכשיו') })
+    on('start', () => { if (Voice.state === 'stopping') { try { r.abort() } catch (e) {} return } Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); voiceDiag('מקשיב… דבר עכשיו') })
     on('audiostart', () => { heard = true; vlog('audiostart – המיקרופון נפתח') })
     on('soundstart', () => { heard = true; vlog('soundstart – נקלט קול') })
     on('speechstart', () => { heard = true; vlog('speechstart – נקלט דיבור') })
@@ -2449,12 +2460,36 @@ function voiceStart(kind, onText) {
     Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') { voiceReset(); voiceDiag('המיקרופון לא הגיב'); toast('המיקרופון לא הגיב – לחץ שוב', '#f59e0b'); voiceFailed('לא התחיל תוך ' + Math.round(Voice.wdMs / 1000) + ' שניות') } }, Voice.wdMs)
     try { r.start(); vlog('start() נקרא') } catch (e) { voiceReset(); voiceDiag('start נכשל: ' + e.message); toast('לא הצלחתי להפעיל את המיקרופון – לחץ שוב', '#f59e0b'); voiceFailed('start() זרק ' + e.name) }
 }
+const diag = m => { const el = document.getElementById('voice-diag'); if (el) el.textContent = m }
+// כל לחיצה פועלת מיד:  כבוי→מתחיל · מקשיב→סוגר · באמצע סגירה→מתחיל מיד כשהסגירה מסתיימת · לחיצה בזמן "ממתין להתחלה"→מבטל
 function voiceToggle(kind, onText) {
-    if (Voice.rec && Voice.state === 'listening' && Voice.kind === kind && Date.now() - Voice.t0 < Voice.stuckMs) {      // a real, live session → stop it
-        const r = Voice.rec; vlog('עצירה ידנית'); try { r.stop() } catch (e) {}
-        setTimeout(() => { if (Voice.rec === r) voiceReset() }, 1500); return
+    try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}          // כל לחיצה גם משתיקה הקראה
+    Voice.muted = false; Voice.pendingSpeak = null
+    if (Voice.startQueued) { Voice.startQueued = null; voiceUI(false, kind); diag('בוטל'); vlog('התחלה בתור בוטלה'); return }
+    const st = Voice.state
+    if (st === 'starting' || st === 'listening') {
+        if (Voice.kind !== kind) { Voice.startQueued = { kind, onText }; voiceStop(); try { Voice.rec && Voice.rec.abort() } catch (e) {} voiceUI(true, kind, '⏳ מתחיל…'); return }      // מסך אחר → סוגר את הקודם ומתחיל מיד בהקשר החדש
+        return voiceStop()
     }
-    voiceStart(kind, onText)                       // idle / starting / stuck / other mic → always a fresh start
+    if (st === 'stopping') {
+        Voice.startQueued = { kind, onText }; voiceUI(true, kind, '⏳ מתחיל…'); diag('מתחיל מיד אחרי הסגירה…'); vlog('לחיצה בזמן סגירה – התחלה בתור')
+        try { Voice.rec && Voice.rec.abort() } catch (e) {}
+        return
+    }
+    voiceStart(kind, onText)
+}
+function voiceStop() {
+    const r = Voice.rec; if (!r) return voiceReset()
+    vlog('עצירה'); Voice.want = false; Voice.state = 'stopping'; voiceUI(false, Voice.kind); diag('סוגר…')
+    try { r.stop() } catch (e) {}
+    setTimeout(() => { if (Voice.rec === r && Voice.state === 'stopping') { vlog('end לא הגיע – abort'); try { r.abort() } catch (e) {} } }, 1000)
+    setTimeout(() => { if (Voice.rec === r && Voice.state === 'stopping') { vlog('סגירה כפויה'); Voice.active = false; voiceClosed(r) } }, 2500)
+}
+function voiceClosed(r) {                              // המקום היחיד שבו סשן נסגר סופית
+    if (Voice.rec === r) { Voice.rec = null; Voice.state = 'idle'; Voice.speak = null }
+    Voice.want = false
+    if (Voice.startQueued) { const q = Voice.startQueued; Voice.startQueued = null; setTimeout(() => voiceStart(q.kind, q.onText), 100) }
+    else speakPending()
 }
 function shopVoiceToggle() { voiceToggle('shop', t => { const r = handleShopPhrase(t); shopVoiceStatus(t, r); if (typeof r === 'string' && !/לא הבנתי/.test(r)) speakReply(r, 'shopping'); return r }) }
 // Going to the background must NOT kill a session that is waiting for the iOS permission sheet;
@@ -2835,19 +2870,22 @@ window.onload = () => {
   }
 
   // ---------- 2. זיהוי דיבור ----------
- window.voiceStart = function (kind, onText) {
-  if (noWebSpeech()) return keyboardFallback(kind)
-  if (kind === 'shop' && shopDictate) shopDictateToggle()
-  const hadRec = !!Voice.rec          // ← כאן הבעיה
-  voiceReset()
-  if (hadRec) setTimeout(() => begin(kind, onText), 350); else begin(kind, onText)
-}
+  window.voiceStart = function (kind, onText) {
+    if (noWebSpeech()) return keyboardFallback(kind)
+    if (kind === 'shop' && shopDictate) shopDictateToggle()
+    const hadRec = !!Voice.rec, tts = ttsBusy()
+    voiceReset()
+    if (tts) { try { speechSynthesis.cancel() } catch (e) {} Voice.pendingSpeak = null; vlog('הקראה נעצרה לפני הקשבה') }
+    const wait = Math.max(hadRec ? 350 : 0, tts ? 800 : 0)
+    if (wait) setTimeout(() => begin(kind, onText), wait); else begin(kind, onText)
+  }
+
   function begin(kind, onText, retry) {
     try { window.speechSynthesis && speechSynthesis.cancel() } catch (e) {}
     let r = Voice.sr; const reused = !!r
     if (!r) {
       try { r = Voice.sr = new (voiceSupported())() } catch (e) { return keyboardFallback(kind) }
-      r.addEventListener('start', () => { Voice.active = true }); r.addEventListener('end', () => { Voice.active = false })
+      r.addEventListener('start', () => { if (Voice.sr === r) Voice.active = true }); r.addEventListener('end', () => { if (Voice.sr === r) Voice.active = false })
     }
     let got = false, heard = false, last = '', delivered = false, fatal = false, lastAct = Date.now()
     const cont = kind === 'home' || kind === 'shop'; Voice.want = cont
@@ -2886,18 +2924,20 @@ window.onload = () => {
       setTimeout(() => { if (Voice.rec === r) { voiceReset(); if (denied) keyboardFallback(kind) } }, 400)
     })
     on('end', () => {
+      vlog('end')
       clearTimeout(Voice.wd)
       if (cont && Voice.want && !fatal && Date.now() - lastAct < 60000) {   // iOS מסיים לבד – מפעילים מחדש עד שלוחצים עצור
         try { if (last) deliverMulti(last); r.start(); vlog('restart'); return } catch (x) { vlog('restart נכשל: ' + x.message) }
       }
       Voice.want = false
       if (!delivered && last) { if (cont) deliverMulti(last); else deliver(last) }                       // iOS מסיים לפעמים בלי תוצאה סופית
-      const sp = Voice.speak, quick = Date.now() - Voice.t0 < 1500
+      const sp = Voice.speak, quick = Date.now() - Voice.t0 < 1500, manual = Voice.state === 'stopping'
       Voice.rec = null; Voice.state = 'idle'; Voice.speak = null
       voiceUI(false, kind)
-      setDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : 'לא נקלט דיבור – לחץ שוב')
-      if (!got && !heard && quick) voiceFailed('נסגר מיד, המיקרופון לא נפתח')
+      setDiag(got ? 'מוכן – לחץ על המיקרופון לפקודה הבאה' : manual ? 'נסגר' : 'לא נקלט דיבור – לחץ שוב')
+      if (!got && !heard && quick && !manual) voiceFailed('נסגר מיד, המיקרופון לא נפתח')
       if (sp) speakHe(sp)
+      voiceClosed(r)
     })
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); setDiag('מפעיל את המיקרופון…')
     // לא הורגים את הסשן בזמן שחלון ההרשאה פתוח: רק הודעה אחרי 6 שנ׳, ואיפוס אחרי 45 שנ׳
@@ -2907,16 +2947,21 @@ window.onload = () => {
     }, 45000)
     const go = n => {
       if (Voice.rec !== r) return
-      if (Voice.active && n < 25) return setTimeout(() => go(n + 1), 60)     // מחכים שהסשן הקודם ייסגר
+      if (Voice.active) {                                                     // הסשן הקודם של המזהה עדיין נסגר: מבקשים abort ומחכים עד ~1.2 שנ׳
+        if (n === 0) { vlog('סשן קודם עדיין פעיל – abort'); try { r.abort() } catch (e) {} }
+        if (n < 20) return setTimeout(() => go(n + 1), 60)
+        if (!retry) { vlog('סשן קודם לא נסגר – מופע חדש'); Voice.sr = null; Voice.active = false; Voice.rec = null; Voice.state = 'idle'; return setTimeout(() => begin(kind, onText, true), 100) }
+        Voice.active = false
+      }
       try { r.start(); vlog('start() נקרא' + (reused ? ' (מופע קיים)' : '')) } catch (e) {
         vlog('start נכשל: ' + e.name + ' ' + e.message)
-        if (!retry) { Voice.sr = null; Voice.active = false; voiceReset(); return setTimeout(() => begin(kind, onText, true), 200) }
+        if (!retry) { try { r.abort() } catch (x) {} Voice.sr = null; Voice.active = false; Voice.rec = null; Voice.state = 'idle'; return setTimeout(() => begin(kind, onText, true), 300) }
         voiceReset(); keyboardFallback(kind)
       }
     }
     go(0)
     if (reused) setTimeout(() => {                                   // מופע ישן שנתקע → יוצרים חדש פעם אחת
-      if (Voice.rec === r && Voice.state === 'starting' && !retry) { vlog('מופע תקוע – יוצר מחדש'); Voice.sr = null; Voice.active = false; voiceReset(); begin(kind, onText, true) }
+      if (Voice.rec === r && Voice.state === 'starting' && !retry) { vlog('מופע תקוע – abort ויוצר מחדש'); try { r.abort() } catch (x) {} Voice.sr = null; Voice.active = false; Voice.rec = null; Voice.state = 'idle'; begin(kind, onText, true) }
     }, 3500)
   }
 
@@ -3366,7 +3411,7 @@ window.onload = () => {
   function spkHtml() {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="spkt" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [], noHe = window.speechSynthesis && vs.length && !vs.some(v => /^he/i.test(v.lang))
-    return '<div class="hint" style="text-align:right">כשמדברים אל האפליקציה – התשובה מוקראת בקול, רק בנושאים שמסומנים. אפשר גם בקול: ״כבה חיווי קולי לקניות״ · ״חיווי קולי לשבת״ · ״תפסיק לדבר״.</div>' +
+    return (IS_IOS ? '<div class="hint" style="text-align:right;color:#f59e0b">באייפון ההקראה מתחילה רק אחרי שהמיקרופון נסגר (המיקרופון נסגר אחרי כל תשובה) – כך מונעים ממנו להיתקע.</div>' : '') + '<div class="hint" style="text-align:right">כשמדברים אל האפליקציה – התשובה מוקראת בקול, רק בנושאים שמסומנים. אפשר גם בקול: ״כבה חיווי קולי לקניות״ · ״חיווי קולי לשבת״ · ״תפסיק לדבר״.</div>' +
       row('master', '🔊 חיווי קולי (מתג ראשי)', ttsOn) + '<div class="fl">מה להקריא</div>' + spkTopics().map(x => row(x[0], esc(x[1]), !SPK.off[x[0]])).join('') +
       '<div class="fl">כללי</div>' + row('typed', '⌨️ להקריא גם כשמקלידים פקודה', SPK.typed) +
       '<div class="fl">מהירות דיבור</div><div style="display:flex;gap:8px">' + [['0.85', '🐢 איטי'], ['1', 'רגיל'], ['1.2', '🐇 מהיר']].map(x => '<button type="button" class="ex" style="flex:1;text-align:center;' + (SPK.rate === +x[0] ? 'font-weight:800;border-color:#10b981' : '') + '" data-act="spkt" data-v="rate:' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
@@ -3832,10 +3877,8 @@ window.onload = () => {
 ;(function () {                                                   // ui8-marker: continuous voice UX + offline
   const $ = id => document.getElementById(id)
   Voice.stuckMs = 600000                                          // האזנה רציפה יכולה להימשך – לחיצה שנייה = עצירה
-  const _vt = window.voiceToggle
-  window.voiceToggle = function (k, f) { if (Voice.rec && Voice.state === 'listening' && Voice.kind === k) Voice.want = false; _vt(k, f) }
   const _vr = window.voiceReset
-  window.voiceReset = function () { Voice.want = false; _vr() }
+  window.voiceReset = function () { Voice.want = false; Voice.startQueued = null; _vr() }
   // live transcript while speaking
   window.voiceInterim = function (kind, text) {
     let el = $('live-toast')
