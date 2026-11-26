@@ -2295,6 +2295,18 @@ function handleShopPhrase(ph) {
 }
 let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? '1') !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+const APP_BUILD = '2026-11-26.3'
+// Cleans what the iPhone keyboard / dictation / Android IME produce: invisible direction marks, niqqud, NBSP,
+// trailing punctuation and polite filler words ("בבקשה", "היי"…) – otherwise a plain question is not recognised
+function cleanSpeech(raw) {
+    let t = String(raw == null ? '' : raw)
+        .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\u061C\uFEFF]/g, '')
+        .replace(/[\u00A0\u2007\u202F]/g, ' ')
+        .replace(/[\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]/g, '')
+        .replace(/\s+/g, ' ').trim().replace(/[\s?!.,;:…]+$/, '')
+    for (let k = 0; k < 3; k++) t = t.replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז|היי|הי|הלו|שלום|בבקשה|סליחה|שמע|תגיד לי|תגידי לי)\s+/, '')
+    return t
+}
 // ---------- חיווי קולי לפי נושא ----------
 const SPK = (() => { let x = null; try { x = JSON.parse(localStorage.getItem('gl_speak')) } catch (e) {} x = x && typeof x === 'object' ? x : {}; x.off = x.off && typeof x.off === 'object' ? x.off : {}; x.rate = x.rate || 1; x.typed = !!x.typed; return x })()
 const spkOn = k => ttsOn && !SPK.off[k]
@@ -2322,7 +2334,7 @@ function speakReply(t, topic, force) {
 const speakHe = t => speakReply(t, 'shopping')
 function spkTopicOf(h, r) {
     const H = String(h || ''), R = String(r || '')
-    if (/^🔊|^🔇/.test(R)) return 'sys'
+    if (/^🔊|^🔇|^🧹|^⚠️|^🔄|^↩️/.test(R)) return 'sys'
     if (/^🏖️/.test(R) || /חופש/.test(H)) return 'vac'
     if (/^🎂|^💬/.test(R) || /יום הולדת|יומולדת|ברכה|חוגג/.test(H)) return 'bday'
     if (/^(🕒|📅|🤔 לאיזו)/.test(R) || /^(?:קבע|תקבע|לקבוע|דחה|העבר)/.test(H)) return 'meet'
@@ -3243,6 +3255,114 @@ window.onload = () => {
     return '📁 נוסף תחום חדש: <b>' + esc(name) + '</b> – אמור "' + esc(name) + ' ..." כדי להוסיף אליו.'
   }
 
+  // ---------- ניקוי נתונים: לפי בחירה (כפתור 🧹 או בפקודה קולית) ----------
+  let cleanAsk = null, cleanPending = null
+  const jlen = k => { try { const x = JSON.parse(localStorage.getItem(k)); return Array.isArray(x) ? x.length : x && typeof x === 'object' ? Object.keys(x).length : 0 } catch (e) { return 0 } }
+  const lsKB = () => { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length } } catch (e) {} return Math.round(n * 2 / 1024) }
+  const SETTING_KEYS = ['gl_theme', 'gl_palette', 'gl_view', 'gl_tts', 'gl_speak', 'gl_confirm_ms', 'gl_addr', 'gl_ui', 'gl_brief', 'gl_brief_day', 'gl_station', 'kms_cal_cfg']
+  const nonShop = r => dom(r.domain) && dom(r.domain).link !== 'shop'
+  function cleanItems() {
+    const it = [
+      { k: 'done', icon: '✅', name: 'משימות שבוצעו', n: crm.records.filter(r => r.done && nonShop(r)).length },
+      { k: 'bought', icon: '🛒', name: 'פריטי קניות שנקנו', n: shop.items.filter(i => i.bought).length },
+      { k: 'shopall', icon: '🧺', name: 'כל רשימת הקניות', n: shop.items.length }]
+    crm.domains.filter(d => d.link !== 'shop').forEach(d => it.push({ k: 'dom:' + d.id, icon: d.icon, name: 'כל הרשומות בתחום ' + d.name, n: crm.records.filter(r => r.domain === d.id).length }))
+    let ses = 0; try { const x = JSON.parse(localStorage.getItem('gl_sessions')); ses = x && Array.isArray(x.list) ? x.list.length : 0 } catch (e) {}
+    it.push(
+      { k: 'chat', icon: '💬', name: 'היסטוריית השיחה עם הבוט', n: chat.length },
+      { k: 'sessions', icon: '🗂️', name: 'שיחות שמורות', n: ses },
+      { k: 'kb', icon: '📚', name: 'מאגר הידע', n: kb.length },
+      { k: 'eng', icon: '🔌', name: 'ידע הנדסי (מחברים וכללים)', n: eng.connectors.length + eng.rules.length },
+      { k: 'conv', icon: '🧠', name: 'למידת שיחה (כללים שלימדת)', n: (conv.rules || []).length + Object.keys(conv.custom || {}).length + Object.keys(conv.extra || {}).length },
+      { k: 'bdays', icon: '🎂', name: 'ימי הולדת שמורים', n: jlen('kms_cal_bdays') },
+      { k: 'vacs', icon: '🏖️', name: 'חופשות שמורות', n: jlen('kms_cal_vac') },
+      { k: 'settings', icon: '⚙️', name: 'הגדרות תצוגה וחיווי', n: null, hint: 'חוזר לברירת מחדל, הנתונים נשארים' },
+      { k: 'cache', icon: '🔄', name: 'מטמון האפליקציה + רענון גרסה', n: null, hint: 'אם המכשיר מציג גרסה ישנה' },
+      { k: 'local', icon: '🧨', name: 'LOCAL – כל הנתונים המקומיים', n: null, hint: 'מוחק הכול (' + lsKB() + 'KB) – מומלץ לגבות קודם' })
+    const pri = ['cache', 'local']; return pri.map(k => it.find(x => x.k === k)).concat(it.filter(x => !pri.includes(x.k)))   // the two "big" options first
+  }
+  function wipeAndReload(clearAll) {
+    (async () => {
+      try { if (clearAll) { localStorage.clear(); sessionStorage.clear() } } catch (e) {}
+      try { if (navigator.serviceWorker) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())) } if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(x => caches.delete(x))) } } catch (e) {}
+      try { const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.replace(u.toString()) } catch (e) { location.reload() }
+    })()
+  }
+  function cleanDo(k) {
+    const later = (keys, msg) => { keys.forEach(x => { try { localStorage.removeItem(x) } catch (e) {} }); setTimeout(() => location.reload(), 700); return msg }
+    if (k === 'done' || k.startsWith('dom:')) {
+      const id = k.slice(4), d = dom(id), before = snap()
+      const pick = k === 'done' ? (r => r.done && nonShop(r)) : (r => r.domain === id), n = crm.records.filter(pick).length
+      if (!n) return '🧹 אין מה לנקות'
+      crm.records = crm.records.filter(r => !pick(r)); last = before; saveCrm()
+      toastUndo('נוקו ' + n + ' רשומות', () => { crm = JSON.parse(before); saveCrm() })
+      return '🧹 נוקו ' + n + (k === 'done' ? ' משימות שבוצעו' : ' רשומות בתחום ' + esc(d ? d.name : ''))
+    }
+    if (k === 'bought') { const n = shop.items.filter(i => i.bought).length; if (!n) return '🧹 אין פריטים שנקנו'; shopClearBought(); return '🧹 נוקו ' + n + ' פריטים שנקנו' }
+    if (k === 'shopall') { const n = shop.items.length; if (!n) return '🧹 הרשימה ריקה'; const sn = snapShop(); shop.items = []; saveShop(); renderShop(); undoShop(sn, 'נוקתה רשימת הקניות'); return '🧹 נוקתה רשימת הקניות (' + n + ')' }
+    if (k === 'chat') { if (!chat.length) return '🧹 אין שיחה לנקות'; clearChat(); return '🧹 השיחה נוקתה' }
+    if (k === 'kb') { const sn = kb.slice(), n = kb.length; if (!n) return '🧹 המאגר ריק'; kb = []; save(); renderKB(); toastUndo('מאגר הידע נוקה', () => { kb = sn; save(); renderKB() }); return '🧹 מאגר הידע נוקה (' + n + ')' }
+    if (k === 'eng') { const sn = JSON.stringify(eng); eng = { connectors: [], rules: [] }; saveEng(); renderEng(); toastUndo('הידע ההנדסי נוקה', () => { eng = JSON.parse(sn); saveEng(); renderEng() }); return '🧹 הידע ההנדסי נוקה' }
+    if (k === 'conv') { const sn = JSON.stringify(conv); conv = { rules: [], custom: {}, extra: {} }; saveConv(); toastUndo('למידת השיחה נוקתה', () => { conv = JSON.parse(sn); saveConv() }); return '🧹 למידת השיחה נוקתה' }
+    if (k === 'sessions') return later(['gl_sessions'], '🧹 השיחות השמורות נוקו – מרענן…')
+    if (k === 'bdays') return later(['kms_cal_bdays'], '🧹 ימי ההולדת נוקו – מרענן…')
+    if (k === 'vacs') return later(['kms_cal_vac'], '🧹 החופשות נוקו – מרענן…')
+    if (k === 'settings') return later(SETTING_KEYS, '🧹 ההגדרות אופסו – מרענן…')
+    if (k === 'cache') { wipeAndReload(false); return '🔄 מנקה מטמון ומרענן לגרסה העדכנית…' }
+    if (k === 'local') { wipeAndReload(true); return '🧹 כל הנתונים המקומיים נמחקו – מרענן…' }
+    return null
+  }
+  function cleanResolve(w) {
+    w = String(w || '').replace(/[״"׳'’־-]/g, '').replace(/\s+/g, ' ').trim()
+    if (/(?:local|לוקל|לוקאל|לוקל סטורג|מקומי|מקומיים|כל הנתונים|הכל|הכול)/i.test(w)) return 'local'
+    if (/(?:מטמון|קאש|cache|רענון גרסה|רענן גרסה|גרסה ישנה)/i.test(w)) return 'cache'
+    if (/(?:שבוצעו|שהושלמו|שסומנו|בוצעו|הושלמו)/.test(w)) return 'done'
+    if (/(?:שנקנו|קנויים|קנוי|שקניתי)/.test(w)) return 'bought'
+    if (/(?:רשימת הקניות|הקניות|קניות)/.test(w)) return 'shopall'
+    if (/(?:שיחות שמורות|היסטוריית שיחות|סשנים)/.test(w)) return 'sessions'
+    if (/(?:שיחה|צאט|הצאט|היסטוריה|היסטוריית)/.test(w)) return 'chat'
+    if (/(?:הנדסי|מחברים)/.test(w)) return 'eng'
+    if (/(?:מאגר|ידע)/.test(w)) return 'kb'
+    if (/(?:למידה|למדתי|לימדתי)/.test(w)) return 'conv'
+    if (/(?:ימי הולדת|יום הולדת)/.test(w)) return 'bdays'
+    if (/(?:חופשות|חופשה)/.test(w)) return 'vacs'
+    if (/(?:הגדרות|תצוגה)/.test(w)) return 'settings'
+    for (const x of w.split(' ')) { const d = x.length >= 3 ? domOf(x) : null; if (d && d.link !== 'shop') return 'dom:' + d.id }
+    return null
+  }
+  function cleanCmd(t) {
+    if (cleanPending) {
+      const p = cleanPending; if (Date.now() - p.ts > 30000) cleanPending = null
+      else {
+        if (p.k === 'local' ? /^(?:אשר מחיקת הכל|אשר מחיקת הכול|אשר מחיקה|אשר ניקוי מלא)$/.test(t) : /^(?:אשר|כן|בצע|נקה|תנקה|מאשר|אישור|כן נקה)$/.test(t)) { cleanPending = null; return cleanDo(p.k) }
+        if (/^(?:בטל|תבטל|לא|ביטול|עזוב|עצור)$/.test(t)) { cleanPending = null; return '↩️ ביטלתי את הניקוי' }
+      }
+    }
+    if (cleanPending && cleanPending.k === 'local' && /^(?:אשר|כן|בצע|אישור|מאשר)$/.test(t)) return '⚠️ לניקוי LOCAL אמור במדויק ״אשר מחיקת הכל״ (או ״בטל״)'
+    if (!cleanPending && /^(?:אשר|אישור|מאשר)$/.test(t)) return '🤔 אין פעולה שממתינה לאישור'
+    if (/^(?:ניקוי|נקה|תנקה|ניקוי נתונים|פתח ניקוי|מסך ניקוי|הגדרות ניקוי)$/.test(t)) { cleanAsk = null; sheet = { type: 'clean' }; renderSheet(); return '🧹 פתחתי את מסך הניקוי – בחר מה לנקות' }
+    const m = t.match(/^(?:ניקוי|נקה|תנקה|נקי|מחק|תמחק|אפס|תאפס|רוקן|תרוקן|סלק)\s+(?:לי\s+)?(?:את\s+)?(?:כל\s+)?(?:ה)?(.+)$/)
+    if (!m) return null
+    const k = cleanResolve(m[1]); if (!k) return null
+    const it = cleanItems().find(x => x.k === k); if (!it) return null
+    if (it.n === 0) return '🧹 אין מה לנקות ב' + it.name
+    cleanPending = { k, ts: Date.now() }
+    return k === 'local' ? '⚠️ זה ימחק את כל הנתונים המקומיים במכשיר. אמור ״אשר מחיקת הכל״ או ״בטל״. מומלץ קודם לגבות (עוד ← גיבוי).'
+      : '🧹 לנקות ' + esc(it.name) + (it.n ? ' (' + it.n + ')' : '') + '? אמור ״אשר״ או ״בטל״'
+  }
+  function cleanHtml() {
+    const its = cleanItems()
+    return '<div class="hint" style="text-align:right">בחר מה לנקות – כל ניקוי מבקש אישור ורובם ניתנים לביטול מיד. אפשר גם בקול: ״נקה משימות שבוצעו״ · ״נקה מטמון״ · ״נקה local״ · ״נקה לקוחות״.</div>' +
+      its.map(x => {
+        const open = cleanAsk === x.k, loc = x.k === 'local'
+        return '<button type="button" class="ex" style="display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:right;' + (x.n === 0 ? 'opacity:.5;' : '') + (loc ? 'border-color:#ef4444;' : '') + '" data-act="cl" data-v="' + x.k + '"><span>' + x.icon + ' ' + esc(x.name) + (x.hint ? '<br><small style="opacity:.7">' + esc(x.hint) + '</small>' : '') + '</span>' + (x.n != null ? '<b>' + x.n + '</b>' : '') + '</button>' +
+          (open ? '<div style="border:1px solid #ef4444;border-radius:14px;padding:10px;margin:4px 0 10px;text-align:right"><div style="margin-bottom:8px">' + (loc ? '⚠️ יימחקו כל הנתונים השמורים במכשיר הזה (משימות, לקוחות, קניות, הגדרות…).' : 'לנקות ' + esc(x.name) + (x.n ? ' (' + x.n + ')' : '') + '?') + '</div>' +
+            (loc ? '<button type="button" class="btn-primary" style="width:100%;margin-bottom:6px" data-act="clbk">⬇️ גבה ונקה הכול</button><button type="button" class="btn-ghost" style="width:100%;margin-bottom:6px;color:#ef4444" data-act="clgo" data-v="local">נקה בלי גיבוי</button>'
+              : '<button type="button" class="btn-primary" style="width:100%;margin-bottom:6px" data-act="clgo" data-v="' + x.k + '">כן, נקה</button>') +
+            '<button type="button" class="btn-ghost" style="width:100%" data-act="clno">ביטול</button></div>' : '')
+      }).join('') + '<div class="hint" style="text-align:center;margin-top:10px">גרסה: ' + APP_BUILD + '</div>'
+  }
+
   // ---------- חיווי קולי: הגדרות ופקודות ----------
   const spkTopics = () => [['cal', '📆 לוח שנה, שבת וחגים'], ['bday', '🎂 ימי הולדת'], ['vac', '🏖️ חופשות'], ['meet', '🗓️ קביעת פגישות / מועדים']].concat(crm.domains.map(d => [d.id, d.icon + ' ' + d.name])).concat([['chat', '💬 שיחה (שאלות לבוט)'], ['other', '🤔 שאר ההודעות']])
   function spkHtml() {
@@ -3350,10 +3470,11 @@ window.onload = () => {
 
   // ---------- THE VOICE ROUTER ----------
   function route(raw, defScope) {
-    const t = String(raw).trim().replace(/[?!.,]+$/, '').replace(/^(?:אוקיי|אוקי|טוב|יאללה|נו|אז)\s+/, ''); let m
+    const t = cleanSpeech(raw); let m
     if (!t) return null
     { const kr = window.KMSCal && KMSCal.route(t); if (kr) return kr }
     if (/^(?:עזרה|תעזור לי|מה אפשר|מה אני יכול)/.test(t)) { openHelp(); return '❓ פתחתי את העזרה' }
+    { const r = cleanCmd(t); if (r) return r }
     { const r = spkCmd(t); if (r) return r }
     if (meetWait) { const mw = meetWait; meetWait = null; if (Date.now() - mw.ts < 60000 && whenOnly(t)) return meetCmd(mw.base + ' ' + t) }
     { const r = meetCmd(t); if (r) return r }
@@ -3383,7 +3504,7 @@ window.onload = () => {
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="backup" title="גיבוי לקובץ" aria-label="גיבוי לקובץ">⇧</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="clean" title="ניקוי נתונים" aria-label="ניקוי נתונים">🧹</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="backup" title="גיבוי לקובץ" aria-label="גיבוי לקובץ">⇧</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div></div><div id="home-body"></div>'
   function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
   function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
@@ -3446,20 +3567,22 @@ window.onload = () => {
         '<button type="button" class="btn-ghost" style="width:100%;margin-top:12px" data-act="open" data-v="tasks">כל המשימות</button>')
     } else if (sheet.type === 'ask') {
       showSheet(head('🤔 לאיזה תחום לשמור?') + '<div class="emptyx" style="margin-bottom:10px">״' + esc(askText || '') + '״</div><div class="mgrid">' + crm.domains.filter(visDom).map(d => '<button type="button" class="tile" style="min-height:74px" data-act="askpick" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b></button>').join('') + '</div>')
+    } else if (sheet.type === 'clean') {
+      showSheet(head('🧹 ניקוי נתונים') + cleanHtml())
     } else if (sheet.type === 'spk') {
       showSheet(head('🔊 חיווי קולי') + spkHtml())
     } else if (sheet.type === 'meet') {
       const mp = meetPick || {}, rs = crm.records.filter(r => !r.done && dom(r.domain) && dom(r.domain).link !== 'shop').sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 8)
       showSheet(head('🗓️ ' + esc(mp.due ? fullDate(mp.due) : '') + (mp.time ? ' · ' + mp.time : '')) + '<div class="hint" style="text-align:right">בחר משימה לעדכון המועד, או צור פגישה חדשה בתחום:</div>' + rs.map(r => '<button type="button" class="ex" data-act="meetpick" data-v="' + r.id + '">' + esc((dom(r.domain) || {}).icon || '') + ' ' + esc(r.title) + (r.due ? ' · ' + esc(dueLabel(r.due)) : '') + '</button>').join('') + '<div class="mgrid" style="margin-top:10px">' + crm.domains.filter(visDom).filter(d => d.link !== 'shop').map(d => '<button type="button" class="tile" style="min-height:64px" data-act="meetnew" data-v="' + d.id + '"><span class="ti">' + d.icon + '</span><b>' + esc(d.name) + '</b><small>פגישה חדשה</small></button>').join('') + '</div>')
     } else if (sheet.type === 'more') {
-      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['spk', '', '🔊', 'חיווי קולי', 'מה להקריא בקול'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
+      showSheet(head('עוד') + '<div class="mgrid">' + [['go', 'kb', '📚', 'ידע', 'מה שלימדת אותי'], ['go', 'eng', '🛠️', 'הנדסה', 'מחברים וכללי שרוול'], ['go', 'report', '📊', 'דוח', 'למידה וכיסוי'], ['go', 'settings', '⚙️', 'הגדרות', 'ערכות נושא וגיבוי'], ['clean', '', '🧹', 'ניקוי נתונים', 'LOCAL, מטמון ועוד'], ['spk', '', '🔊', 'חיווי קולי', 'מה להקריא בקול'], ['help', '', '❓', 'עזרה ופקודות', 'מה אפשר להכתיב'], ['backup', '', '⇧', 'גיבוי', 'שמירה לקובץ'], ['cal', '', '📆', 'לוח שנה', 'חגים, זמני שבת, ימי הולדת וחופשה'], ['export', '', '📤', 'ייצוא משימות', 'וואטסאפ, אאוטלוק, יומן']].filter(x => !(x[0] === 'go' && ui.hideTab.includes(x[1]))).map(x => '<button type="button" class="tile" style="min-height:96px" data-act="' + x[0] + '" data-v="' + x[1] + '"><span class="ti">' + x[2] + '</span><b>' + x[3] + '</b><small>' + x[4] + '</small></button>').join('') + '</div>')
     } else if (sheet.type === 'help') {
       const e = voiceEnv(), sr = voiceSupported(), offl = !!(navigator.serviceWorker && navigator.serviceWorker.controller); let ls = false; try { localStorage.setItem('gl_t', '1'); localStorage.removeItem('gl_t'); ls = true } catch (x) {}
       const chk = [[sr, 'זיהוי דיבור בדפדפן', sr ? 'זמין' : 'לא זמין כאן – הכתב דרך 🎤 שבמקלדת בתיבת הפקודה'], [e.secure, 'חיבור מאובטח', e.secure ? 'תקין' : 'המיקרופון דורש HTTPS'], [ls, 'שמירה מקומית', ls ? 'תקינה' : 'חסומה – הנתונים לא יישמרו'],
         [offl, 'עבודה אופליין', offl ? 'מוכן – האפליקציה נטענת מהמטמון' : 'לא מותקן עדיין – ראה ההערה למטה'], [true, 'נתונים', crm.records.length + ' רשומות · ' + remaining().length + ' פריטי קניות · ' + kb.length + ' ידע']]
       const EX = [['✅ משימות', ['תתקשר מחר למוטי בצהריים בשעה 14:00', 'משימה לשלם חשבון חשמל מחר', 'תוסיף משימה להתקשר לדני ביום שלישי', 'סיימתי לשלם חשבון חשמל']], ['👥 לקוחות', ['לקוח חדש דנה כהן 050-1234567', 'תוסיף ללקוחות משה מעוניין בהצעה']], ['🏢 מחלקה', ['מחלקה פגישת צוות בעוד 3 ימים']],
-        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🔊 חיווי קולי', ['הפעל חיווי קולי', 'כבה חיווי קולי', 'חיווי קולי לשבת', 'הפעל חיווי קולי לימי הולדת ולמשימות', 'כבה חיווי קולי לקניות', 'תפסיק לדבר', 'חיווי קולי (פותח הגדרות)']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
-      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>חיווי קולי:</b> התשובות מוקראות בקול – אפשר לבחור באילו נושאים (🔊 בסרגל העליון, או בפקודה ״כבה חיווי קולי לקניות״). <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
+        ['🛒 קניות', ['קניות חלב ביצים ולחם', 'קניתי חלב (מוחק מהרשימה)']], ['📝 כללי', ['הערה לבדוק ספק חדש', 'רעיון מדבקות לכבלים']], ['🧹 ניקוי נתונים', ['ניקוי (פותח מסך בחירה)', 'נקה משימות שבוצעו', 'נקה פריטים שנקנו', 'נקה לקוחות', 'נקה את השיחה', 'נקה מטמון', 'נקה local', 'אשר / בטל']], ['🔊 חיווי קולי', ['הפעל חיווי קולי', 'כבה חיווי קולי', 'חיווי קולי לשבת', 'הפעל חיווי קולי לימי הולדת ולמשימות', 'כבה חיווי קולי לקניות', 'תפסיק לדבר', 'חיווי קולי (פותח הגדרות)']], ['🗓️ קביעת פגישה / עדכון מועד', ['קבע פגישה לתאריך 28 לנובמבר בשעה 14:00', 'קבע פגישה עם דנה ל-3 בדצמבר בשעה 10:00', 'לקבוע פגישה בלקוחות מחר ב-9:30', 'דחה את הפגישה ל-1/12 בשעה 16:00', 'קבע פגישה (ואז: 28 לנובמבר בשעה 14:00)']], ['📆 לוח שנה וחגים', ['לוח שנה', 'מתי כניסת שבת', 'מתי נכנסת שבת', 'מתי מדליקים נרות', 'מתי יציאת שבת', 'מתי כניסת החג', 'מה זמני שבת', 'איזו פרשה השבוע', 'מתי השקיעה', 'מה התאריך העברי', 'מתי חל פסח', 'האם אפשר פגישה ביום שבת בשעה 10:00']], ['🎂 ימי הולדת', ['שלח ברכה (למי שחוגג היום)', 'שלח למי שחוגג היום', 'שלח לדנה', 'שלח ברכה לדנה', 'מי חוגג השבוע', 'מי חוגג היום', 'מתי יום ההולדת של דנה', 'הוסף יום הולדת לדנה ב-26 בנובמבר', 'ימי הולדת']], ['🏖️ ימי חופשה מומלצים', ['ימי חופשה מומלצים', 'מתי נוח לצאת לחופשה בפסח', 'מתי נוח לצאת לחופשה בסוכות', 'הצג אפשרות 2 בלוח', 'שמור אפשרות 2']], ['⚙️ ניהול', ['פתח תחום ספקים', 'הצג לקוחות', 'לקוחות (כניסה למצב תחום) · יציאה', 'בטל']]]
+      showSheet(head('❓ עזרה ופקודות') + '<div class="hint" style="text-align:right">לחץ פעם אחת על 🎙️ – ההאזנה נמשכת ואפשר לומר כמה פקודות ברצף (לחץ שוב לעצירה, או שהיא נעצרת אחרי דקה של שקט). המערכת מזהה את התחום לפי המילה הראשונה ומעבירה אליו את השאר. אם לא זוהה תחום – תישאל לאן לשמור. <b>קביעת מועד:</b> ״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ מעדכנת את התאריך והשעה במשימה שנשמרה לאחרונה – או במשימה/תחום שתציין בשם (״קבע פגישה בלקוחות …״, ״קבע פגישה עם דנה …״); אם אין התאמה תוצג רשימה לבחירה. <b>ימי הולדת:</b> ״שלח למי שחוגג היום״ או ״שלח לדנה״ פותחים וואטסאפ עם הברכה. <b>ניקוי:</b> כפתור 🧹 או ״נקה …״ – בוחרים מה לנקות (משימות שבוצעו, קניות, שיחה, תחום מסוים, מטמון/רענון גרסה, או LOCAL = הכול) ואז ״אשר״. <b>חיווי קולי:</b> התשובות מוקראות בקול – אפשר לבחור באילו נושאים (🔊 בסרגל העליון, או בפקודה ״כבה חיווי קולי לקניות״). <b>שאלות קוליות:</b> ״מתי כניסת שבת״ ו״ימי חופשה מומלצים״ פותחות חלון עם התשובה. לחיצה על דוגמה מעתיקה אותה לתיבת הפקודה. בכל פתיחה של האפליקציה קופץ סיכום היום (אפשר גם ב-📅 שבראש מסך הבית).</div>' +
         EX.map(g => '<div class="hg">' + g[0] + '</div>' + g[1].map(x => '<button type="button" class="ex" data-act="ex" data-v="' + esc(x.replace(/ \(.*\)$/, '')) + '">״' + esc(x) + '״</button>').join('')).join('') +
         '<div class="hg">🩺 בדיקת תקינות</div>' + chk.map(c => '<div class="okr"><span>' + (c[0] ? '✅' : '⚠️') + '</span><div><b>' + c[1] + '</b><small>' + esc(c[2]) + '</small></div></div>').join('') +
         '<div class="hint" style="text-align:right;margin-top:10px">📴 אופליין: האפליקציה עצמה עובדת בלי רשת אחרי שנטענה פעם אחת מאתר (דורש את הקבצים sw.js, manifest.json ו-icon.png לצד הקובץ). זיהוי הדיבור של הדפדפן עשוי להזדקק לרשת – במצב טיסה השתמש ב-🎤 שבמקלדת, שפועל במכשיר.</div><button type="button" class="btn-primary" style="width:100%;margin-top:12px" data-act="runtest">▶ הרץ בדיקה עצמית של הפקודות</button>' +
@@ -3478,6 +3601,9 @@ window.onload = () => {
       route('מחר פגישה עם הסמנכ"ל'); route('בשעה 14:00'); const sp = crm.records[0]; ok(sp && sp.time === '14:00' && sp.due === fmt(new Date(Date.now() + 864e5)) && crm.records.length === crm.records.filter(x => x).length, 'שעה במשפט נפרד', '״מחר פגישה עם הסמנכ״ל״ ואחריו ״בשעה 14:00״ → אותה משימה')
       route('משימה לבדוק ספק'); route('קבע פגישה לתאריך 28 לנובמבר בשעה 14:00'); const mt = crm.records[0]; ok(mt && mt.time === '14:00' && /-11-28$/.test(mt.due) && mt.title === 'לבדוק ספק', 'קבע פגישה', '״קבע פגישה לתאריך 28 לנובמבר בשעה 14:00״ → המשימה האחרונה עודכנה')
       route('קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00'); const mn = crm.records[0]; ok(mn && mn.time === '10:00' && /-12-03$/.test(mn.due) && mn.title === 'פגישה עם גדעון', 'פגישה עם שם', '״קבע פגישה עם גדעון ל-3 בדצמבר בשעה 10:00״ → פגישה חדשה')
+      ok(cleanSpeech('\u200fבבקשה מָתַי כניסת שבת?') === 'מתי כניסת שבת', 'ניקוי טקסט מאייפון', 'סימני כיווניות, ניקוד ומילות נימוס לא מפריעים לזיהוי')
+      route('משימה לבדיקת ניקוי'); route('סיימתי בדיקת ניקוי'); const cq = route('נקה משימות שבוצעו'); route('אשר'); ok(/אשר/.test(cq) && !crm.records.some(r => /בדיקת ניקוי/.test(r.title)), 'ניקוי בקול', '״נקה משימות שבוצעו״ + ״אשר״ מנקה')
+      { const cl = route('נקה local'); const cn = route('בטל'); ok(/אשר מחיקת הכל/.test(cl) && /ביטלתי/.test(cn), 'ניקוי LOCAL דורש אישור', '״בטל״ מבטל, שום דבר לא נמחק') }
       { const o0 = JSON.stringify(SPK.off), t0 = ttsOn; route('כבה חיווי קולי לקניות'); const a = !!SPK.off.shopping; route('הפעל חיווי קולי לקניות ולשבת'); const b = !SPK.off.shopping && !SPK.off.cal; SPK.off = JSON.parse(o0); ttsOn = t0; saveSpk(); ok(a && b, 'חיווי קולי לפי נושא', '״כבה/הפעל חיווי קולי לקניות״ משנה את ההגדרה') }
       route('קניות חלב'); const had = shop.items.some(i => /חלב/.test(i.name)); route('קניתי חלב'); ok(had && !shop.items.some(i => /חלב/.test(i.name)), 'קניות: הוספה ומחיקה', '״קניות חלב״ ואז ״קניתי חלב״')
       lastDomTs = 0; route('משהו לא מוכר לגמרי'); ok(askText, 'טקסט לא מזוהה', 'נשאלת לאיזה תחום לשמור'); askText = null
@@ -3500,7 +3626,7 @@ window.onload = () => {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="vis" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     b.innerHTML = '<div class="fl" style="margin-top:0">מסכים באפליקציה</div>' + SECTIONS.map(x => row('tab:' + x[0], x[1], !ui.hideTab.includes(x[0]))).join('') +
       '<div class="fl">תחומים במסך הבית</div>' + crm.domains.map(d => row('dom:' + d.id, d.icon + ' ' + esc(d.name), visDom(d))).join('') +
-      '<button type="button" class="btn-primary" style="width:100%;margin-top:14px" data-act="spk">🔊 הגדרות חיווי קולי (מה להקריא)</button>' + '<button type="button" class="btn-primary" style="width:100%;margin-top:10px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
+      '<button type="button" class="btn-primary" style="width:100%;margin-top:14px" data-act="spk">🔊 הגדרות חיווי קולי (מה להקריא)</button>' + '<button type="button" class="btn-ghost" style="width:100%;margin-top:10px" data-act="clean">🧹 ניקוי נתונים (לפי בחירה)</button>' + '<button type="button" class="btn-primary" style="width:100%;margin-top:10px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
   }
   function toggleVis(v) {
     const k = v.split(':')[0], id = v.split(':')[1], arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
@@ -3574,6 +3700,11 @@ window.onload = () => {
     else if (a === 'close') closeSheet()
     else if (a === 'scopeoff') { scope = null; renderSticky() }
     else if (a === 'askx') { askText = null; renderAsk() }
+    else if (a === 'clean') { cleanAsk = null; sheet = { type: 'clean' }; renderSheet() }
+    else if (a === 'cl') { cleanAsk = cleanAsk === v ? null : v; renderSheet() }
+    else if (a === 'clno') { cleanAsk = null; renderSheet() }
+    else if (a === 'clbk') { try { backupAll() } catch (e) {} setTimeout(() => { cleanAsk = null; setStatus('', cleanDo('local')) }, 900) }
+    else if (a === 'clgo') { cleanAsk = null; const msg = cleanDo(v); if (sheet && sheet.type === 'clean') renderSheet(); setStatus('', msg) }
     else if (a === 'spk') { sheet = { type: 'spk' }; renderSheet() }
     else if (a === 'spkt') toggleSpk(v)
     else if (a === 'meetpick') { const r = crm.records.find(x => x.id === v), mp = meetPick; meetPick = null; closeSheet(); if (r && mp) setStatus('', meetApply(r, null, mp.due, mp.time, '', mp.kind)) }
@@ -3773,7 +3904,7 @@ window.onload = () => {
   const tb = document.querySelector('#home-panel .topbar')
   if (tb) { const w = document.createElement('div'); w.className = 'wtop'
     w.innerHTML = '<div><div class="wtime" id="wtime">' + clock() + '</div><div class="wdate">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div></div>' +
-      '<div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div>'
+      '<div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="clean" title="ניקוי נתונים" aria-label="ניקוי נתונים">🧹</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div>'
     tb.replaceWith(w) }
   setInterval(() => { const t = $('wtime'); if (t) t.textContent = clock() }, 20000)
   window.renderHome = function () {
