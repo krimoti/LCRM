@@ -769,7 +769,10 @@ body.st-home .station[data-id=home]{padding-bottom:calc(160px + env(safe-area-in
                     <button type="button" class="btn-ghost text-xs" onclick="backupAll()">💾 גיבוי לקובץ</button>
                     <label class="btn-ghost text-xs" style="cursor:pointer">♻️ שחזור מקובץ<input type="file" accept=".json" class="hidden" onchange="restoreAll(event)"></label>
                 </div>
-                <button type="button" onclick="resetAllData()" class="text-xs hover:text-red-400" style="color:#6b7280">🗑️ אפס הכל (ידע + שיחות)</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn-ghost text-xs" data-act="clean">🧹 ניקוי נתונים</button>
+                    <button type="button" class="btn-ghost text-xs" data-act="spk">🔊 חיווי קולי</button>
+                </div>
             </div>
         </div>
 
@@ -3549,7 +3552,7 @@ window.onload = () => {
 
   // ---------- home ----------
   const home = $('home-panel')
-  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="clean" title="ניקוי נתונים" aria-label="ניקוי נתונים">🧹</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="backup" title="גיבוי לקובץ" aria-label="גיבוי לקובץ">⇧</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div></div><div id="home-body"></div>'
+  home.innerHTML = '<div class="topbar"><div class="brand"><div><h1>KMS-CRM</h1><small>מרכז הניהול האישי שלך</small></div></div><div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="backup" title="גיבוי לקובץ" aria-label="גיבוי לקובץ">⇧</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div></div><div id="home-body"></div>'
   function setStatus(h, r) { window.say(h, r) }
   function renderSticky() { const el = $('home-sticky'); if (!el) return; const d = scope && dom(scope); el.hidden = !d; if (d) el.innerHTML = '<span>' + d.icon + ' מצב תחום: <b>' + esc(d.name) + '</b></span><button type="button" class="xb" data-act="scopeoff">✕</button>' }
   function renderAsk() { if (askText) { sheet = { type: 'ask' }; renderSheet() } else if (sheet && sheet.type === 'ask') closeSheet() }
@@ -3671,7 +3674,7 @@ window.onload = () => {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="vis" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     b.innerHTML = '<div class="fl" style="margin-top:0">מסכים באפליקציה</div>' + SECTIONS.map(x => row('tab:' + x[0], x[1], !ui.hideTab.includes(x[0]))).join('') +
       '<div class="fl">תחומים במסך הבית</div>' + crm.domains.map(d => row('dom:' + d.id, d.icon + ' ' + esc(d.name), visDom(d))).join('') +
-      '<button type="button" class="btn-primary" style="width:100%;margin-top:14px" data-act="spk">🔊 הגדרות חיווי קולי (מה להקריא)</button>' + '<button type="button" class="btn-ghost" style="width:100%;margin-top:10px" data-act="clean">🧹 ניקוי נתונים (לפי בחירה)</button>' + '<button type="button" class="btn-primary" style="width:100%;margin-top:10px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
+      '<button type="button" class="btn-primary" style="width:100%;margin-top:10px" data-act="export">📤 ייצוא משימות (וואטסאפ / אאוטלוק / יומן)</button>'
   }
   function toggleVis(v) {
     const k = v.split(':')[0], id = v.split(':')[1], arr = k === 'tab' ? ui.hideTab : ui.hideDom, i = arr.indexOf(id)
@@ -3947,7 +3950,7 @@ window.onload = () => {
   const tb = document.querySelector('#home-panel .topbar')
   if (tb) { const w = document.createElement('div'); w.className = 'wtop'
     w.innerHTML = '<div><div class="wtime" id="wtime">' + clock() + '</div><div class="wdate">' + new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div></div>' +
-      '<div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="clean" title="ניקוי נתונים" aria-label="ניקוי נתונים">🧹</button><button type="button" class="ib" data-act="spk" title="חיווי קולי" aria-label="חיווי קולי">🔊</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div>'
+      '<div class="top-actions"><button type="button" class="ib" data-act="cal" title="לוח שנה" aria-label="לוח שנה">📆</button><button type="button" class="ib" data-act="brief" title="סיכום היום" aria-label="סיכום היום">📅</button><button type="button" class="ib" data-act="help" title="עזרה ופקודות" aria-label="עזרה ופקודות">❓</button><button type="button" class="ib" data-act="settings" title="הגדרות" aria-label="הגדרות">⚙</button></div>'
     tb.replaceWith(w) }
   setInterval(() => { const t = $('wtime'); if (t) t.textContent = clock() }, 20000)
   window.renderHome = function () {
