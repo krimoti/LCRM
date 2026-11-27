@@ -2294,7 +2294,7 @@ function handleShopPhrase(ph) {
     return shopStage(segmentStream(ph))
 }
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-let shopRec = null, shopVoiceOn = false, ttsOn = (localStorage.getItem('gl_tts') ?? (IS_IOS ? '0' : '1')) !== '0'
+let shopRec = null, shopVoiceOn = false, ttsOn = IS_IOS ? localStorage.getItem('gl_tts_ios') === '1' : (localStorage.getItem('gl_tts') ?? '1') !== '0'
 const plain = h => String(h).replace(/<br>/g, ' • ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
 const APP_BUILD = '2026-11-26.3'
 // Cleans what the iPhone keyboard / dictation / Android IME produce: invisible direction marks, niqqud, NBSP,
@@ -2312,7 +2312,7 @@ function cleanSpeech(raw) {
 const SPK = (() => { let x = null; try { x = JSON.parse(localStorage.getItem('gl_speak')) } catch (e) {} x = x && typeof x === 'object' ? x : {}; x.off = x.off && typeof x.off === 'object' ? x.off : {}; x.rate = x.rate || 1; x.typed = !!x.typed; return x })()
 const spkOn = k => ttsOn && !SPK.off[k]
 function spkSync() { const b = document.getElementById('shop-tts'); if (b) b.textContent = spkOn('shopping') ? '🔊' : '🔇' }
-function saveSpk() { try { localStorage.setItem('gl_speak', JSON.stringify(SPK)); localStorage.setItem('gl_tts', ttsOn ? '1' : '0') } catch (e) {} spkSync() }
+function saveSpk() { try { localStorage.setItem('gl_speak', JSON.stringify(SPK)); localStorage.setItem('gl_tts', ttsOn ? '1' : '0'); if (IS_IOS) localStorage.setItem('gl_tts_ios', ttsOn ? '1' : '0') } catch (e) {} spkSync() }
 const SPK_MONTHS = ['בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני', 'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר']
 function spokenText(t) {
     let x = plain(t).replace(/אמור ״.*$/, '').replace(/(\d{1,2}\/\d{1,2})\s*[–-]\s*(\d{1,2}\/\d{1,2})/g, '$1 עד $2').replace(/(\d{1,2})\/(\d{1,2})(?!\d)/g, (m, d, mo) => +mo >= 1 && +mo <= 12 ? d + ' ' + SPK_MONTHS[mo - 1] : m)
@@ -2385,7 +2385,7 @@ function voiceEnv() {
 function renderVoiceLog() {
     const el = document.getElementById('voice-log'); if (!el || el.style.display === 'none') return
     const e = voiceEnv()
-    el.textContent = `סביבה: ${e.ios ? 'iOS' : 'לא-iOS'} | מסך-הבית: ${e.standalone ? 'כן' : 'לא'} | HTTPS: ${e.secure ? 'כן' : 'לא'} (${e.proto}) | זיהוי דיבור: ${e.sr} | גישה למיקרופון: ${e.getUserMedia ? 'כן' : 'לא'}\n${e.ua}\n` + '─'.repeat(30) + '\n' + (Voice.log.join('\n') || '(עוד לא נרשם כלום – לחץ על 🎤)')
+    el.textContent = `סביבה: ${e.ios ? 'iOS' : 'לא-iOS'} | הקראה: ${ttsOn ? 'פעילה' : 'כבויה'} | מסך-הבית: ${e.standalone ? 'כן' : 'לא'} | HTTPS: ${e.secure ? 'כן' : 'לא'} (${e.proto}) | זיהוי דיבור: ${e.sr} | גישה למיקרופון: ${e.getUserMedia ? 'כן' : 'לא'}\n${e.ua}\n` + '─'.repeat(30) + '\n' + (Voice.log.join('\n') || '(עוד לא נרשם כלום – לחץ על 🎤)')
 }
 function toggleVoiceLog() {
     const el = document.getElementById('voice-log'); if (!el) return
@@ -2899,7 +2899,7 @@ window.onload = () => {
       onText(t)
     }
     on('start', () => { Voice.state = 'listening'; clearTimeout(Voice.wd); voiceUI(true, kind); setDiag('מקשיב… דבר עכשיו'); vlog('start') });
-    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; vlog(n) }))
+    ['audiostart', 'soundstart', 'speechstart'].forEach(n => on(n, () => { heard = true; if (n !== 'audiostart') Voice.speechAt = Date.now(); vlog(n) }))
     const deliverMulti = t => {                                   // כל משפט סופי = פקודה נפרדת
       got = true; heard = true; Voice.fails = 0; last = ''; lastAct = Date.now()
       vlog('שמעתי: ' + t); setDiag('שמעתי: ' + t)
@@ -2907,6 +2907,7 @@ window.onload = () => {
       if (window.voiceInterim) window.voiceInterim(kind, '')
     }
     on('result', e => {
+      Voice.speechAt = Date.now()
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i], t = ((res[0] || {}).transcript || '').trim(); if (!t) continue
@@ -2939,6 +2940,7 @@ window.onload = () => {
       if (sp) speakHe(sp)
       voiceClosed(r)
     })
+    setTimeout(() => { if (Voice.rec === r && !(Voice.speechAt >= Voice.t0) && Voice.ttsEnd && Date.now() - Voice.ttsEnd < 60000) { vlog('לא נקלט דיבור אחרי הקראה (באג iOS?)'); setDiag('לא נקלט דיבור. ייתכן שהמיקרופון חסום זמנית אחרי הקראה (באג של iOS) – כבה הקראה ב-🔊 או חכה כחצי דקה'); toast('אם לא נקלט דיבור: המיקרופון חסום זמנית אחרי הקראה – כבה הקראה ב-🔊', '#f59e0b') } }, 7000)
     voiceUI(true, kind, '⏳ מפעיל… (אשר את חלון ההרשאה)'); setDiag('מפעיל את המיקרופון…')
     // לא הורגים את הסשן בזמן שחלון ההרשאה פתוח: רק הודעה אחרי 6 שנ׳, ואיפוס אחרי 45 שנ׳
     Voice.wd = setTimeout(() => { if (Voice.rec === r && Voice.state === 'starting') setDiag('ממתין להרשאה… אשר בחלון שנפתח') }, 6000)
@@ -3302,7 +3304,7 @@ window.onload = () => {
   let cleanAsk = null, cleanPending = null
   const jlen = k => { try { const x = JSON.parse(localStorage.getItem(k)); return Array.isArray(x) ? x.length : x && typeof x === 'object' ? Object.keys(x).length : 0 } catch (e) { return 0 } }
   const lsKB = () => { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length } } catch (e) {} return Math.round(n * 2 / 1024) }
-  const SETTING_KEYS = ['gl_theme', 'gl_palette', 'gl_view', 'gl_tts', 'gl_speak', 'gl_confirm_ms', 'gl_addr', 'gl_ui', 'gl_brief', 'gl_brief_day', 'gl_station', 'kms_cal_cfg']
+  const SETTING_KEYS = ['gl_theme', 'gl_palette', 'gl_view', 'gl_tts', 'gl_tts_ios', 'gl_speak', 'gl_confirm_ms', 'gl_addr', 'gl_ui', 'gl_brief', 'gl_brief_day', 'gl_station', 'kms_cal_cfg']
   const nonShop = r => dom(r.domain) && dom(r.domain).link !== 'shop'
   function cleanItems() {
     const it = [
@@ -3411,7 +3413,7 @@ window.onload = () => {
   function spkHtml() {
     const row = (k, label, on) => '<div class="vrow"><span>' + label + '</span><button type="button" class="tg" data-act="spkt" data-v="' + k + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '"></button></div>'
     const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [], noHe = window.speechSynthesis && vs.length && !vs.some(v => /^he/i.test(v.lang))
-    return (IS_IOS ? '<div class="hint" style="text-align:right;color:#f59e0b">באייפון ההקראה מתחילה רק אחרי שהמיקרופון נסגר (המיקרופון נסגר אחרי כל תשובה) – כך מונעים ממנו להיתקע.</div>' : '') + '<div class="hint" style="text-align:right">כשמדברים אל האפליקציה – התשובה מוקראת בקול, רק בנושאים שמסומנים. אפשר גם בקול: ״כבה חיווי קולי לקניות״ · ״חיווי קולי לשבת״ · ״תפסיק לדבר״.</div>' +
+    return (IS_IOS ? '<div class="hint" style="text-align:right;color:#f59e0b">⚠️ באייפון (באג של iOS) הקראה גורמת להכתבה הבאה לא להקלט במשך כחצי דקה. לכן ההקראה כבויה כאן כברירת מחדל – ההפעלה על אחריותך. כשהיא פעילה היא מתחילה רק אחרי שהמיקרופון נסגר.</div>' : '') + '<div class="hint" style="text-align:right">כשמדברים אל האפליקציה – התשובה מוקראת בקול, רק בנושאים שמסומנים. אפשר גם בקול: ״כבה חיווי קולי לקניות״ · ״חיווי קולי לשבת״ · ״תפסיק לדבר״.</div>' +
       row('master', '🔊 חיווי קולי (מתג ראשי)', ttsOn) + '<div class="fl">מה להקריא</div>' + spkTopics().map(x => row(x[0], esc(x[1]), !SPK.off[x[0]])).join('') +
       '<div class="fl">כללי</div>' + row('typed', '⌨️ להקריא גם כשמקלידים פקודה', SPK.typed) +
       '<div class="fl">מהירות דיבור</div><div style="display:flex;gap:8px">' + [['0.85', '🐢 איטי'], ['1', 'רגיל'], ['1.2', '🐇 מהיר']].map(x => '<button type="button" class="ex" style="flex:1;text-align:center;' + (SPK.rate === +x[0] ? 'font-weight:800;border-color:#10b981' : '') + '" data-act="spkt" data-v="rate:' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
@@ -3419,7 +3421,7 @@ window.onload = () => {
       (noHe ? '<div class="hint" style="text-align:right;color:#f59e0b">⚠️ לא נמצא במכשיר קול בעברית – הוסף קול עברי בהגדרות המערכת (למשל Google Text-to-Speech) כדי לשמוע.</div>' : '')
   }
   function toggleSpk(v) {
-    if (v === 'master') { ttsOn = !ttsOn; if (!ttsOn) try { speechSynthesis.cancel() } catch (e) {} }
+    if (v === 'master') { ttsOn = !ttsOn; if (!ttsOn) try { speechSynthesis.cancel() } catch (e) {} else if (IS_IOS) toast('⚠️ באייפון ההקראה עלולה לחסום את ההכתבה הבאה לכחצי דקה (באג של iOS)', '#f59e0b') }
     else if (v === 'typed') SPK.typed = !SPK.typed
     else if (v.startsWith('rate:')) SPK.rate = +v.slice(5)
     else if (v === 'test') { speakReply('בדיקת חיווי קולי. כניסת שבת ביום שישי בשעה 16 ו-18 דקות', 'sys', true); return }
@@ -3446,7 +3448,7 @@ window.onload = () => {
     if (!m[1] && !m[2]) return null
     const on = !m[1] || /^(?:הפעל|תפעיל|הדלק|תדליק)$/.test(m[1])
     const words = (m[2] || '').split(/\s*,\s*|\s+ו(?=\S)/).map(x => x.trim()).filter(Boolean)
-    if (!words.length) { ttsOn = on; if (!on) try { speechSynthesis.cancel() } catch (e) {} saveSpk(); return on ? '🔊 חיווי קולי הופעל' : '🔇 חיווי קולי כובה' }
+    if (!words.length) { ttsOn = on; if (!on) try { speechSynthesis.cancel() } catch (e) {} saveSpk(); return on ? '🔊 חיווי קולי הופעל' + (IS_IOS ? ' ⚠️ באייפון עלול לחסום את ההכתבה הבאה לכחצי דקה' : '') : '🔇 חיווי קולי כובה' }
     const keys = []; for (const w of words) { const k = spkResolve(w); if (!k) return '🤔 לא הכרתי את הנושא ״' + esc(w) + '״. נסה: שבת, ימי הולדת, חופשות, פגישות, קניות, או שם תחום.'; keys.push(k) }
     const all = spkTopics().map(x => x[0])
     if (keys.includes('all')) { all.forEach(k => { SPK.off[k] = !on }); ttsOn = on }
@@ -3456,7 +3458,7 @@ window.onload = () => {
     }
     saveSpk(); if (sheet && sheet.type === 'spk') renderSheet(); renderVis()
     const names = keys.map(k => k === 'all' ? 'הכול' : k === 'typed' ? 'הקלדה' : ((spkTopics().find(x => x[0] === k) || [0, k])[1]).replace(/^\S+\s/, ''))
-    return (on ? '🔊 חיווי קולי הופעל ל: ' : '🔇 חיווי קולי כובה ל: ') + esc(names.join(', '))
+    return (on ? '🔊 חיווי קולי הופעל ל: ' : '🔇 חיווי קולי כובה ל: ') + esc(names.join(', ')) + (IS_IOS && on ? ' ⚠️ באייפון עלול לחסום את ההכתבה הבאה לכחצי דקה' : '')
   }
 
   // ---------- "קבע פגישה לתאריך 28 לנובמבר בשעה 14:00" → מעדכן משימה שמורה (או יוצר חדשה) ----------
